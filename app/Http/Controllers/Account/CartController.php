@@ -1,0 +1,159 @@
+<?php
+
+namespace App\Http\Controllers\Account;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCartRequest;
+use App\Http\Requests\UpdateCartRequest;
+use App\Models\Cart;
+use App\Models\Product;
+use Illuminate\Http\Request;
+
+class CartController extends Controller
+{
+    public function store(StoreCartRequest $request)
+    {
+        $user = $request->user();
+
+        if (!$user->activeCashierShift) {
+            return back()->with('error', 'Buka shift kasir terlebih dahulu sebelum menambah produk.');
+        }
+
+        $product = Product::query()
+            ->with(['productUnits.unit'])
+            ->where('id', $request->product_id)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        if ($product->isPpob()) {
+            return $this->storePpobCart($request, $user, $product);
+        }
+
+        return $this->storePhysicalCart($request, $user, $product);
+    }
+
+    public function update(UpdateCartRequest $request, Cart $cart)
+    {
+        $this->authorizeCartOwner($request, $cart);
+
+        $product = Product::with(['productUnits'])->findOrFail($cart->product_id);
+        $qty = (int) $request->qty;
+
+        if ($product->isPpob()) {
+            $cart->update(['qty' => $qty]);
+            return back();
+        }
+
+        $conversionFactor = $this->resolveConversionFactor($product, $cart->unit_id);
+        $qtyInBase = (int) round($qty * $conversionFactor);
+
+        if ($qtyInBase > (int) $product->stock) {
+            return back()->with('error', 'Qty keranjang melebihi stok tersedia.');
+        }
+
+        $productUnit = $product->productUnits->firstWhere('unit_id', $cart->unit_id);
+
+        $cart->update([
+            'qty' => $qty,
+            'price' => $productUnit?->sell_price ?? $product->sell_price,
+        ]);
+
+        return back();
+    }
+
+    public function destroy(Request $request, Cart $cart)
+    {
+        $this->authorizeCartOwner($request, $cart);
+
+        $cart->delete();
+
+        return back();
+    }
+
+    protected function storePhysicalCart(Request $request, $user, Product $product)
+    {
+        if ((int) $product->stock < 1) {
+            return back()->with('error', 'Stok produk habis.');
+        }
+
+        $unitId = (int) ($request->unit_id ?: $product->defaultSellUnit?->unit_id);
+
+        $productUnit = $product->productUnits->first(function ($row) use ($unitId) {
+            return $unitId > 0 ? $row->unit_id === $unitId : $row->is_default_sell;
+        }) ?? $product->productUnits->firstWhere('is_default_sell', true);
+
+        if (!$productUnit) {
+            return back()->with('error', 'Satuan jual produk belum dikonfigurasi.');
+        }
+
+        $conversionFactor = (float) $productUnit->conversion_factor;
+
+        $cart = Cart::query()
+            ->where('cashier_id', $user->id)
+            ->where('product_id', $product->id)
+            ->where('unit_id', $productUnit->unit_id)
+            ->whereNull('ppob_cost')
+            ->first();
+
+        $nextQty = (int) ($cart?->qty ?? 0) + 1;
+        $qtyInBase = (int) round($nextQty * $conversionFactor);
+
+        if ($qtyInBase > (int) $product->stock) {
+            return back()->with('error', 'Qty keranjang melebihi stok tersedia.');
+        }
+
+        Cart::updateOrCreate(
+            [
+                'cashier_id' => $user->id,
+                'product_id' => $product->id,
+                'unit_id' => $productUnit->unit_id,
+                'ppob_cost' => null,
+            ],
+            [
+                'qty' => $nextQty,
+                'price' => (int) $productUnit->sell_price,
+                'customer_ref' => null,
+                'admin_fee' => null,
+            ],
+        );
+
+        return back();
+    }
+
+    protected function storePpobCart(StoreCartRequest $request, $user, Product $product)
+    {
+        $ppobCost = (int) $request->ppob_cost;
+        $adminFee = (int) $request->admin_fee;
+
+        Cart::create([
+            'cashier_id' => $user->id,
+            'product_id' => $product->id,
+            'unit_id' => null,
+            'qty' => 1,
+            'price' => $ppobCost + $adminFee,
+            'customer_ref' => filled($request->customer_ref) ? trim($request->customer_ref) : null,
+            'ppob_cost' => $ppobCost,
+            'admin_fee' => $adminFee,
+        ]);
+
+        return back();
+    }
+
+    protected function resolveConversionFactor(Product $product, ?int $unitId): float
+    {
+        if (!$unitId) {
+            return 1;
+        }
+
+        $productUnit = $product->productUnits->firstWhere('unit_id', $unitId);
+
+        return (float) ($productUnit?->conversion_factor ?? 1);
+    }
+
+    protected function authorizeCartOwner(Request $request, Cart $cart): void
+    {
+        if ($cart->cashier_id !== $request->user()->id) {
+            abort(403);
+        }
+    }
+}
