@@ -36,7 +36,7 @@ export default function Sidebar() {
                         href="/account/dashboard"
                         className={menuClass("/account/dashboard")}
                     >
-                        <i className="fa fa-tachometer-alt fa-fw me-2"></i>
+                        <i className="fas fa-tachometer-alt fa-fw me-2"></i>
                         Dashboard
                     </Link>
                 )}
@@ -55,7 +55,7 @@ export default function Sidebar() {
                         href="/account/roles"
                         className={menuClass("/account/roles")}
                     >
-                        <i className="fa fa-shield-alt fa-fw me-2"></i>
+                        <i className="fas fa-shield-alt fa-fw me-2"></i>
                         Role
                     </Link>
                 )}
@@ -65,7 +65,7 @@ export default function Sidebar() {
                         href="/account/users"
                         className={menuClass("/account/users")}
                     >
-                        <i className="fa fa-users fa-fw me-2"></i>
+                        <i className="fas fa-users fa-fw me-2"></i>
                         User
                     </Link>
                 )}
@@ -75,7 +75,7 @@ export default function Sidebar() {
                         href="/account/settings"
                         className={menuClass("/account/settings")}
                     >
-                        <i className="fa fa-store fa-fw me-2"></i>
+                        <i className="fas fa-store fa-fw me-2"></i>
                         Store Settings
                     </Link>
                 )}
@@ -100,7 +100,7 @@ export default function Sidebar() {
                         href="/account/categories"
                         className={menuClass("/account/categories")}
                     >
-                        <i className="fa fa-tags fa-fw me-2"></i>
+                        <i className="fas fa-tags fa-fw me-2"></i>
                         Category
                     </Link>
                 )}
@@ -110,7 +110,7 @@ export default function Sidebar() {
                         href="/account/suppliers"
                         className={menuClass("/account/suppliers")}
                     >
-                        <i className="fa fa-truck fa-fw me-2"></i>
+                        <i className="fas fa-truck fa-fw me-2"></i>
                         Suppliers
                     </Link>
                 )}
@@ -120,7 +120,7 @@ export default function Sidebar() {
                         href="/account/customers"
                         className={menuClass("/account/customers")}
                     >
-                        <i className="fa fa-address-book fa-fw me-2"></i>
+                        <i className="fas fa-address-book fa-fw me-2"></i>
                         Customers
                     </Link>
                 )}
@@ -130,7 +130,7 @@ export default function Sidebar() {
                         href="/account/products"
                         className={menuClass("/account/products")}
                     >
-                        <i className="fa fa-cube fa-fw me-2"></i>
+                        <i className="fas fa-cube fa-fw me-2"></i>
                         Produk
                     </Link>
                 )}
@@ -140,7 +140,7 @@ export default function Sidebar() {
                         href="/account/units"
                         className={menuClass("/account/units")}
                     >
-                        <i className="fa fa-balance-scale fa-fw me-2"></i>
+                        <i className="fas fa-balance-scale fa-fw me-2"></i>
                         Satuan
                     </Link>
                 )}
@@ -159,7 +159,7 @@ export default function Sidebar() {
                         href="/account/ppob-accounts"
                         className={menuClass("/account/ppob-accounts")}
                     >
-                        <i className="fa fa-wallet fa-fw me-2"></i>
+                        <i className="fas fa-wallet fa-fw me-2"></i>
                         Akun PPOB
                     </Link>
                 )}
@@ -169,7 +169,7 @@ export default function Sidebar() {
                         href="/account/ppob-balance-logs"
                         className={menuClass("/account/ppob-balance-logs")}
                     >
-                        <i className="fa fa-list fa-fw me-2"></i>
+                        <i className="fas fa-list fa-fw me-2"></i>
                         Riwayat Saldo
                     </Link>
                 )}
@@ -188,7 +188,7 @@ export default function Sidebar() {
                         href="/account/stock-movements"
                         className={menuClass("/account/stock-movements")}
                     >
-                        <i className="fa fa-exchange-alt fa-fw me-2"></i>
+                        <i className="fas fa-exchange-alt fa-fw me-2"></i>
                         Mutasi Stok
                     </Link>
                 )}
@@ -198,7 +198,7 @@ export default function Sidebar() {
                         href="/account/stock-opnames"
                         className={menuClass("/account/stock-opnames")}
                     >
-                        <i className="fa fa-clipboard-check fa-fw me-2"></i>
+                        <i className="fas fa-clipboard-check fa-fw me-2"></i>
                         Stock Opname
                     </Link>
                 )}
@@ -217,7 +217,7 @@ export default function Sidebar() {
                         href="/account/purchases"
                         className={menuClass("/account/purchases")}
                     >
-                        <i className="fa fa-shopping-cart fa-fw me-2"></i>
+                        <i className="fas fa-shopping-cart fa-fw me-2"></i>
                         Pembelian Supplier
                     </Link>
                 )}
@@ -227,7 +227,7 @@ export default function Sidebar() {
                         href="/account/supplier-returns"
                         className={menuClass("/account/supplier-returns")}
                     >
-                        <i className="fa fa-undo fa-fw me-2"></i>
+                        <i className="fas fa-undo fa-fw me-2"></i>
                         Retur Supplier
                     </Link>
                 )}
@@ -252,7 +252,7 @@ export default function Sidebar() {
                         href="/account/cashier-shifts"
                         className={menuClass("/account/cashier-shifts")}
                     >
-                        <i className="fa fa-clock fa-fw me-2"></i>
+                        <i className="fas fa-clock fa-fw me-2"></i>
                         Shift Kasir
                     </Link>
                 )}
@@ -262,7 +262,7 @@ export default function Sidebar() {
                         href="/account/transactions/create"
                         className={menuClass("/account/transactions/create")}
                     >
-                        <i className="fa fa-cash-register fa-fw me-2"></i>
+                        <i className="fas fa-cash-register fa-fw me-2"></i>
                         POS Kasir
                     </Link>
                 )}
@@ -274,7 +274,7 @@ export default function Sidebar() {
                             except: ["/account/transactions/create"],
                         })}
                     >
-                        <i className="fa fa-receipt fa-fw me-2"></i>
+                        <i className="fas fa-receipt fa-fw me-2"></i>
                         Riwayat Transaksi
                     </Link>
                 )}
@@ -284,7 +284,7 @@ export default function Sidebar() {
                         href="/account/returns"
                         className={menuClass("/account/returns")}
                     >
-                        <i className="fa fa-undo fa-fw me-2"></i>
+                        <i className="fas fa-undo fa-fw me-2"></i>
                         Retur Customer
                     </Link>
                 )}
@@ -294,7 +294,7 @@ export default function Sidebar() {
                         href="/account/expenses"
                         className={menuClass("/account/expenses")}
                     >
-                        <i className="fa fa-money-bill-wave fa-fw me-2"></i>
+                        <i className="fas fa-money-bill-wave fa-fw me-2"></i>
                         Pengeluaran
                     </Link>
                 )}
@@ -313,7 +313,7 @@ export default function Sidebar() {
                         href="/account/reports/sales"
                         className={menuClass("/account/reports/sales")}
                     >
-                        <i className="fa fa-chart-line fa-fw me-2"></i>
+                        <i className="fas fa-chart-line fa-fw me-2"></i>
                         Laporan Penjualan
                     </Link>
                 )}
@@ -323,7 +323,7 @@ export default function Sidebar() {
                         href="/account/reports/profit"
                         className={menuClass("/account/reports/profit")}
                     >
-                        <i className="fa fa-coins fa-fw me-2"></i>
+                        <i className="fas fa-coins fa-fw me-2"></i>
                         Laporan Laba
                     </Link>
                 )}
@@ -333,7 +333,7 @@ export default function Sidebar() {
                         href="/account/reports/stock"
                         className={menuClass("/account/reports/stock")}
                     >
-                        <i className="fa fa-chart-bar fa-fw me-2"></i>
+                        <i className="fas fa-chart-bar fa-fw me-2"></i>
                         Laporan Stok
                     </Link>
                 )}

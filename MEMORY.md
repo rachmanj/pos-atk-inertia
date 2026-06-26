@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings  
-**Last Updated**: 2026-06-20 (POS hardening: CheckoutService, tests, logging, MySQL default)
+**Last Updated**: 2026-06-26 (Service products with BOM)
 
 ---
 
@@ -87,4 +87,22 @@
 **Challenge/Decision**: Production readiness for checkout/payments?  
 **Solution**: Added structured logging in `TransactionController` (checkout errors, Snap failures, Midtrans callbacks). Extracted `CheckoutService` for checkout/void. Added 16 PHPUnit tests (`CheckoutTest`, `MidtransCallbackTest`, `VoidTransactionTest`, `PpobBalanceServiceTest`). FormRequests: `StoreTransactionRequest`, `StoreCartRequest`, `UpdateCartRequest`. Login throttle `5/min`. Removed duplicate logout route. `.env.example` MySQL-first + `MIDTRANS_*` vars.  
 **Key Learning**: Run `php artisan test` before deploy; tests use SQLite `:memory:` while local dev should use MySQL for concurrent cashier locking.
+
+### POS-015 Product Excel import (2026-06-26) ✅ COMPLETE
+
+**Challenge/Decision**: How to bulk-load inventory without manual product create?  
+**Solution**: `ProductImportController` + `ProductsImport` (Maatwebsite Excel) on Products index. Create-only by barcode; single base UOM per row auto-mapped to `product_units`. Template at `GET /account/products/import/template`; upload at `POST /account/products/import`. Uses `products.create` permission.  
+**Key Learning**: Category auto-created by name; unit abbreviation must pre-exist in `units`. Opening stock creates `stock_movements` with note "Stok awal import." Duplicate barcodes in file or DB are skipped with row-level error summary in flash.
+
+### POS-016 Service products with BOM (2026-06-26) ✅ COMPLETE
+
+**Challenge/Decision**: How to sell laminating/print/fotocopy that consume paper/film while keeping inventory and COGS accurate?  
+**Solution**: New `product_type=service` with `product_components` recipe table. Services sold at fixed catalog price; checkout deducts physical component stock and computes COGS from component `avg_cost`. Void reverses all `stock_movements` for the transaction (not detail-by-detail). Stock report scoped to `physical()` only.  
+**Key Learning**: Components must be `physical` products. Service keeps one base/default-sell `product_unit` for cart compatibility. Key files: `CheckoutService`, `ProductController`, `CartController`, `ProductComponentBuilder.jsx`, migration `create_product_components_table`.
+
+### POS-016 Font Awesome version conflict (2026-06-26) ✅ COMPLETE
+
+**Challenge/Decision**: Sidebar icons (`fa-shield-alt`, `fa-store`, etc.) showed empty boxes or wrong glyphs.  
+**Solution**: `app.blade.php` was loading FA 4.7 **after** FA 5.15.4, overriding the FA5 font. Removed FA4; load FA5 `all.min.css` + `v4-shims.min.css` in blade. All React icons migrated from legacy `fa fa-*` to FA5 `fas fa-*` / `far fa-*` (outline icons like file-excel, clock).  
+**Key Learning**: Do not mix FA4 and FA5. Icons like `fa-store` and `fa-shield-alt` are FA5-only — they break if FA4 CSS loads last.
 

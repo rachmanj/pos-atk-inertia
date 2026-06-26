@@ -41,7 +41,7 @@ export default function RoleIndex() {
                                             href="/account/roles/create"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-plus-circle me-2"></i>
+                                            <i className="fas fa-plus-circle me-2"></i>
                                             TAMBAH ROLE
                                         </Link>
                                     )}
@@ -143,7 +143,7 @@ export default function RoleIndex() {
                                                                         className="btn btn-primary btn-sm me-2 shadow-sm"
                                                                     >
                                                                         <i
-                                                                            className="fa fa-pencil"
+                                                                            className="fas fa-pencil-alt"
                                                                             aria-hidden="true"
                                                                         ></i>
                                                                     </Link>

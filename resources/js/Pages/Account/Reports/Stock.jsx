@@ -91,7 +91,7 @@ export default function StockReport() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-boxes me-2"></i>
+                                    <i className="fas fa-boxes me-2"></i>
                                     LAPORAN STOK
                                 </h5>
                             </div>
@@ -180,7 +180,7 @@ export default function StockReport() {
                                                 type="submit"
                                                 className="btn btn-primary shadow-sm w-100"
                                             >
-                                                <i className="fa fa-filter me-2"></i>
+                                                <i className="fas fa-filter me-2"></i>
                                                 Filter
                                             </button>
 
@@ -189,7 +189,7 @@ export default function StockReport() {
                                                 className="btn btn-secondary shadow-sm w-100"
                                                 onClick={handleReset}
                                             >
-                                                <i className="fa fa-sync-alt me-2"></i>
+                                                <i className="fas fa-sync-alt me-2"></i>
                                                 Reset
                                             </button>
                                         </div>
@@ -442,7 +442,7 @@ export default function StockReport() {
                                                                                     )}`}
                                                                                     className="btn btn-secondary btn-sm shadow-sm"
                                                                                 >
-                                                                                    <i className="fa fa-history me-1"></i>
+                                                                                    <i className="fas fa-history me-1"></i>
                                                                                     Riwayat
                                                                                 </Link>
                                                                             )}
@@ -451,7 +451,7 @@ export default function StockReport() {
                                                                                     href={`/account/stock-movements/create?product_id=${product.id}`}
                                                                                     className="btn btn-primary btn-sm shadow-sm"
                                                                                 >
-                                                                                    <i className="fa fa-sliders-h me-1"></i>
+                                                                                    <i className="fas fa-sliders-h me-1"></i>
                                                                                     Sesuaikan
                                                                                 </Link>
                                                                             )}

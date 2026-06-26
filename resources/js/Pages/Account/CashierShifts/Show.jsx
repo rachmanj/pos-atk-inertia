@@ -60,14 +60,14 @@ export default function CashierShiftShow() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-user-clock me-2"></i>{" "}
+                                    <i className="fas fa-user-clock me-2"></i>{" "}
                                     DETAIL SHIFT
                                 </h5>
                                 <Link
                                     href="/account/cashier-shifts"
                                     className="btn btn-secondary shadow-sm rounded-sm"
                                 >
-                                    <i className="fa fa-arrow-left me-2"></i>{" "}
+                                    <i className="fas fa-arrow-left me-2"></i>{" "}
                                     KEMBALI
                                 </Link>
                             </div>
@@ -284,7 +284,7 @@ export default function CashierShiftShow() {
                                     <div className="card border-0 bg-light shadow-sm rounded-3">
                                         <div className="card-body">
                                             <h6 className="fw-bold mb-3">
-                                                <i className="fa fa-door-closed me-2"></i>{" "}
+                                                <i className="fas fa-door-closed me-2"></i>{" "}
                                                 TUTUP SHIFT
                                             </h6>
                                             <form onSubmit={closeShift}>
@@ -374,7 +374,7 @@ export default function CashierShiftShow() {
                                                     type="submit"
                                                     className="btn btn-danger shadow-sm rounded-sm mt-3"
                                                 >
-                                                    <i className="fa fa-door-closed me-2"></i>{" "}
+                                                    <i className="fas fa-door-closed me-2"></i>{" "}
                                                     TUTUP SHIFT
                                                 </button>
                                             </form>

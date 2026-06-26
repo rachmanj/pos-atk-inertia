@@ -29,6 +29,10 @@ class CartController extends Controller
             return $this->storePpobCart($request, $user, $product);
         }
 
+        if ($product->isService()) {
+            return $this->storeServiceCart($request, $user, $product);
+        }
+
         return $this->storePhysicalCart($request, $user, $product);
     }
 
@@ -39,8 +43,18 @@ class CartController extends Controller
         $product = Product::with(['productUnits'])->findOrFail($cart->product_id);
         $qty = (int) $request->qty;
 
-        if ($product->isPpob()) {
+        if ($product->isPpob() || $product->isService()) {
             $cart->update(['qty' => $qty]);
+
+            if ($product->isService()) {
+                $productUnit = $product->productUnits->firstWhere('unit_id', $cart->unit_id)
+                    ?? $product->productUnits->firstWhere('is_default_sell', true);
+
+                $cart->update([
+                    'price' => $productUnit?->sell_price ?? $product->sell_price,
+                ]);
+            }
+
             return back();
         }
 
@@ -101,6 +115,51 @@ class CartController extends Controller
         if ($qtyInBase > (int) $product->stock) {
             return back()->with('error', 'Qty keranjang melebihi stok tersedia.');
         }
+
+        Cart::updateOrCreate(
+            [
+                'cashier_id' => $user->id,
+                'product_id' => $product->id,
+                'unit_id' => $productUnit->unit_id,
+                'ppob_cost' => null,
+            ],
+            [
+                'qty' => $nextQty,
+                'price' => (int) $productUnit->sell_price,
+                'customer_ref' => null,
+                'admin_fee' => null,
+            ],
+        );
+
+        return back();
+    }
+
+    protected function storeServiceCart(Request $request, $user, Product $product)
+    {
+        $product->loadMissing(['productUnits', 'components.componentProduct']);
+
+        $unitId = (int) ($request->unit_id ?: $product->defaultSellUnit?->unit_id);
+
+        $productUnit = $product->productUnits->first(function ($row) use ($unitId) {
+            return $unitId > 0 ? $row->unit_id === $unitId : $row->is_default_sell;
+        }) ?? $product->productUnits->firstWhere('is_default_sell', true);
+
+        if (!$productUnit) {
+            return back()->with('error', 'Satuan jual layanan belum dikonfigurasi.');
+        }
+
+        if ($product->components->isEmpty()) {
+            return back()->with('error', 'Resep bahan baku layanan belum dikonfigurasi.');
+        }
+
+        $cart = Cart::query()
+            ->where('cashier_id', $user->id)
+            ->where('product_id', $product->id)
+            ->where('unit_id', $productUnit->unit_id)
+            ->whereNull('ppob_cost')
+            ->first();
+
+        $nextQty = (int) ($cart?->qty ?? 0) + 1;
 
         Cart::updateOrCreate(
             [

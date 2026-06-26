@@ -39,7 +39,7 @@ export default function CashierShiftIndex() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-clock me-2"></i> SHIFT
+                                    <i className="fas fa-clock me-2"></i> SHIFT
                                     KASIR
                                 </h5>
                                 <div>
@@ -52,7 +52,7 @@ export default function CashierShiftIndex() {
                                                 href="/account/cashier-shifts/create"
                                                 className="btn btn-success shadow-sm rounded-sm"
                                             >
-                                                <i className="fa fa-sign-in me-2"></i>{" "}
+                                                <i className="fas fa-sign-in-alt me-2"></i>{" "}
                                                 BUKA SHIFT
                                             </Link>
                                         )}
@@ -61,7 +61,7 @@ export default function CashierShiftIndex() {
                                             href={`/account/cashier-shifts/${activeShift.id}`}
                                             className="btn btn-primary shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-money me-2"></i>{" "}
+                                            <i className="fas fa-money-bill-wave me-2"></i>{" "}
                                             SHIFT AKTIF
                                         </Link>
                                     )}
@@ -282,7 +282,7 @@ export default function CashierShiftIndex() {
                                                                     href={`/account/cashier-shifts/${shift.id}`}
                                                                     className="btn btn-secondary btn-sm shadow-sm"
                                                                 >
-                                                                    <i className="fa fa-eye me-1"></i>{" "}
+                                                                    <i className="fas fa-eye me-1"></i>{" "}
                                                                     Detail
                                                                 </Link>
                                                             </td>

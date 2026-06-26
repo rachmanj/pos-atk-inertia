@@ -18,12 +18,12 @@ export default function UnitIndex() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-balance-scale me-2"></i>
+                                    <i className="fas fa-balance-scale me-2"></i>
                                     SATUAN
                                 </h5>
                                 {hasAnyPermission(["units.create"], permissions) && (
                                     <Link href="/account/units/create" className="btn btn-success shadow-sm rounded-sm">
-                                        <i className="fa fa-plus-circle me-2"></i>
+                                        <i className="fas fa-plus-circle me-2"></i>
                                         TAMBAH SATUAN
                                     </Link>
                                 )}
@@ -52,7 +52,7 @@ export default function UnitIndex() {
                                                         <td>
                                                             {hasAnyPermission(["units.edit"], permissions) && (
                                                                 <Link href={`/account/units/${unit.id}/edit`} className="btn btn-warning btn-sm text-white me-1">
-                                                                    <i className="fa fa-edit"></i>
+                                                                    <i className="fas fa-edit"></i>
                                                                 </Link>
                                                             )}
                                                             {hasAnyPermission(["units.delete"], permissions) && (

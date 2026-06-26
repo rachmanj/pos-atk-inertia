@@ -1,5 +1,5 @@
 **Purpose**: Technical reference for understanding system design and development patterns  
-**Last Updated**: 2026-06-20 (POS hardening: CheckoutService, tests, FormRequests, MySQL default)
+**Last Updated**: 2026-06-26 (Service products with BOM)
 
 ---
 
@@ -18,6 +18,7 @@
 | Styling | Bootstrap 5, React-Bootstrap, Tailwind CSS 4 |
 | Auth & RBAC | Laravel session auth, Spatie Laravel Permission |
 | Payments | Midtrans Snap (`midtrans/midtrans-php`) |
+| Spreadsheet | Maatwebsite Excel (`maatwebsite/excel`) — product bulk import |
 | Database | MySQL (default in `.env.example`); SQLite for PHPUnit (`:memory:`) |
 | Dev tooling | Laravel Boost, Pint, PHPUnit, Pail |
 
@@ -30,6 +31,8 @@ app/
   Http/Requests/              # FormRequest validation (checkout, cart, etc.)
   Http/Middleware/            # HandleInertiaRequests (shared props)
   Models/                     # Eloquent models
+  Imports/                    # Maatwebsite Excel import classes (ProductsImport)
+  Exports/                    # Excel export classes (ProductImportTemplate)
   Services/                   # CheckoutService, PpobBalanceService
 database/
   migrations/                 # Domain schema (2026_05_16_*)
@@ -78,6 +81,7 @@ config/
 - **Supplier returns**: return goods to supplier against a purchase invoice.
 - **Stock movements** (`StockMovementController`): manual adjustments (`adjustment` type).
 - **Stock opname**: physical count session with per-product variance (`stock_opname_details`).
+- **Product import** (`ProductImportController`): bulk-create physical products from `.xlsx`/`.csv` via Products index modal. Create-only (skip existing barcodes). Template columns: `category`, `barcode`, `title`, `description`, `buy_price`, `stock`, `unit`, `sell_price`. Auto-creates categories; unit must exist in `units`. Each row creates one base/default-sell `product_unit` and opening `stock_movements` when stock > 0. Permission: `products.create`.
 - All monetary amounts and prices use **integer** (IDR, no decimals).
 
 ### Returns
@@ -106,11 +110,33 @@ config/
 
 ### PPOB (digital products)
 
-- **`products.product_type`**: `physical` | `ppob`.
+- **`products.product_type`**: `physical` | `ppob` | `service`.
 - **Catalog (admin)**: PPOB products need barcode, title, category only — `buy_price` / `sell_price` optional (stored as 0); image optional. UI hides price fields when type is PPOB (`Products/Create.jsx`, `Edit.jsx`). Default display unit: `lembar`.
 - **POS checkout**: Cashier enters **`ppob_cost`** (from provider app); **`admin_fee`** pre-filled from `settings.ppob_admin_fee` (editable); optional **`customer_ref`**. Sell price = cost + fee; profit = `admin_fee × qty`. No stock movement.
 - **`ppob_accounts`** + **`ppob_balance_logs`**: saldo ledger (`top_up`, `sale`, `adjustment`); auto-debit `ppob_cost × qty` on sale via `PpobBalanceService`.
 - **`cashier_shifts`**: optional `ppob_opening_balance` / `ppob_closing_balance` for shift reconciliation vs `ppob_expected_balance`.
+
+### Service products & BOM
+
+- **`products.product_type = service`**: fixed sell price, no own stock (`stock = 0`). Examples: laminating, print, fotocopy.
+- **`product_components`**: recipe rows linking `service_product_id` → `component_product_id` with `qty_per_unit` (component base units consumed per service unit sold).
+- **Catalog (admin)**: service products need barcode, title, category, sell price, display unit, and at least one physical component. UI: `Products/Create.jsx`, `Edit.jsx` + `ProductComponentBuilder.jsx`.
+- **POS checkout**: service lines behave like physical (click to add, fixed price). `CheckoutService` deducts each component's stock, writes `stock_movements` (type `out`) on components (not the service SKU), and sets line `buy_price` = sum of component WAC × recipe qty.
+- **Void**: restores stock by reversing all `stock_movements` (`out` → `in`) for the transaction — covers both physical lines and service-consumed components.
+- **Stock report**: scoped to `physical()` products only; services excluded from inventory valuation.
+
+```mermaid
+sequenceDiagram
+    participant POS as CheckoutService
+    participant DB as Database
+    POS->>DB: TransactionDetail for service line
+    loop each product_components row
+        POS->>DB: Validate component.stock
+        POS->>DB: stock_movements out on component
+        POS->>DB: Decrement component.stock
+    end
+    POS->>DB: Profit uses component WAC as COGS
+```
 
 ## Database Schema
 
@@ -125,6 +151,8 @@ erDiagram
     categories ||--o{ products : contains
     products ||--o{ transaction_details : sold_in
     products ||--o{ stock_movements : tracked_by
+    products ||--o{ product_components : service_recipe
+    product_components }o--|| products : component
     transactions ||--o{ transaction_details : has
     transactions ||--o| profits : generates
     transactions ||--o{ return_transactions : may_have
@@ -141,7 +169,8 @@ erDiagram
 |-------|---------|
 | `users` | Staff accounts (admin, cashier) |
 | `categories` | Product grouping |
-| `products` | SKU: barcode, stock (base units), `avg_cost`, `product_type`; legacy `unit` string synced from base UOM |
+| `products` | SKU: barcode, stock (base units), `avg_cost`, `product_type` (`physical`/`ppob`/`service`); legacy `unit` string synced from base UOM |
+| `product_components` | Service BOM: `service_product_id`, `component_product_id`, `qty_per_unit` |
 | `units`, `product_units` | Multi-UOM definitions |
 | `ppob_accounts`, `ppob_balance_logs` | PPOB provider wallet ledger |
 | `suppliers`, `customers` | Master data |

@@ -109,6 +109,30 @@ export default function TransactionCreate() {
         visitProductList(id, searchQuery);
     };
 
+    const serviceComponentBlocked = (product) => {
+        const recipe = product.components || [];
+
+        if (recipe.length === 0) {
+            return true;
+        }
+
+        return recipe.some((row) => {
+            const component = row.component_product || row.componentProduct;
+
+            return !component || Number(component.stock || 0) < Number(row.qty_per_unit || 0);
+        });
+    };
+
+    const serviceComponentLow = (product) => {
+        const recipe = product.components || [];
+
+        return recipe.some((row) => {
+            const component = row.component_product || row.componentProduct;
+
+            return component && Number(component.stock || 0) <= 10;
+        });
+    };
+
     const addToCart = (product) => {
         if (product.product_type === "ppob") {
             setPpobModalProduct(product);
@@ -336,7 +360,7 @@ export default function TransactionCreate() {
                             href="/account/transactions"
                             className="btn btn-outline-secondary btn-sm"
                         >
-                            <i className="fa fa-receipt me-2"></i>
+                            <i className="fas fa-receipt me-2"></i>
                             Riwayat
                         </Link>
                     </div>
@@ -350,7 +374,7 @@ export default function TransactionCreate() {
                                 >
                                     <div className="input-group">
                                         <span className="input-group-text">
-                                            <i className="fa fa-search"></i>
+                                            <i className="fas fa-search"></i>
                                         </span>
 
                                         <input
@@ -409,9 +433,15 @@ export default function TransactionCreate() {
                                     {products.data.length > 0 ? (
                                         products.data.map((product) => {
                                             const isPpob = product.product_type === "ppob";
+                                            const isService = product.product_type === "service";
                                             const defaultUnit = product.default_sell_unit || product.product_units?.find((u) => u.is_default_sell);
                                             const displayPrice = defaultUnit?.sell_price ?? product.sell_price;
-                                            const disabled = !isPpob && product.stock < 1;
+                                            const componentBlocked = isService && serviceComponentBlocked(product);
+                                            const disabled = isPpob
+                                                ? false
+                                                : isService
+                                                  ? componentBlocked
+                                                  : product.stock < 1;
 
                                             return (
                                             <button
@@ -425,25 +455,39 @@ export default function TransactionCreate() {
                                                     {product.image ? (
                                                         <img src={product.image} alt={product.title} />
                                                     ) : (
-                                                        <i className={`fa ${isPpob ? "fa-bolt" : "fa-box"}`}></i>
+                                                        <i className={`fa ${isPpob ? "fa-bolt" : isService ? "fa-print" : "fa-box"}`}></i>
                                                     )}
                                                     {disabled && (
-                                                        <span className="pos-product-empty">Habis</span>
+                                                        <span className="pos-product-empty">
+                                                            {isService ? "Bahan habis" : "Habis"}
+                                                        </span>
                                                     )}
                                                     {isPpob && (
                                                         <span className="badge bg-info position-absolute top-0 end-0 m-1">PPOB</span>
                                                     )}
+                                                    {isService && !disabled && serviceComponentLow(product) && (
+                                                        <span className="badge bg-warning text-dark position-absolute top-0 end-0 m-1">Bahan menipis</span>
+                                                    )}
+                                                    {isService && (
+                                                        <span className="badge bg-secondary position-absolute top-0 start-0 m-1">Layanan</span>
+                                                    )}
                                                 </span>
                                                 <span className="pos-product-name">{product.title}</span>
                                                 <span className="pos-product-meta">
-                                                    <span>{isPpob ? "Digital" : `Stok ${product.stock}`}</span>
+                                                    <span>
+                                                        {isPpob
+                                                            ? "Digital"
+                                                            : isService
+                                                              ? "Pakai bahan baku"
+                                                              : `Stok ${product.stock}`}
+                                                    </span>
                                                     <strong>{isPpob ? "Modal+Fee" : formatRupiah(displayPrice)}</strong>
                                                 </span>
                                             </button>
                                         );})
                                     ) : (
                                         <div className="pos-empty-state">
-                                            <i className="fa fa-box-open"></i>
+                                            <i className="fas fa-box-open"></i>
                                             <strong>
                                                 Produk tidak ditemukan
                                             </strong>
@@ -550,7 +594,7 @@ export default function TransactionCreate() {
                                                                 )
                                                             }
                                                         >
-                                                            <i className="fa fa-minus"></i>
+                                                            <i className="fas fa-minus"></i>
                                                         </button>
 
                                                         <span>{cart.qty}</span>
@@ -565,7 +609,7 @@ export default function TransactionCreate() {
                                                                 )
                                                             }
                                                         >
-                                                            <i className="fa fa-plus"></i>
+                                                            <i className="fas fa-plus"></i>
                                                         </button>
                                                     </div>
 
@@ -583,14 +627,14 @@ export default function TransactionCreate() {
                                                             deleteCart(cart.id)
                                                         }
                                                     >
-                                                        <i className="fa fa-trash"></i>
+                                                        <i className="fas fa-trash"></i>
                                                     </button>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
                                         <div className="pos-empty-cart">
-                                            <i className="fa fa-shopping-basket"></i>
+                                            <i className="fas fa-shopping-basket"></i>
                                             <strong>Keranjang kosong</strong>
                                             <span>
                                                 Item belanja akan tampil di
@@ -797,7 +841,7 @@ export default function TransactionCreate() {
                                         className="btn btn-success btn-lg w-100 pos-pay-button"
                                         disabled={carts.length === 0}
                                     >
-                                        <i className="fa fa-check-circle me-2"></i>
+                                        <i className="fas fa-check-circle me-2"></i>
                                         Proses Pembayaran
                                     </button>
                                 </form>

@@ -27,7 +27,7 @@ class StockReportController extends Controller
 
         $lowThreshold = (int) ($request->low_threshold ?: 10);
 
-        $baseQuery = Product::query();
+        $baseQuery = Product::query()->physical();
         $this->applyFilters($baseQuery, $request, $lowThreshold);
 
         $products = (clone $baseQuery)

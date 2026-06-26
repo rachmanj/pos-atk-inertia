@@ -31,7 +31,7 @@ export default function Search({ URL }) {
                 />
 
                 <span className="input-group-text border-0 shadow-sm">
-                    <i className="fa fa-search"></i>
+                    <i className="fas fa-search"></i>
                 </span>
             </div>
         </form>

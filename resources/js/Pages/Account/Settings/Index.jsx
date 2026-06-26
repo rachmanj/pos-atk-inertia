@@ -85,7 +85,7 @@ export default function SettingIndex() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0">
                                 <h5 className="mb-1 fw-bold">
-                                    <i className="fa fa-store me-2"></i>
+                                    <i className="fas fa-store me-2"></i>
                                     STORE SETTINGS
                                 </h5>
                                 <small className="text-muted">
@@ -274,7 +274,7 @@ export default function SettingIndex() {
                                                                 height: 120,
                                                             }}
                                                         >
-                                                            <i className="fa fa-store fa-2x"></i>
+                                                            <i className="fas fa-store fa-2x"></i>
                                                         </span>
                                                     )}
                                                 </div>
@@ -366,7 +366,7 @@ export default function SettingIndex() {
                                             type="submit"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-save me-2"></i>
+                                            <i className="fas fa-save me-2"></i>
                                             SIMPAN
                                         </button>
 
@@ -375,7 +375,7 @@ export default function SettingIndex() {
                                             className="btn btn-warning shadow-sm rounded-sm ms-2 text-white"
                                             onClick={resetForm}
                                         >
-                                            <i className="fa fa-redo me-2"></i>
+                                            <i className="fas fa-redo me-2"></i>
                                             RESET
                                         </button>
                                     </div>

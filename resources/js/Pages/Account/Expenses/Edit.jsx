@@ -49,7 +49,7 @@ export default function ExpenseEdit() {
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <div>
                                     <h5 className="mb-1 fw-bold">
-                                        <i className="fa fa-pencil-alt me-2"></i>
+                                        <i className="fas fa-pencil-alt me-2"></i>
                                         EDIT PENGELUARAN
                                     </h5>
                                     <small className="text-muted">
@@ -61,7 +61,7 @@ export default function ExpenseEdit() {
                                     href="/account/expenses"
                                     className="btn btn-secondary shadow-sm rounded-sm"
                                 >
-                                    <i className="fa fa-arrow-left me-2"></i>
+                                    <i className="fas fa-arrow-left me-2"></i>
                                     BACK
                                 </Link>
                             </div>
@@ -206,7 +206,7 @@ export default function ExpenseEdit() {
                                         type="submit"
                                         className="btn btn-success shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-save me-2"></i>
+                                        <i className="fas fa-save me-2"></i>
                                         UPDATE
                                     </button>
                                 </form>

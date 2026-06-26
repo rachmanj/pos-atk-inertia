@@ -197,7 +197,7 @@ export default function TransactionShow() {
                                 title="Kembali"
                                 aria-label="Kembali"
                             >
-                                <i className="fa fa-arrow-left"></i>
+                                <i className="fas fa-arrow-left"></i>
                             </button>
 
                             <div className="transaction-show-title">
@@ -233,7 +233,7 @@ export default function TransactionShow() {
                                         href="/account/transactions/create"
                                         className="btn btn-success"
                                     >
-                                        <i className="fa fa-cash-register"></i>
+                                        <i className="fas fa-cash-register"></i>
                                         POS Kasir
                                     </Link>
 
@@ -271,7 +271,7 @@ export default function TransactionShow() {
                                         className="btn btn-outline-secondary"
                                         onClick={handlePrint}
                                     >
-                                        <i className="fa fa-print"></i>
+                                        <i className="fas fa-print"></i>
                                         Cetak Struk
                                     </button>
 
@@ -281,7 +281,7 @@ export default function TransactionShow() {
                                             className="btn btn-danger"
                                             onClick={handleVoid}
                                         >
-                                            <i className="fa fa-ban"></i>
+                                            <i className="fas fa-ban"></i>
                                             Void Transaksi
                                         </button>
                                     )}
@@ -291,7 +291,7 @@ export default function TransactionShow() {
                                             href={`/account/returns/create/${transaction.invoice}`}
                                             className="btn btn-warning text-dark"
                                         >
-                                            <i className="fa fa-undo"></i>
+                                            <i className="fas fa-undo"></i>
                                             Ajukan Retur
                                         </Link>
                                     )}
@@ -354,7 +354,7 @@ export default function TransactionShow() {
                                                         className="receipt-logo"
                                                     />
                                                 ) : (
-                                                    <i className="fa fa-store receipt-logo-placeholder"></i>
+                                                    <i className="fas fa-store receipt-logo-placeholder"></i>
                                                 )}
                                             </div>
 

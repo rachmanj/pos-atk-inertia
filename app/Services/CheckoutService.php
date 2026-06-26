@@ -31,7 +31,7 @@ class CheckoutService
 
         return DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $activeShift) {
             $carts = Cart::query()
-                ->with(['product.productUnits'])
+                ->with(['product.productUnits', 'product.components.componentProduct'])
                 ->where('cashier_id', $user->id)
                 ->orderBy('id')
                 ->lockForUpdate()
@@ -41,16 +41,25 @@ class CheckoutService
                 throw new DomainException('Keranjang masih kosong!');
             }
 
-            $physicalProductIds = $carts
-                ->filter(fn ($cart) => $cart->product?->isPhysical())
-                ->pluck('product_id')
+            $stockProductIds = $carts
+                ->flatMap(function ($cart) {
+                    if ($cart->product?->isPhysical()) {
+                        return [$cart->product_id];
+                    }
+
+                    if ($cart->product?->isService()) {
+                        return $cart->product->components->pluck('component_product_id');
+                    }
+
+                    return [];
+                })
                 ->unique()
                 ->values()
                 ->all();
 
             $products = Product::query()
-                ->with(['productUnits'])
-                ->whereIn('id', $physicalProductIds)
+                ->with(['productUnits', 'components.componentProduct'])
+                ->whereIn('id', $stockProductIds)
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get()
@@ -143,6 +152,74 @@ class CheckoutService
                         referenceId: $transaction->id,
                         note: 'Penjualan PPOB Invoice: ' . $invoice,
                     );
+
+                    continue;
+                }
+
+                if ($product->isService()) {
+                    $productUnit = $product->productUnits->firstWhere('unit_id', $cart->unit_id)
+                        ?? $product->productUnits->firstWhere('is_default_sell', true);
+
+                    $conversionFactor = (float) ($productUnit?->conversion_factor ?? 1);
+                    $itemSubtotal = (int) $cart->price * (int) $cart->qty;
+                    $recipeCostPerUnit = 0;
+                    $itemCost = 0;
+
+                    if ($product->components->isEmpty()) {
+                        throw new DomainException('Resep bahan baku layanan ' . $product->title . ' belum dikonfigurasi.');
+                    }
+
+                    foreach ($product->components as $componentRow) {
+                        $componentProduct = $products->get($componentRow->component_product_id);
+
+                        if (!$componentProduct || !$componentProduct->isPhysical()) {
+                            throw new DomainException('Bahan baku layanan ' . $product->title . ' tidak valid.');
+                        }
+
+                        $qtyNeeded = (int) round((float) $componentRow->qty_per_unit * (int) $cart->qty);
+
+                        if ($qtyNeeded > (int) $componentProduct->stock) {
+                            throw new DomainException('Stok bahan ' . $componentProduct->title . ' tidak mencukupi.');
+                        }
+
+                        $componentCost = (int) $componentProduct->avg_cost * $qtyNeeded;
+                        $itemCost += $componentCost;
+                        $recipeCostPerUnit += (int) round((int) $componentProduct->avg_cost * (float) $componentRow->qty_per_unit);
+
+                        $stockBefore = (int) $componentProduct->stock;
+                        $stockAfter = $stockBefore - $qtyNeeded;
+
+                        StockMovement::create([
+                            'product_id' => $componentProduct->id,
+                            'user_id' => $user->id,
+                            'type' => 'out',
+                            'qty' => $qtyNeeded,
+                            'stock_before' => $stockBefore,
+                            'stock_after' => $stockAfter,
+                            'reference_type' => Transaction::class,
+                            'reference_id' => $transaction->id,
+                            'note' => 'Penjualan layanan ' . $product->title . ' Invoice: ' . $invoice,
+                        ]);
+
+                        $componentProduct->update([
+                            'stock' => $stockAfter,
+                        ]);
+
+                        $products->put($componentProduct->id, $componentProduct->fresh());
+                    }
+
+                    TransactionDetail::create([
+                        'transaction_id' => $transaction->id,
+                        'product_id' => $cart->product_id,
+                        'unit_id' => $cart->unit_id,
+                        'conversion_factor' => $conversionFactor,
+                        'qty' => $cart->qty,
+                        'price' => $cart->price,
+                        'buy_price' => $recipeCostPerUnit,
+                        'subtotal' => $itemSubtotal,
+                    ]);
+
+                    $totalBuyPrice += $itemCost;
 
                     continue;
                 }
@@ -253,26 +330,36 @@ class CheckoutService
                     throw new DomainException('Produk pada transaksi tidak ditemukan.');
                 }
 
-                if ($product->isPpob()) {
-                    if ($ppobAccount) {
-                        $refundAmount = (int) $detail->ppob_cost * (int) $detail->qty;
-
-                        $this->ppobBalanceService->recordMovement(
-                            account: $ppobAccount,
-                            userId: $user->id,
-                            type: 'adjustment',
-                            amount: $refundAmount,
-                            referenceType: Transaction::class,
-                            referenceId: $transaction->id,
-                            note: 'Void PPOB Invoice: ' . $transaction->invoice,
-                        );
-                    }
-
+                if (!$product->isPpob()) {
                     continue;
                 }
 
+                if ($ppobAccount) {
+                    $refundAmount = (int) $detail->ppob_cost * (int) $detail->qty;
+
+                    $this->ppobBalanceService->recordMovement(
+                        account: $ppobAccount,
+                        userId: $user->id,
+                        type: 'adjustment',
+                        amount: $refundAmount,
+                        referenceType: Transaction::class,
+                        referenceId: $transaction->id,
+                        note: 'Void PPOB Invoice: ' . $transaction->invoice,
+                    );
+                }
+            }
+
+            $outMovements = StockMovement::query()
+                ->where('reference_type', Transaction::class)
+                ->where('reference_id', $transaction->id)
+                ->where('type', 'out')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($outMovements as $movement) {
                 $lockedProduct = Product::query()
-                    ->whereKey($detail->product_id)
+                    ->whereKey($movement->product_id)
                     ->lockForUpdate()
                     ->first();
 
@@ -280,15 +367,14 @@ class CheckoutService
                     throw new DomainException('Produk pada transaksi tidak ditemukan.');
                 }
 
-                $qtyInBase = $detail->qtyInBaseUnits();
                 $stockBefore = (int) $lockedProduct->stock;
-                $stockAfter = $stockBefore + $qtyInBase;
+                $stockAfter = $stockBefore + (int) $movement->qty;
 
                 StockMovement::create([
                     'product_id' => $lockedProduct->id,
                     'user_id' => $user->id,
                     'type' => 'in',
-                    'qty' => $qtyInBase,
+                    'qty' => (int) $movement->qty,
                     'stock_before' => $stockBefore,
                     'stock_after' => $stockAfter,
                     'reference_type' => Transaction::class,

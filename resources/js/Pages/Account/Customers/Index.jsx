@@ -22,7 +22,7 @@ export default function CustomerIndex() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-address-book me-2"></i>{" "}
+                                    <i className="fas fa-address-book me-2"></i>{" "}
                                     CUSTOMERS
                                 </h5>
                                 <div>
@@ -34,7 +34,7 @@ export default function CustomerIndex() {
                                             href="/account/customers/create"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-plus-circle me-2"></i>{" "}
+                                            <i className="fas fa-plus-circle me-2"></i>{" "}
                                             ADD CUSTOMER
                                         </Link>
                                     )}
@@ -113,7 +113,7 @@ export default function CustomerIndex() {
                                                                         href={`/account/customers/${customer.id}/edit`}
                                                                         className="btn btn-primary btn-sm me-2 shadow-sm"
                                                                     >
-                                                                        <i className="fa fa-pencil"></i>
+                                                                        <i className="fas fa-pencil-alt"></i>
                                                                     </Link>
                                                                 )}
 

@@ -158,7 +158,7 @@ export default function Create() {
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <div>
                                     <h5 className="mb-1 fw-bold">
-                                        <i className="fa fa-undo me-2"></i>
+                                        <i className="fas fa-undo me-2"></i>
                                         AJUKAN RETUR
                                     </h5>
                                     <small className="text-muted">
@@ -170,7 +170,7 @@ export default function Create() {
                                     href={`/account/transactions/${transaction.invoice}`}
                                     className="btn btn-secondary shadow-sm rounded-sm"
                                 >
-                                    <i className="fa fa-arrow-left me-2"></i>
+                                    <i className="fas fa-arrow-left me-2"></i>
                                     Kembali
                                 </Link>
                             </div>
@@ -428,7 +428,7 @@ export default function Create() {
                                             type="submit"
                                             className="btn btn-primary shadow-sm"
                                         >
-                                            <i className="fa fa-paper-plane me-2"></i>
+                                            <i className="fas fa-paper-plane me-2"></i>
                                             Ajukan Retur
                                         </button>
                                     </div>

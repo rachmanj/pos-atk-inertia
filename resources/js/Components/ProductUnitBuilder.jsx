@@ -45,7 +45,7 @@ export default function ProductUnitBuilder({ units = [], rows = [], onChange, er
             <div className="d-flex justify-content-between align-items-center mb-1">
                 <label className="fw-bold mb-0">Satuan & Harga Jual</label>
                 <button type="button" className="btn btn-sm btn-outline-primary" onClick={addRow}>
-                    <i className="fa fa-plus me-1"></i> Tambah Satuan
+                    <i className="fas fa-plus me-1"></i> Tambah Satuan
                 </button>
             </div>
             <small className="d-block text-muted mb-2">Harga jual per satuan; satuan default dipakai di POS dan daftar produk.</small>
@@ -87,7 +87,7 @@ export default function ProductUnitBuilder({ units = [], rows = [], onChange, er
                                 </td>
                                 <td>
                                     <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeRow(index)} disabled={rows.length === 1}>
-                                        <i className="fa fa-trash"></i>
+                                        <i className="fas fa-trash"></i>
                                     </button>
                                 </td>
                             </tr>

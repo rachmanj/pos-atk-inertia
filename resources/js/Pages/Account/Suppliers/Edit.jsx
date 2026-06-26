@@ -52,7 +52,7 @@ export default function SupplierEdit() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-truck me-2"></i>
+                                    <i className="fas fa-truck me-2"></i>
                                     EDIT SUPPLIER
                                 </h5>
 
@@ -60,7 +60,7 @@ export default function SupplierEdit() {
                                     href="/account/suppliers"
                                     className="btn btn-secondary shadow-sm rounded-sm"
                                 >
-                                    <i className="fa fa-arrow-left me-2"></i>
+                                    <i className="fas fa-arrow-left me-2"></i>
                                     KEMBALI
                                 </Link>
                             </div>
@@ -223,7 +223,7 @@ export default function SupplierEdit() {
                                             type="submit"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-save me-2"></i>
+                                            <i className="fas fa-save me-2"></i>
                                             PERBARUI
                                         </button>
                                     </div>

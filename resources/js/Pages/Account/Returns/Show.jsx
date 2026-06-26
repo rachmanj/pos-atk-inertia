@@ -153,7 +153,7 @@ export default function Show() {
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <div>
                                     <h5 className="mb-1 fw-bold">
-                                        <i className="fa fa-undo me-2"></i>
+                                        <i className="fas fa-undo me-2"></i>
                                         DETAIL RETUR
                                     </h5>
                                     <small className="text-muted">
@@ -166,7 +166,7 @@ export default function Show() {
                                         href="/account/returns"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-arrow-left me-2"></i>
+                                        <i className="fas fa-arrow-left me-2"></i>
                                         Kembali
                                     </Link>
 
@@ -181,7 +181,7 @@ export default function Show() {
                                                     )
                                                 }
                                             >
-                                                <i className="fa fa-check me-2"></i>
+                                                <i className="fas fa-check me-2"></i>
                                                 Setujui
                                             </button>
 
@@ -194,7 +194,7 @@ export default function Show() {
                                                     )
                                                 }
                                             >
-                                                <i className="fa fa-times me-2"></i>
+                                                <i className="fas fa-times me-2"></i>
                                                 Tolak
                                             </button>
                                         </>

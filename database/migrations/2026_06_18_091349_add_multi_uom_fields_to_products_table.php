@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->enum('product_type', ['physical', 'ppob'])->default('physical')->after('description');
+            $table->enum('product_type', ['physical', 'ppob', 'service'])->default('physical')->after('description');
             $table->bigInteger('avg_cost')->default(0)->after('buy_price');
         });
 

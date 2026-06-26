@@ -21,7 +21,7 @@ export default function PurchaseShow() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-file-invoice me-2"></i>
+                                    <i className="fas fa-file-invoice me-2"></i>
                                     DETAIL PEMBELIAN
                                 </h5>
 
@@ -30,7 +30,7 @@ export default function PurchaseShow() {
                                         href="/account/purchases"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-arrow-left me-2"></i>
+                                        <i className="fas fa-arrow-left me-2"></i>
                                         KEMBALI
                                     </Link>
 
@@ -42,7 +42,7 @@ export default function PurchaseShow() {
                                             href="/account/purchases/create"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-plus-circle me-2"></i>
+                                            <i className="fas fa-plus-circle me-2"></i>
                                             PEMBELIAN BARU
                                         </Link>
                                     )}
@@ -55,7 +55,7 @@ export default function PurchaseShow() {
                                             href={`/account/supplier-returns/create/${purchase.invoice}`}
                                             className="btn btn-danger shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-undo me-2"></i>
+                                            <i className="fas fa-undo me-2"></i>
                                             RETUR SUPPLIER
                                         </Link>
                                     )}

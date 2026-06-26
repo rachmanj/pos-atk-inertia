@@ -74,7 +74,7 @@ export default function ExpenseIndex() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-money-bill-wave me-2"></i>
+                                    <i className="fas fa-money-bill-wave me-2"></i>
                                     PENGELUARAN
                                 </h5>
 
@@ -86,7 +86,7 @@ export default function ExpenseIndex() {
                                         href="/account/expenses/create"
                                         className="btn btn-success shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-plus-circle me-2"></i>
+                                        <i className="fas fa-plus-circle me-2"></i>
                                         TAMBAH PENGELUARAN
                                     </Link>
                                 )}
@@ -182,7 +182,7 @@ export default function ExpenseIndex() {
                                                 type="submit"
                                                 className="btn btn-primary shadow-sm"
                                             >
-                                                <i className="fa fa-filter"></i>
+                                                <i className="fas fa-filter"></i>
                                             </button>
 
                                             <button
@@ -190,7 +190,7 @@ export default function ExpenseIndex() {
                                                 className="btn btn-secondary shadow-sm"
                                                 onClick={handleReset}
                                             >
-                                                <i className="fa fa-sync-alt"></i>
+                                                <i className="fas fa-sync-alt"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -302,7 +302,7 @@ export default function ExpenseIndex() {
                                                                         href={`/account/expenses/${expense.id}/edit`}
                                                                         className="btn btn-primary btn-sm me-2 shadow-sm"
                                                                     >
-                                                                        <i className="fa fa-pencil-alt"></i>
+                                                                        <i className="fas fa-pencil-alt"></i>
                                                                     </Link>
                                                                 )}
 

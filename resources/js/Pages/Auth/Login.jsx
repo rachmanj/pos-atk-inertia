@@ -51,7 +51,7 @@ export default function Login() {
                     <div className="pos-login-card">
                         <div className="pos-login-card-header">
                             <span className="pos-login-card-icon">
-                                <i className="fa fa-user-lock"></i>
+                                <i className="fas fa-user-lock"></i>
                             </span>
                             <div>
                                 <h2>Masuk ke POS</h2>
@@ -66,7 +66,7 @@ export default function Login() {
                             <div className="pos-login-field">
                                 <label>Email</label>
                                 <div className="pos-login-input">
-                                    <i className="fa fa-envelope"></i>
+                                    <i className="fas fa-envelope"></i>
                                     <input
                                         type="email"
                                         value={email}
@@ -87,7 +87,7 @@ export default function Login() {
                             <div className="pos-login-field">
                                 <label>Password</label>
                                 <div className="pos-login-input">
-                                    <i className="fa fa-lock"></i>
+                                    <i className="fas fa-lock"></i>
                                     <input
                                         type="password"
                                         value={password}
@@ -106,7 +106,7 @@ export default function Login() {
                             </div>
 
                             <button className="pos-login-button" type="submit">
-                                <i className="fa fa-sign-in-alt"></i>
+                                <i className="fas fa-sign-in-alt"></i>
                                 Masuk
                             </button>
                         </form>

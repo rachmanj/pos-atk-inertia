@@ -36,7 +36,7 @@ export default function Delete({ URL, id }) {
             onClick={() => destroy(id)}
             className="btn btn-danger btn-sm"
         >
-            <i className="fa fa-trash"></i>
+            <i className="fas fa-trash"></i>
         </button>
     );
 }

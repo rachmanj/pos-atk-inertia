@@ -123,7 +123,7 @@ export default function StockOpnameCreate() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-clipboard-check me-2"></i>
+                                    <i className="fas fa-clipboard-check me-2"></i>
                                     STOCK OPNAME BARU
                                 </h5>
 
@@ -131,7 +131,7 @@ export default function StockOpnameCreate() {
                                     href="/account/stock-opnames"
                                     className="btn btn-secondary shadow-sm rounded-sm"
                                 >
-                                    <i className="fa fa-arrow-left me-2"></i>
+                                    <i className="fas fa-arrow-left me-2"></i>
                                     KEMBALI
                                 </Link>
                             </div>
@@ -443,7 +443,7 @@ export default function StockOpnameCreate() {
                                                                         !canSubmit
                                                                     }
                                                                 >
-                                                                    <i className="fa fa-trash"></i>
+                                                                    <i className="fas fa-trash"></i>
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -460,7 +460,7 @@ export default function StockOpnameCreate() {
                                             onClick={addItem}
                                             disabled={!canSubmit}
                                         >
-                                            <i className="fa fa-plus me-2"></i>
+                                            <i className="fas fa-plus me-2"></i>
                                             Tambah Baris
                                         </button>
 
@@ -469,7 +469,7 @@ export default function StockOpnameCreate() {
                                             className="btn btn-success shadow-sm"
                                             disabled={!canSubmit}
                                         >
-                                            <i className="fa fa-save me-2"></i>
+                                            <i className="fas fa-save me-2"></i>
                                             Simpan Stock Opname
                                         </button>
                                     </div>

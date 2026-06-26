@@ -90,6 +90,16 @@ class Product extends Model
         return $this->hasOne(StockMovement::class)->latestOfMany();
     }
 
+    public function components(): HasMany
+    {
+        return $this->hasMany(ProductComponent::class, 'service_product_id');
+    }
+
+    public function usedInServices(): HasMany
+    {
+        return $this->hasMany(ProductComponent::class, 'component_product_id');
+    }
+
     public function isPpob(): bool
     {
         return $this->product_type === 'ppob';
@@ -100,6 +110,11 @@ class Product extends Model
         return $this->product_type === 'physical';
     }
 
+    public function isService(): bool
+    {
+        return $this->product_type === 'service';
+    }
+
     public function scopePhysical(Builder $query): Builder
     {
         return $query->where('product_type', 'physical');
@@ -108,6 +123,11 @@ class Product extends Model
     public function scopePpob(Builder $query): Builder
     {
         return $query->where('product_type', 'ppob');
+    }
+
+    public function scopeService(Builder $query): Builder
+    {
+        return $query->where('product_type', 'service');
     }
 
     public function displayUnit(): ?string

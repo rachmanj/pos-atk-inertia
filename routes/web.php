@@ -9,6 +9,7 @@ use App\Http\Controllers\Account\CategoryController;
 use App\Http\Controllers\Account\SupplierController;
 use App\Http\Controllers\Account\CustomerController;
 use App\Http\Controllers\Account\ProductController;
+use App\Http\Controllers\Account\ProductImportController;
 use App\Http\Controllers\Account\StockMovementController;
 use App\Http\Controllers\Account\StockOpnameController;
 use App\Http\Controllers\Account\PurchaseController;
@@ -125,6 +126,14 @@ Route::middleware(['auth'])
         Route::get('products/print-barcodes', [ProductController::class, 'printBarcodes'])
             ->middleware('permission:products.index')
             ->name('products.print_barcodes');
+
+        Route::get('products/import/template', [ProductImportController::class, 'template'])
+            ->middleware('permission:products.create')
+            ->name('products.import_template');
+
+        Route::post('products/import', [ProductImportController::class, 'store'])
+            ->middleware('permission:products.create')
+            ->name('products.import');
 
         Route::resource('products', ProductController::class)
             ->except(['show'])

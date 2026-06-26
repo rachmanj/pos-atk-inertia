@@ -1,5 +1,5 @@
 **Purpose**: Track current work and immediate priorities  
-**Last Updated**: 2026-06-20
+**Last Updated**: 2026-06-26
 
 ---
 
@@ -19,7 +19,7 @@ _(none)_
 
 ## Recently Completed
 
-- `[done] P0: POS hardening — logging, CheckoutService, feature tests, FormRequests, MySQL default [TransactionController, CheckoutService, tests/, .env.example] (completed: 2026-06-20)`
+- `[done] Product Excel import — create-only bulk import from Products index [ProductImportController, ProductsImport, Products/Index.jsx] (completed: 2026-06-26)`
 - `[done] P1: Add MIDTRANS_* vars to .env.example [config/midtrans.php] (completed: 2026-06-20)`
 - `[done] P2: Remove duplicate logout route [routes/web.php] (completed: 2026-06-20)`
 - `[done] P0: Physical product pricing — UOM table only, opening buy on create, WAC on edit [ProductController, Create/Edit, StockReport] (completed: 2026-06-18)`

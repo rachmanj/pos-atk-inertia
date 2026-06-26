@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference  
-**Last Updated**: 2026-06-20 (Multi-UOM, WAC, PPOB decisions + POS hardening)
+**Last Updated**: 2026-06-26 (Service products with BOM decision)
 
 # Technical Decision Records
 
@@ -228,3 +228,23 @@
 **Implementation**: `TransactionController@store`, `CartController@store`/`update`.
 
 **Review Date**: 2026-09-20 (extend to remaining controllers as touched)
+
+---
+
+## Decision: Service products with Bill of Materials (BOM) — 2026-06-26
+
+**Context**: Store sells services (laminating, print, fotocopy) that consume raw materials (paper, laminating film). Existing types were `physical` (own stock) and `ppob` (dynamic price, no stock).
+
+**Options Considered**:
+
+1. **Manual material lines at POS**: Cashier adds paper/film separately — no code change, poor UX, easy to forget.
+2. **PPOB-style dynamic pricing**: Wrong model; services have fixed prices, not provider cost entry.
+3. **Service SKU + BOM recipe**: Sell one service product; auto-deduct components on checkout.
+
+**Decision**: Option 3 — `product_type=service` + `product_components` table.
+
+**Rationale**: Reuses existing `stock_movements`, WAC, and profit reporting. Raw materials stay normal physical products for purchasing/opname. COGS = sum(component WAC × recipe qty). Void restores from `stock_movements` audit trail (robust if recipe changes later).
+
+**Implementation**: `ProductComponent` model, `CheckoutService` service branch, `ProductController` recipe sync, `ProductComponentBuilder.jsx`, POS grid shows component availability hints.
+
+**Review Date**: 2026-12-26

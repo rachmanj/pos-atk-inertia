@@ -52,7 +52,7 @@ export default function SupplierReturnIndex() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-undo me-2"></i>
+                                    <i className="fas fa-undo me-2"></i>
                                     RETUR SUPPLIER
                                 </h5>
 
@@ -61,7 +61,7 @@ export default function SupplierReturnIndex() {
                                         href="/account/purchases"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-shopping-bag me-2"></i>
+                                        <i className="fas fa-shopping-bag me-2"></i>
                                         LIHAT PEMBELIAN
                                     </Link>
                                 )}
@@ -146,7 +146,7 @@ export default function SupplierReturnIndex() {
                                                 type="submit"
                                                 className="btn btn-primary shadow-sm w-100"
                                             >
-                                                <i className="fa fa-filter me-2"></i>
+                                                <i className="fas fa-filter me-2"></i>
                                                 Filter
                                             </button>
 
@@ -155,7 +155,7 @@ export default function SupplierReturnIndex() {
                                                 className="btn btn-secondary shadow-sm w-100"
                                                 onClick={handleReset}
                                             >
-                                                <i className="fa fa-sync-alt me-2"></i>
+                                                <i className="fas fa-sync-alt me-2"></i>
                                                 Reset
                                             </button>
                                         </div>
@@ -252,7 +252,7 @@ export default function SupplierReturnIndex() {
                                                                         href={`/account/supplier-returns/${item.invoice}`}
                                                                         className="btn btn-secondary btn-sm shadow-sm"
                                                                     >
-                                                                        <i className="fa fa-eye me-1"></i>
+                                                                        <i className="fas fa-eye me-1"></i>
                                                                         Detail
                                                                     </Link>
                                                                 )}

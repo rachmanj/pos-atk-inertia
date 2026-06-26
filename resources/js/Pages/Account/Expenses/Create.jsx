@@ -60,7 +60,7 @@ export default function ExpenseCreate() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-plus-circle me-2"></i>
+                                    <i className="fas fa-plus-circle me-2"></i>
                                     TAMBAH PENGELUARAN
                                 </h5>
 
@@ -68,7 +68,7 @@ export default function ExpenseCreate() {
                                     href="/account/expenses"
                                     className="btn btn-secondary shadow-sm rounded-sm"
                                 >
-                                    <i className="fa fa-arrow-left me-2"></i>
+                                    <i className="fas fa-arrow-left me-2"></i>
                                     BACK
                                 </Link>
                             </div>
@@ -214,7 +214,7 @@ export default function ExpenseCreate() {
                                             type="submit"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-save me-2"></i>
+                                            <i className="fas fa-save me-2"></i>
                                             SAVE
                                         </button>
 
@@ -223,7 +223,7 @@ export default function ExpenseCreate() {
                                             className="btn btn-warning shadow-sm rounded-sm ms-2 text-white"
                                             onClick={resetForm}
                                         >
-                                            <i className="fa fa-redo me-2"></i>
+                                            <i className="fas fa-redo me-2"></i>
                                             RESET
                                         </button>
                                     </div>

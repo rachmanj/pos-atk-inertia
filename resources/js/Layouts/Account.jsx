@@ -45,7 +45,7 @@ export default function LayoutAccount({ children }) {
                                 />
                             ) : (
                                 <span className="sidebar-store-logo-placeholder">
-                                    <i className="fa fa-store"></i>
+                                    <i className="fas fa-store"></i>
                                 </span>
                             )}
 
@@ -65,7 +65,7 @@ export default function LayoutAccount({ children }) {
                                 className="btn btn-success-dark"
                                 onClick={sidebarToggleHandler}
                             >
-                                <i className="fa fa-list-ul"></i>
+                                <i className="fas fa-list-ul"></i>
                             </button>
 
                             <ul className="navbar-nav ms-auto mb-0">
@@ -77,7 +77,7 @@ export default function LayoutAccount({ children }) {
                                 >
                                     <NavDropdown.Item onClick={logoutHandler}>
                                         <i
-                                            className="fa fa-sign-out me-2"
+                                            className="fas fa-sign-out-alt me-2"
                                             aria-hidden="true"
                                         ></i>
                                         Keluar

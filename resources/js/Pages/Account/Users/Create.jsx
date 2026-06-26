@@ -69,7 +69,7 @@ export default function UserCreate() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-user-plus me-2"></i>
+                                    <i className="fas fa-user-plus me-2"></i>
                                     TAMBAH PENGGUNA
                                 </h5>
 
@@ -78,7 +78,7 @@ export default function UserCreate() {
                                         href="/account/users"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-arrow-left me-2"></i>
+                                        <i className="fas fa-arrow-left me-2"></i>
                                         KEMBALI
                                     </Link>
                                 </div>
@@ -238,7 +238,7 @@ export default function UserCreate() {
                                             type="submit"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-save me-2"></i>
+                                            <i className="fas fa-save me-2"></i>
                                             SIMPAN
                                         </button>
 
@@ -247,7 +247,7 @@ export default function UserCreate() {
                                             onClick={resetForm}
                                             className="btn btn-warning shadow-sm rounded-sm ms-2 text-white"
                                         >
-                                            <i className="fa fa-redo me-2"></i>
+                                            <i className="fas fa-redo me-2"></i>
                                             ATUR ULANG
                                         </button>
                                     </div>

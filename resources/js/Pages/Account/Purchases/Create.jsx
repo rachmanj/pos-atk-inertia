@@ -135,7 +135,7 @@ export default function PurchaseCreate() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-shopping-cart me-2"></i>
+                                    <i className="fas fa-shopping-cart me-2"></i>
                                     TAMBAH PEMBELIAN
                                 </h5>
 
@@ -143,7 +143,7 @@ export default function PurchaseCreate() {
                                     href="/account/purchases"
                                     className="btn btn-secondary shadow-sm rounded-sm"
                                 >
-                                    <i className="fa fa-arrow-left me-2"></i>
+                                    <i className="fas fa-arrow-left me-2"></i>
                                     KEMBALI
                                 </Link>
                             </div>
@@ -519,7 +519,7 @@ export default function PurchaseCreate() {
                                                                         !canSubmit
                                                                     }
                                                                 >
-                                                                    <i className="fa fa-trash"></i>
+                                                                    <i className="fas fa-trash"></i>
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -536,7 +536,7 @@ export default function PurchaseCreate() {
                                             onClick={addItem}
                                             disabled={!canSubmit}
                                         >
-                                            <i className="fa fa-plus me-2"></i>
+                                            <i className="fas fa-plus me-2"></i>
                                             Tambah Baris
                                         </button>
 
@@ -545,7 +545,7 @@ export default function PurchaseCreate() {
                                             className="btn btn-success shadow-sm"
                                             disabled={!canSubmit}
                                         >
-                                            <i className="fa fa-save me-2"></i>
+                                            <i className="fas fa-save me-2"></i>
                                             Simpan Pembelian
                                         </button>
                                     </div>

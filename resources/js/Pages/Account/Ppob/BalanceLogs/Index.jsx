@@ -75,7 +75,7 @@ export default function PpobBalanceLogIndex() {
                     <div className="col-12 mb-4">
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0">
-                                <h5 className="mb-0 fw-bold"><i className="fa fa-list me-2"></i>RIWAYAT SALDO PPOB</h5>
+                                <h5 className="mb-0 fw-bold"><i className="fas fa-list me-2"></i>RIWAYAT SALDO PPOB</h5>
                             </div>
                             <div className="card-body">
                                 <form className="row g-2 mb-4" onSubmit={applyFilter}>

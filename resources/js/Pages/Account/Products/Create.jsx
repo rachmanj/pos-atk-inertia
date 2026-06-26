@@ -3,9 +3,10 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
 import Swal from "sweetalert2";
 import ProductUnitBuilder from "../../../Components/ProductUnitBuilder";
+import ProductComponentBuilder from "../../../Components/ProductComponentBuilder";
 
 export default function ProductCreate() {
-    const { errors = {}, categories = [], units = [] } = usePage().props;
+    const { errors = {}, categories = [], units = [], physicalProducts = [] } = usePage().props;
 
     const [barcode, setBarcode] = useState("");
     const [title, setTitle] = useState("");
@@ -18,8 +19,14 @@ export default function ProductCreate() {
     const [productUnits, setProductUnits] = useState([
         { unit_id: units[0]?.id ? String(units[0].id) : "", conversion_factor: 1, sell_price: 0, is_base_unit: true, is_default_sell: true },
     ]);
+    const [serviceSellPrice, setServiceSellPrice] = useState("");
+    const [serviceUnitId, setServiceUnitId] = useState(units[0]?.id ? String(units[0].id) : "");
+    const [components, setComponents] = useState([
+        { component_product_id: "", qty_per_unit: 1, note: "" },
+    ]);
 
     const isPhysical = productType === "physical";
+    const isService = productType === "service";
 
     const storeProduct = (e) => {
         e.preventDefault();
@@ -39,6 +46,16 @@ export default function ProductCreate() {
                     sell_price: Number(row.sell_price || 0),
                 }))),
             };
+
+        if (isService) {
+            payload.sell_price = serviceSellPrice;
+            payload.unit_id = serviceUnitId;
+            payload.components = JSON.stringify(components.map((row) => ({
+                component_product_id: Number(row.component_product_id),
+                qty_per_unit: Number(row.qty_per_unit || 0),
+                note: row.note || null,
+            })));
+        }
 
         if (image instanceof File) {
             payload.image = image;
@@ -74,7 +91,7 @@ export default function ProductCreate() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-cube me-2"></i>
+                                    <i className="fas fa-cube me-2"></i>
                                     TAMBAH PRODUK
                                 </h5>
 
@@ -83,7 +100,7 @@ export default function ProductCreate() {
                                         href="/account/products"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-arrow-left me-2"></i>
+                                        <i className="fas fa-arrow-left me-2"></i>
                                         KEMBALI
                                     </Link>
                                 </div>
@@ -130,7 +147,7 @@ export default function ProductCreate() {
                                                         );
                                                     }}
                                                 >
-                                                    <i className="fa fa-barcode me-1"></i>
+                                                    <i className="fas fa-barcode me-1"></i>
                                                     Generate
                                                 </button>
                                             </div>
@@ -241,6 +258,7 @@ export default function ProductCreate() {
                                             <label className="fw-bold mb-2">Tipe Produk</label>
                                             <select className="form-select" value={productType} onChange={(e) => setProductType(e.target.value)}>
                                                 <option value="physical">Fisik (Stok)</option>
+                                                <option value="service">Layanan (BOM)</option>
                                                 <option value="ppob">PPOB (Digital)</option>
                                             </select>
                                         </div>
@@ -305,6 +323,58 @@ export default function ProductCreate() {
                                                 </div>
                                             </div>
                                         </>
+                                    ) : isService ? (
+                                        <>
+                                            <div className="alert alert-info mb-4">
+                                                Produk layanan dijual dengan harga tetap. Stok bahan baku akan berkurang otomatis saat penjualan.
+                                            </div>
+
+                                            <div className="row">
+                                                <div className="col-md-4 mb-3">
+                                                    <label className="fw-bold mb-2">Harga Jual</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text">Rp</span>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            className={`form-control ${errors.sell_price ? "is-invalid" : ""}`}
+                                                            value={serviceSellPrice}
+                                                            onChange={(e) => setServiceSellPrice(e.target.value)}
+                                                            placeholder="0"
+                                                        />
+                                                    </div>
+                                                    {errors.sell_price && (
+                                                        <div className="text-danger small mt-1">{errors.sell_price}</div>
+                                                    )}
+                                                </div>
+
+                                                <div className="col-md-4 mb-3">
+                                                    <label className="fw-bold mb-2">Satuan Jual</label>
+                                                    <select
+                                                        className={`form-select ${errors.unit_id ? "is-invalid" : ""}`}
+                                                        value={serviceUnitId}
+                                                        onChange={(e) => setServiceUnitId(e.target.value)}
+                                                    >
+                                                        <option value="">-- Pilih Satuan --</option>
+                                                        {units.map((unit) => (
+                                                            <option key={unit.id} value={unit.id}>
+                                                                {unit.name} ({unit.abbreviation})
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors.unit_id && (
+                                                        <div className="text-danger small mt-1">{errors.unit_id}</div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <ProductComponentBuilder
+                                                physicalProducts={physicalProducts}
+                                                rows={components}
+                                                onChange={setComponents}
+                                                errors={errors}
+                                            />
+                                        </>
                                     ) : (
                                         <>
                                             <div className="alert alert-info mb-4">
@@ -348,7 +418,7 @@ export default function ProductCreate() {
                                             type="submit"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-save me-2"></i>
+                                            <i className="fas fa-save me-2"></i>
                                             SIMPAN
                                         </button>
 
@@ -356,7 +426,7 @@ export default function ProductCreate() {
                                             type="reset"
                                             className="btn btn-warning shadow-sm rounded-sm ms-2 text-white"
                                         >
-                                            <i className="fa fa-redo me-2"></i>
+                                            <i className="fas fa-redo me-2"></i>
                                             ULANGI
                                         </button>
                                     </div>

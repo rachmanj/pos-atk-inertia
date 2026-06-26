@@ -86,28 +86,28 @@ export default function Dashboard() {
             title: "Penjualan Bruto Hari Ini",
             value: formatRupiah(summary.today_sales || 0),
             subtitle: `${summary.today_transactions || 0} transaksi lunas aktif, tidak termasuk void`,
-            icon: "fa fa-money",
+            icon: "fas fa-money-bill-wave",
             color: "primary",
         },
         {
             title: "Transaksi Hari Ini",
             value: summary.today_transactions || 0,
             subtitle: `Rata-rata ${formatRupiah(summary.today_average_sale || 0)}`,
-            icon: "fa fa-file-text-o",
+            icon: "far fa-file-alt",
             color: "info",
         },
         {
             title: "Laba Bersih",
             value: formatRupiah(summary.today_net_profit || 0),
             subtitle: `Pengeluaran ${formatRupiah(summary.today_expense || 0)}`,
-            icon: "fa fa-line-chart",
+            icon: "fas fa-chart-line",
             color: netProfitColor,
         },
         {
             title: "Stok Menipis",
             value: summary.low_stock_count || 0,
             subtitle: `Dari ${summary.active_products || 0} produk aktif`,
-            icon: "fa fa-cubes",
+            icon: "fas fa-cubes",
             color: lowStockColor,
         },
     ];
@@ -162,7 +162,7 @@ export default function Dashboard() {
                         <div className="card border-0 shadow-sm rounded-3 h-100">
                             <div className="card-header bg-white border-0 p-4 pb-0">
                                 <h5 className="mb-0 fw-bold text-dark">
-                                    <i className="fa fa-clock-o text-success me-2" aria-hidden="true"></i>
+                                    <i className="far fa-clock text-success me-2" aria-hidden="true"></i>
                                     Shift Kasir
                                 </h5>
                             </div>
@@ -229,7 +229,7 @@ export default function Dashboard() {
                                     </>
                                 ) : (
                                     <div className="text-center py-4">
-                                        <i className="fa fa-clock-o fa-3x text-secondary opacity-50 mb-3" aria-hidden="true"></i>
+                                        <i className="far fa-clock fa-3x text-secondary opacity-50 mb-3" aria-hidden="true"></i>
                                         <h6 className="fw-bold mb-2">
                                             Belum ada shift aktif
                                         </h6>
@@ -243,7 +243,7 @@ export default function Dashboard() {
                         <div className="card border-0 shadow-sm rounded-3 h-100">
                             <div className="card-header bg-white border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold text-dark">
-                                    <i className="fa fa-pie-chart text-primary me-2" aria-hidden="true"></i>
+                                    <i className="fas fa-chart-pie text-primary me-2" aria-hidden="true"></i>
                                     Pantauan Cepat
                                 </h5>
                             </div>

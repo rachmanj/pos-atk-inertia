@@ -38,7 +38,7 @@ class TransactionController extends Controller
 
         $categories = Category::all();
 
-        $products = Product::with(['category', 'productUnits.unit', 'defaultSellUnit.unit'])
+        $products = Product::with(['category', 'productUnits.unit', 'defaultSellUnit.unit', 'components.componentProduct'])
             ->where('is_active', true)
             ->when($request->q, function ($query) use ($request) {
                 $query->where(function ($q) use ($request) {

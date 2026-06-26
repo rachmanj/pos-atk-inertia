@@ -32,7 +32,7 @@ export default function StockOpnameShow() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-clipboard-list me-2"></i>
+                                    <i className="fas fa-clipboard-list me-2"></i>
                                     DETAIL STOCK OPNAME
                                 </h5>
 
@@ -41,7 +41,7 @@ export default function StockOpnameShow() {
                                         href="/account/stock-opnames"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-arrow-left me-2"></i>
+                                        <i className="fas fa-arrow-left me-2"></i>
                                         KEMBALI
                                     </Link>
 
@@ -53,7 +53,7 @@ export default function StockOpnameShow() {
                                             href="/account/stock-opnames/create"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-plus-circle me-2"></i>
+                                            <i className="fas fa-plus-circle me-2"></i>
                                             OPNAME BARU
                                         </Link>
                                     )}

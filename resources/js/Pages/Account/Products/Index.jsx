@@ -1,19 +1,41 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
-import { Head, usePage, Link } from "@inertiajs/react";
+import { Head, usePage, Link, router } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import Search from "../../../Shared/Search";
 import Delete from "../../../Shared/Delete";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import Swal from "sweetalert2";
+import { Modal, Button } from "react-bootstrap";
 
 export default function ProductIndex() {
-    const { products, auth = {} } = usePage().props;
+    const { products, auth = {}, flash = {} } = usePage().props;
 
     const allPermissions = auth.permissions || {};
 
     const [selectedProducts, setSelectedProducts] = useState([]);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importProcessing, setImportProcessing] = useState(false);
+
+    useEffect(() => {
+        if (flash.success) {
+            Swal.fire({
+                icon: "success",
+                title: "Berhasil",
+                text: flash.success,
+            });
+        }
+
+        if (flash.error) {
+            Swal.fire({
+                icon: "error",
+                title: "Import Gagal",
+                text: flash.error,
+            });
+        }
+    }, [flash.success, flash.error]);
 
     const handleSelectAll = (e) => {
         if (e.target.checked) {
@@ -53,6 +75,35 @@ export default function ProductIndex() {
         window.open(url, "_blank");
     };
 
+    const handleImportSubmit = (e) => {
+        e.preventDefault();
+
+        if (!importFile) {
+            Swal.fire({
+                title: "Peringatan!",
+                text: "Pilih file Excel terlebih dahulu.",
+                icon: "warning",
+            });
+
+            return;
+        }
+
+        setImportProcessing(true);
+
+        router.post(
+            "/account/products/import",
+            { file: importFile },
+            {
+                forceFormData: true,
+                onFinish: () => {
+                    setImportProcessing(false);
+                    setShowImportModal(false);
+                    setImportFile(null);
+                },
+            },
+        );
+    };
+
     return (
         <>
             <Head>
@@ -65,7 +116,7 @@ export default function ProductIndex() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-box me-2"></i>
+                                    <i className="fas fa-box me-2"></i>
                                     PRODUK
                                 </h5>
 
@@ -78,7 +129,7 @@ export default function ProductIndex() {
                                             href="/account/stock-movements"
                                             className="btn btn-dark shadow-sm rounded-sm me-2"
                                         >
-                                            <i className="fa fa-history me-2"></i>
+                                            <i className="fas fa-history me-2"></i>
                                             RIWAYAT STOK
                                         </Link>
                                     )}
@@ -91,7 +142,7 @@ export default function ProductIndex() {
                                             href="/account/stock-movements/create"
                                             className="btn btn-warning shadow-sm rounded-sm me-2 text-dark"
                                         >
-                                            <i className="fa fa-exchange me-2"></i>
+                                            <i className="fas fa-exchange-alt me-2"></i>
                                             KOREKSI STOK
                                         </Link>
                                     )}
@@ -100,20 +151,33 @@ export default function ProductIndex() {
                                         ["products.create"],
                                         allPermissions,
                                     ) && (
-                                        <Link
-                                            href="/account/products/create"
-                                            className="btn btn-success shadow-sm rounded-sm"
-                                        >
-                                            <i className="fa fa-plus-circle me-2"></i>
-                                            TAMBAH PRODUK
-                                        </Link>
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setShowImportModal(true)
+                                                }
+                                                className="btn btn-info shadow-sm rounded-sm me-2 text-white"
+                                            >
+                                                <i className="far fa-file-excel me-2"></i>
+                                                IMPORT EXCEL
+                                            </button>
+
+                                            <Link
+                                                href="/account/products/create"
+                                                className="btn btn-success shadow-sm rounded-sm"
+                                            >
+                                                <i className="fas fa-plus-circle me-2"></i>
+                                                TAMBAH PRODUK
+                                            </Link>
+                                        </>
                                     )}
 
                                     <button
                                         onClick={handlePrintSelected}
                                         className="btn btn-primary shadow-sm rounded-sm ms-2"
                                     >
-                                        <i className="fa fa-print me-2"></i>
+                                        <i className="fas fa-print me-2"></i>
                                         CETAK BARCODE
                                     </button>
                                 </div>
@@ -301,7 +365,7 @@ export default function ProductIndex() {
                                                                         className="btn btn-warning btn-sm me-2 shadow-sm text-dark"
                                                                         title="Koreksi Stok"
                                                                     >
-                                                                        <i className="fa fa-exchange"></i>
+                                                                        <i className="fas fa-exchange-alt"></i>
                                                                     </Link>
                                                                 )}
 
@@ -315,7 +379,7 @@ export default function ProductIndex() {
                                                                         href={`/account/products/${product.id}/edit`}
                                                                         className="btn btn-primary btn-sm me-2 shadow-sm"
                                                                     >
-                                                                        <i className="fa fa-pencil"></i>
+                                                                        <i className="fas fa-pencil-alt"></i>
                                                                     </Link>
                                                                 )}
 
@@ -360,6 +424,87 @@ export default function ProductIndex() {
                         </div>
                     </div>
                 </div>
+
+                <Modal
+                    show={showImportModal}
+                    onHide={() => setShowImportModal(false)}
+                    centered
+                >
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            <i className="far fa-file-excel me-2"></i>
+                            Import Produk dari Excel
+                        </Modal.Title>
+                    </Modal.Header>
+
+                    <form onSubmit={handleImportSubmit}>
+                        <Modal.Body>
+                            <p className="text-muted small mb-3">
+                                Unduh template, isi data produk, lalu unggah
+                                file .xlsx, .xls, atau .csv. Barcode yang sudah
+                                ada akan dilewati.
+                            </p>
+
+                            <div className="mb-3">
+                                <a
+                                    href="/account/products/import/template"
+                                    className="btn btn-outline-secondary btn-sm"
+                                >
+                                    <i className="fas fa-download me-2"></i>
+                                    Unduh Template Excel
+                                </a>
+                            </div>
+
+                            <div className="mb-2">
+                                <label
+                                    htmlFor="import-file"
+                                    className="form-label fw-semibold"
+                                >
+                                    File Excel
+                                </label>
+                                <input
+                                    id="import-file"
+                                    type="file"
+                                    className="form-control"
+                                    accept=".xlsx,.xls,.csv"
+                                    onChange={(e) =>
+                                        setImportFile(
+                                            e.target.files?.[0] ?? null,
+                                        )
+                                    }
+                                />
+                            </div>
+                        </Modal.Body>
+
+                        <Modal.Footer>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setShowImportModal(false)}
+                                disabled={importProcessing}
+                            >
+                                Batal
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="info"
+                                className="text-white"
+                                disabled={importProcessing}
+                            >
+                                {importProcessing ? (
+                                    <>
+                                        <i className="fas fa-spinner fa-spin me-2"></i>
+                                        Mengimpor...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fas fa-upload me-2"></i>
+                                        Import
+                                    </>
+                                )}
+                            </Button>
+                        </Modal.Footer>
+                    </form>
+                </Modal>
             </LayoutAccount>
         </>
     );

@@ -33,7 +33,7 @@ export default function CashierShiftCreate() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fa fa-door-open me-2"></i>
+                                    <i className="fas fa-door-open me-2"></i>
                                     BUKA SHIFT
                                 </h5>
 
@@ -41,7 +41,7 @@ export default function CashierShiftCreate() {
                                     href="/account/cashier-shifts"
                                     className="btn btn-secondary shadow-sm rounded-sm"
                                 >
-                                    <i className="fa fa-arrow-left me-2"></i>
+                                    <i className="fas fa-arrow-left me-2"></i>
                                     KEMBALI
                                 </Link>
                             </div>
@@ -115,7 +115,7 @@ export default function CashierShiftCreate() {
                                         type="submit"
                                         className="btn btn-success shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-play-circle me-2"></i>
+                                        <i className="fas fa-play-circle me-2"></i>
                                         MULAI SHIFT
                                     </button>
                                 </form>

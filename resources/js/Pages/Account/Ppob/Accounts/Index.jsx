@@ -15,7 +15,7 @@ export default function PpobAccountIndex() {
                     <div className="col-12">
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between">
-                                <h5 className="mb-0 fw-bold"><i className="fa fa-wallet me-2"></i>AKUN PPOB</h5>
+                                <h5 className="mb-0 fw-bold"><i className="fas fa-wallet me-2"></i>AKUN PPOB</h5>
                                 {hasAnyPermission(["ppob-accounts.create"], permissions) && (
                                     <Link href="/account/ppob-accounts/create" className="btn btn-success btn-sm">TAMBAH AKUN</Link>
                                 )}

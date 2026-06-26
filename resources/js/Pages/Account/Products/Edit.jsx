@@ -5,9 +5,10 @@ import Swal from "sweetalert2";
 import hasAnyPermission from "../../../Utils/Permissions";
 
 import ProductUnitBuilder from "../../../Components/ProductUnitBuilder";
+import ProductComponentBuilder from "../../../Components/ProductComponentBuilder";
 
 export default function ProductEdit() {
-    const { errors = {}, categories = [], product, units = [], auth } = usePage().props;
+    const { errors = {}, categories = [], product, units = [], auth, physicalProducts = [] } = usePage().props;
     const allPermissions = auth?.permissions ?? {};
 
     const [barcode, setBarcode] = useState(product.barcode);
@@ -25,8 +26,22 @@ export default function ProductEdit() {
             is_default_sell: row.is_default_sell,
         })),
     );
+    const [serviceSellPrice, setServiceSellPrice] = useState(String(product.sell_price || ""));
+    const [serviceUnitId, setServiceUnitId] = useState(
+        String(product.product_units?.[0]?.unit_id || units[0]?.id || ""),
+    );
+    const [components, setComponents] = useState(
+        (product.components || []).length > 0
+            ? product.components.map((row) => ({
+                  component_product_id: String(row.component_product_id),
+                  qty_per_unit: row.qty_per_unit,
+                  note: row.note || "",
+              }))
+            : [{ component_product_id: "", qty_per_unit: 1, note: "" }],
+    );
 
     const isPhysical = productType === "physical";
+    const isService = productType === "service";
 
     const updateProduct = (e) => {
         e.preventDefault();
@@ -45,6 +60,16 @@ export default function ProductEdit() {
                 sell_price: Number(row.sell_price),
             }))),
         };
+
+        if (isService) {
+            data.sell_price = serviceSellPrice;
+            data.unit_id = serviceUnitId;
+            data.components = JSON.stringify(components.map((row) => ({
+                component_product_id: Number(row.component_product_id),
+                qty_per_unit: Number(row.qty_per_unit || 0),
+                note: row.note || null,
+            })));
+        }
 
         const hasNewImage = image instanceof File;
 
@@ -79,7 +104,7 @@ export default function ProductEdit() {
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
                                     <i
-                                        className="fa fa-cube me-2"
+                                        className="fas fa-cube me-2"
                                         aria-hidden="true"
                                     ></i>
                                     EDIT PRODUK
@@ -90,7 +115,7 @@ export default function ProductEdit() {
                                         href="/account/products"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fa fa-arrow-left me-2"></i>
+                                        <i className="fas fa-arrow-left me-2"></i>
                                         KEMBALI
                                     </Link>
                                 </div>
@@ -137,7 +162,7 @@ export default function ProductEdit() {
                                                         );
                                                     }}
                                                 >
-                                                    <i className="fa fa-barcode me-1"></i>
+                                                    <i className="fas fa-barcode me-1"></i>
                                                     Generate
                                                 </button>
                                             </div>
@@ -264,6 +289,7 @@ export default function ProductEdit() {
                                             <label className="fw-bold mb-2">Tipe Produk</label>
                                             <select className="form-select" value={productType} onChange={(e) => setProductType(e.target.value)}>
                                                 <option value="physical">Fisik (Stok)</option>
+                                                <option value="service">Layanan (BOM)</option>
                                                 <option value="ppob">PPOB (Digital)</option>
                                             </select>
                                         </div>
@@ -297,12 +323,64 @@ export default function ProductEdit() {
                                                 </div>
                                             </div>
                                         </>
+                                    ) : isService ? (
+                                        <>
+                                            <div className="alert alert-info mb-4">
+                                                Produk layanan dijual dengan harga tetap. Stok bahan baku akan berkurang otomatis saat penjualan.
+                                            </div>
+
+                                            <div className="row">
+                                                <div className="col-md-4 mb-3">
+                                                    <label className="fw-bold mb-2">Harga Jual</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text">Rp</span>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            className={`form-control ${errors.sell_price ? "is-invalid" : ""}`}
+                                                            value={serviceSellPrice}
+                                                            onChange={(e) => setServiceSellPrice(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    {errors.sell_price && (
+                                                        <div className="text-danger small mt-1">{errors.sell_price}</div>
+                                                    )}
+                                                </div>
+
+                                                <div className="col-md-4 mb-3">
+                                                    <label className="fw-bold mb-2">Satuan Jual</label>
+                                                    <select
+                                                        className={`form-select ${errors.unit_id ? "is-invalid" : ""}`}
+                                                        value={serviceUnitId}
+                                                        onChange={(e) => setServiceUnitId(e.target.value)}
+                                                    >
+                                                        <option value="">-- Pilih Satuan --</option>
+                                                        {units.map((unit) => (
+                                                            <option key={unit.id} value={unit.id}>
+                                                                {unit.name} ({unit.abbreviation})
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors.unit_id && (
+                                                        <div className="text-danger small mt-1">{errors.unit_id}</div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <ProductComponentBuilder
+                                                physicalProducts={physicalProducts}
+                                                rows={components}
+                                                onChange={setComponents}
+                                                errors={errors}
+                                            />
+                                        </>
                                     ) : (
                                         <div className="alert alert-info mb-4">
                                             Produk PPOB tidak memerlukan harga beli/jual di katalog. Harga modal dan admin fee diinput saat penjualan di POS.
                                         </div>
                                     )}
 
+                                    {!isService && (
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
                                             <label className="fw-bold mb-2">Stok</label>
@@ -335,7 +413,7 @@ export default function ProductEdit() {
                                                                 )}`}
                                                                 className="btn btn-dark btn-sm shadow-sm"
                                                             >
-                                                                <i className="fa fa-history me-2"></i>
+                                                                <i className="fas fa-history me-2"></i>
                                                                 RIWAYAT
                                                             </Link>
                                                         )}
@@ -351,7 +429,7 @@ export default function ProductEdit() {
                                                                 className="btn btn-warning btn-sm shadow-sm text-dark"
                                                             >
                                                                 <i
-                                                                    className="fa fa-exchange me-2"
+                                                                    className="fas fa-exchange-alt me-2"
                                                                     aria-hidden="true"
                                                                 ></i>
                                                                 SESUAIKAN
@@ -368,6 +446,7 @@ export default function ProductEdit() {
                                             )}
                                         </div>
                                     </div>
+                                    )}
 
                                     <div className="mb-4">
                                         <label className="fw-bold mb-2">
@@ -403,7 +482,7 @@ export default function ProductEdit() {
                                             type="submit"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fa fa-save me-2"></i>
+                                            <i className="fas fa-save me-2"></i>
                                             PERBARUI
                                         </button>
                                     </div>

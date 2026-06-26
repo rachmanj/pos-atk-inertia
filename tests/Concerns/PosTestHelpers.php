@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductComponent;
 use App\Models\ProductUnit;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
@@ -55,7 +56,7 @@ trait PosTestHelpers
     protected function createPhysicalProduct(array $overrides = []): array
     {
         $category = Category::create([
-            'name' => 'Test Category',
+            'name' => 'Test Category ' . uniqid(),
             'slug' => 'test-category-' . uniqid(),
         ]);
 
@@ -88,6 +89,56 @@ trait PosTestHelpers
         ]);
 
         return compact('category', 'unit', 'product', 'productUnit');
+    }
+
+    protected function createServiceProduct(array $componentCatalogs, array $overrides = []): array
+    {
+        $category = Category::create([
+            'name' => 'Service Category ' . uniqid(),
+            'slug' => 'service-category-' . uniqid(),
+        ]);
+
+        $unit = Unit::create([
+            'name' => 'Sheet',
+            'abbreviation' => 'lsn-' . uniqid(),
+        ]);
+
+        $sellPrice = $overrides['sell_price'] ?? 5000;
+
+        $service = Product::create(array_merge([
+            'category_id' => $category->id,
+            'barcode' => 'SV-' . uniqid(),
+            'title' => 'Test Service',
+            'slug' => 'test-service-' . uniqid(),
+            'product_type' => 'service',
+            'buy_price' => 0,
+            'sell_price' => $sellPrice,
+            'avg_cost' => 0,
+            'unit' => $unit->abbreviation,
+            'stock' => 0,
+            'is_active' => true,
+        ], $overrides));
+
+        $serviceUnit = ProductUnit::create([
+            'product_id' => $service->id,
+            'unit_id' => $unit->id,
+            'conversion_factor' => 1,
+            'sell_price' => $sellPrice,
+            'is_base_unit' => true,
+            'is_default_sell' => true,
+        ]);
+
+        $components = [];
+
+        foreach ($componentCatalogs as $componentCatalog) {
+            $components[] = ProductComponent::create([
+                'service_product_id' => $service->id,
+                'component_product_id' => $componentCatalog['product']->id,
+                'qty_per_unit' => $componentCatalog['qty_per_unit'] ?? 1,
+            ]);
+        }
+
+        return compact('category', 'unit', 'service', 'serviceUnit', 'components');
     }
 
     protected function addCartItem(User $user, Product $product, Unit $unit, int $qty = 1, int $price = 10000): Cart

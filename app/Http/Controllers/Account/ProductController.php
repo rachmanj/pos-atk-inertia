@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductComponent;
 use App\Models\ProductUnit;
 use App\Models\StockMovement;
 use App\Models\Unit;
@@ -41,6 +42,10 @@ class ProductController extends Controller
         return Inertia::render('Account/Products/Create', [
             'categories' => Category::orderBy('name')->get(),
             'units' => Unit::orderBy('name')->get(),
+            'physicalProducts' => Product::physical()
+                ->where('is_active', true)
+                ->orderBy('title')
+                ->get(['id', 'title', 'barcode', 'unit', 'stock']),
         ]);
     }
 
@@ -48,18 +53,22 @@ class ProductController extends Controller
     {
         $productType = $request->input('product_type', 'physical');
         $productUnits = $this->parseProductUnits($request);
+        $components = $this->parseComponents($request);
 
         $rules = [
             'category_id' => 'required|exists:categories,id',
             'barcode' => 'required|string|unique:products,barcode',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'product_type' => 'required|in:physical,ppob',
+            'product_type' => 'required|in:physical,ppob,service',
         ];
 
         if ($productType === 'physical') {
             $rules['buy_price'] = 'required|integer|min:0';
             $rules['stock'] = 'required|integer|min:0';
+        } elseif ($productType === 'service') {
+            $rules['sell_price'] = 'required|integer|min:1';
+            $rules['unit_id'] = 'required|exists:units,id';
         } else {
             $rules['buy_price'] = 'nullable|integer|min:0';
             $rules['stock'] = 'nullable|integer|min:0';
@@ -72,6 +81,8 @@ class ProductController extends Controller
         if ($productType === 'physical') {
             $openingBuyPrice = (int) $request->buy_price;
             $this->validateProductUnits($productUnits, $openingBuyPrice);
+        } elseif ($productType === 'service') {
+            $this->validateComponents($components);
         }
 
         $imageName = null;
@@ -82,15 +93,19 @@ class ProductController extends Controller
             $imageName = $image->hashName();
         }
 
-        DB::transaction(function () use ($request, $productType, $productUnits, $imageName) {
+        DB::transaction(function () use ($request, $productType, $productUnits, $components, $imageName) {
             $stock = $productType === 'physical' ? (int) $request->stock : 0;
-            $buyPrice = $productType === 'physical' ? (int) $request->buy_price : (int) ($request->buy_price ?? 0);
-            $sellPrice = $productType === 'physical'
-                ? $this->resolveDefaultSellPrice($productUnits)
-                : 0;
-            $baseAbbreviation = $productType === 'physical'
-                ? $this->resolveBaseUnitAbbreviation($productUnits)
-                : 'lembar';
+            $buyPrice = $productType === 'physical' ? (int) $request->buy_price : 0;
+            $sellPrice = match ($productType) {
+                'physical' => $this->resolveDefaultSellPrice($productUnits),
+                'service' => (int) $request->sell_price,
+                default => 0,
+            };
+            $baseAbbreviation = match ($productType) {
+                'physical' => $this->resolveBaseUnitAbbreviation($productUnits),
+                'service' => Unit::query()->whereKey($request->unit_id)->value('abbreviation') ?: 'lembar',
+                default => 'lembar',
+            };
 
             $product = Product::create([
                 'category_id' => $request->category_id,
@@ -123,6 +138,9 @@ class ProductController extends Controller
                         'note' => 'Stok awal produk saat dibuat.',
                     ]);
                 }
+            } elseif ($productType === 'service') {
+                $this->syncServiceProductUnit($product, (int) $request->unit_id, (int) $request->sell_price);
+                $this->syncComponents($product, $components);
             }
         });
 
@@ -131,12 +149,17 @@ class ProductController extends Controller
 
     public function edit($id)
     {
-        $product = Product::with(['productUnits.unit'])->findOrFail($id);
+        $product = Product::with(['productUnits.unit', 'components.componentProduct'])->findOrFail($id);
 
         return Inertia::render('Account/Products/Edit', [
             'product' => $product,
             'categories' => Category::orderBy('name')->get(),
             'units' => Unit::orderBy('name')->get(),
+            'physicalProducts' => Product::physical()
+                ->where('is_active', true)
+                ->whereKeyNot($product->id)
+                ->orderBy('title')
+                ->get(['id', 'title', 'barcode', 'unit', 'stock']),
         ]);
     }
 
@@ -145,13 +168,14 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
         $productType = $request->input('product_type', $product->product_type);
         $productUnits = $this->parseProductUnits($request);
+        $components = $this->parseComponents($request);
 
         $rules = [
             'category_id' => 'required|exists:categories,id',
             'barcode' => 'required|string|unique:products,barcode,' . $id,
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'product_type' => 'required|in:physical,ppob',
+            'product_type' => 'required|in:physical,ppob,service',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ];
 
@@ -159,6 +183,14 @@ class ProductController extends Controller
 
         if ($productType === 'physical') {
             $this->validateProductUnits($productUnits);
+        } elseif ($productType === 'service') {
+            $rules['sell_price'] = 'required|integer|min:1';
+            $rules['unit_id'] = 'required|exists:units,id';
+            $request->validate([
+                'sell_price' => 'required|integer|min:1',
+                'unit_id' => 'required|exists:units,id',
+            ]);
+            $this->validateComponents($components);
         }
 
         $data = [
@@ -172,6 +204,11 @@ class ProductController extends Controller
         if ($productType === 'physical') {
             $data['sell_price'] = $this->resolveDefaultSellPrice($productUnits);
             $data['unit'] = $this->resolveBaseUnitAbbreviation($productUnits);
+        } elseif ($productType === 'service') {
+            $data['sell_price'] = (int) $request->sell_price;
+            $data['buy_price'] = 0;
+            $data['avg_cost'] = 0;
+            $data['unit'] = Unit::query()->whereKey($request->unit_id)->value('abbreviation') ?: 'lembar';
         } else {
             $data['buy_price'] = 0;
             $data['sell_price'] = 0;
@@ -191,13 +228,18 @@ class ProductController extends Controller
             $data['image'] = $image->hashName();
         }
 
-        DB::transaction(function () use ($product, $data, $productType, $productUnits) {
+        DB::transaction(function () use ($product, $data, $productType, $productUnits, $components, $request) {
             $product->update($data);
 
             if ($productType === 'physical') {
                 $this->syncProductUnits($product, $productUnits);
+                $product->components()->delete();
+            } elseif ($productType === 'service') {
+                $this->syncServiceProductUnit($product, (int) $request->unit_id, (int) $request->sell_price);
+                $this->syncComponents($product, $components);
             } else {
                 $product->productUnits()->delete();
+                $product->components()->delete();
             }
         });
 
@@ -340,5 +382,89 @@ class ProductController extends Controller
         $defaultRow = collect($productUnits)->firstWhere('is_default_sell', true);
 
         return (int) ($defaultRow['sell_price'] ?? 0);
+    }
+
+    protected function parseComponents(Request $request): array
+    {
+        $components = $request->input('components', []);
+
+        if (is_string($components)) {
+            $components = json_decode($components, true) ?? [];
+        }
+
+        return collect($components)
+            ->map(function ($row) {
+                return [
+                    'component_product_id' => (int) ($row['component_product_id'] ?? 0),
+                    'qty_per_unit' => (float) ($row['qty_per_unit'] ?? 0),
+                    'note' => filled($row['note'] ?? null) ? trim($row['note']) : null,
+                ];
+            })
+            ->filter(fn ($row) => $row['component_product_id'] > 0)
+            ->values()
+            ->all();
+    }
+
+    protected function validateComponents(array $components): void
+    {
+        if (count($components) < 1) {
+            throw ValidationException::withMessages([
+                'components' => 'Tambahkan minimal satu bahan baku untuk layanan.',
+            ]);
+        }
+
+        $componentIds = collect($components)->pluck('component_product_id');
+
+        if ($componentIds->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'components' => 'Bahan baku tidak boleh duplikat.',
+            ]);
+        }
+
+        $physicalCount = Product::physical()
+            ->whereIn('id', $componentIds)
+            ->count();
+
+        if ($physicalCount !== $componentIds->count()) {
+            throw ValidationException::withMessages([
+                'components' => 'Semua bahan baku harus produk fisik yang aktif.',
+            ]);
+        }
+
+        foreach ($components as $index => $row) {
+            if ($row['qty_per_unit'] <= 0) {
+                throw ValidationException::withMessages([
+                    "components.$index.qty_per_unit" => 'Qty bahan baku per unit layanan harus lebih dari 0.',
+                ]);
+            }
+        }
+    }
+
+    protected function syncServiceProductUnit(Product $product, int $unitId, int $sellPrice): void
+    {
+        $product->productUnits()->delete();
+
+        ProductUnit::create([
+            'product_id' => $product->id,
+            'unit_id' => $unitId,
+            'conversion_factor' => 1,
+            'sell_price' => $sellPrice,
+            'is_base_unit' => true,
+            'is_default_sell' => true,
+        ]);
+    }
+
+    protected function syncComponents(Product $product, array $components): void
+    {
+        $product->components()->delete();
+
+        foreach ($components as $row) {
+            ProductComponent::create([
+                'service_product_id' => $product->id,
+                'component_product_id' => $row['component_product_id'],
+                'qty_per_unit' => $row['qty_per_unit'],
+                'note' => $row['note'],
+            ]);
+        }
     }
 }
