@@ -34,6 +34,7 @@ trait PosTestHelpers
 
         $user = User::create([
             'name' => 'Test Kasir',
+            'username' => 'kasir-test-' . uniqid(),
             'email' => 'kasir-test-' . uniqid() . '@example.com',
             'password' => Hash::make('password'),
         ]);

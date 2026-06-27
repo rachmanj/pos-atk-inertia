@@ -14,7 +14,7 @@
 ### POS-002 Local dev & credentials (2026-06-18) ✅ COMPLETE
 
 **Challenge/Decision**: How to run and log in locally?  
-**Solution**: `composer dev` (serve + queue + pail + vite). Seed: `php artisan migrate --seed`. Users: `admin@gmail.com` / `kasir@gmail.com`, password `password`. App URL: `http://127.0.0.1:8000` (not 3000).  
+**Solution**: `composer dev` (serve + queue + pail + vite). Seed: `php artisan migrate --seed`. Users: username `admin` / email `admin@gmail.com` or username `kasir` / email `kasir@gmail.com`, password `password`. App URL: `http://127.0.0.1:8000` (not 3000).  
 **Key Learning**: Do not store real Midtrans keys in docs; use env names `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION`.
 
 ### POS-003 POS gate: cashier shift (2026-06-18) ✅ COMPLETE

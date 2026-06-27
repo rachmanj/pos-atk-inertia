@@ -18,6 +18,7 @@ class PpobBalanceServiceTest extends TestCase
     {
         $user = User::create([
             'name' => 'Test User',
+            'username' => 'ppob-test',
             'email' => 'ppob-test@example.com',
             'password' => Hash::make('password'),
         ]);
@@ -46,6 +47,7 @@ class PpobBalanceServiceTest extends TestCase
     {
         $user = User::create([
             'name' => 'Test User',
+            'username' => 'ppob-test2',
             'email' => 'ppob-test2@example.com',
             'password' => Hash::make('password'),
         ]);

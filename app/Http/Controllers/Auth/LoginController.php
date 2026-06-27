@@ -9,40 +9,32 @@ use Inertia\Inertia;
 
 class LoginController extends Controller
 {
-    /**
-     * Tampilkan halaman login
-     */
     public function index()
     {
         return Inertia::render('Auth/Login');
     }
 
-    /**
-     * Proses autentikasi user
-     */
     public function store(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email',
+            'login'    => 'required|string',
             'password' => 'required',
         ]);
 
-        $credentials = $request->only('email', 'password');
+        $login = $request->input('login');
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt([$field => $login, 'password' => $request->password])) {
             $request->session()->regenerate();
 
             return redirect()->route('account.dashboard');
         }
 
         return back()->withErrors([
-            'email' => 'Email atau Password yang Anda masukkan salah.',
-        ])->onlyInput('email');
+            'login' => 'Username, email, atau password yang Anda masukkan salah.',
+        ])->onlyInput('login');
     }
 
-    /**
-     * Proses logout user
-     */
     public function destroy(Request $request)
     {
         Auth::logout();

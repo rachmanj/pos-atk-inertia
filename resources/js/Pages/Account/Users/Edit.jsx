@@ -8,6 +8,7 @@ export default function UserEdit() {
     const { errors, roles, user } = usePage().props;
 
     const [name, setName] = useState(user.name);
+    const [username, setUsername] = useState(user.username);
     const [email, setEmail] = useState(user.email);
     const [password, setPassword] = useState("");
     const [passwordConfirmation, setPasswordConfirmation] = useState("");
@@ -34,6 +35,7 @@ export default function UserEdit() {
             `/account/users/${user.id}`,
             {
                 name: name,
+                username: username,
                 email: email,
                 password: password,
                 password_confirmation: passwordConfirmation,
@@ -109,6 +111,34 @@ export default function UserEdit() {
                                             )}
                                         </div>
 
+                                        <div className="col-md-6 mb-4">
+                                            <label className="fw-bold mb-2">
+                                                Username
+                                            </label>
+
+                                            <input
+                                                type="text"
+                                                className={`form-control ${
+                                                    errors.username
+                                                        ? "is-invalid"
+                                                        : ""
+                                                }`}
+                                                value={username}
+                                                onChange={(e) =>
+                                                    setUsername(e.target.value)
+                                                }
+                                                placeholder="Masukkan username"
+                                            />
+
+                                            {errors.username && (
+                                                <div className="invalid-feedback">
+                                                    {errors.username}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="row">
                                         <div className="col-md-6 mb-4">
                                             <label className="fw-bold mb-2">
                                                 Alamat Email

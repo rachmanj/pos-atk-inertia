@@ -63,6 +63,9 @@ export default function UserIndex() {
                                                     Nama Pengguna
                                                 </th>
                                                 <th className="border-0">
+                                                    Username
+                                                </th>
+                                                <th className="border-0">
                                                     Alamat Email
                                                 </th>
                                                 <th
@@ -94,6 +97,8 @@ export default function UserIndex() {
                                                             </td>
 
                                                             <td>{user.name}</td>
+
+                                                            <td>{user.username}</td>
 
                                                             <td>
                                                                 {user.email}
@@ -151,7 +156,7 @@ export default function UserIndex() {
                                             ) : (
                                                 <tr>
                                                     <td
-                                                        colSpan="5"
+                                                        colSpan="6"
                                                         className="text-center py-4"
                                                     >
                                                         Data belum tersedia!

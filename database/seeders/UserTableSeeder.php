@@ -18,11 +18,13 @@ class UserTableSeeder extends Seeder
             'email' => 'admin@gmail.com',
         ], [
             'name' => 'Administrator',
+            'username' => 'admin',
             'password' => Hash::make('password'),
         ]);
 
         $admin->update([
             'name' => 'Administrator',
+            'username' => 'admin',
         ]);
 
         $admin->syncRoles([$adminRoleName]);
@@ -32,11 +34,13 @@ class UserTableSeeder extends Seeder
             'email' => 'kasir@gmail.com',
         ], [
             'name' => 'Kasir',
+            'username' => 'kasir',
             'password' => Hash::make('password'),
         ]);
 
         $cashier->update([
             'name' => 'Kasir',
+            'username' => 'kasir',
         ]);
 
         $cashier->syncRoles([$cashierRoleName]);

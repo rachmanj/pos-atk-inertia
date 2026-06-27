@@ -6,14 +6,14 @@ export default function Login() {
     const storeName = store.name ?? "POS Kasir";
     const loginLogo = store.logo_url ?? "/assets/logo.png";
 
-    const [email, setEmail] = useState("");
+    const [login, setLogin] = useState("");
     const [password, setPassword] = useState("");
 
     const loginHandler = async (e) => {
         e.preventDefault();
 
         router.post("/login", {
-            email: email,
+            login: login,
             password: password,
         });
     };
@@ -64,22 +64,22 @@ export default function Login() {
                             className="pos-login-form"
                         >
                             <div className="pos-login-field">
-                                <label>Email</label>
+                                <label>Username atau Email</label>
                                 <div className="pos-login-input">
-                                    <i className="fas fa-envelope"></i>
+                                    <i className="fas fa-user"></i>
                                     <input
-                                        type="email"
-                                        value={email}
+                                        type="text"
+                                        value={login}
                                         onChange={(e) =>
-                                            setEmail(e.target.value)
+                                            setLogin(e.target.value)
                                         }
-                                        placeholder="nama@toko.com"
-                                        autoComplete="email"
+                                        placeholder="username atau nama@toko.com"
+                                        autoComplete="username"
                                     />
                                 </div>
-                                {errors.email && (
+                                {errors.login && (
                                     <div className="pos-login-error">
-                                        {errors.email}
+                                        {errors.login}
                                     </div>
                                 )}
                             </div>

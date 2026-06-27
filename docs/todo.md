@@ -19,6 +19,7 @@ _(none)_
 
 ## Recently Completed
 
+- `[done] Auth: login with username or email; self-service change password from navbar dropdown [LoginController, PasswordController, Account.jsx] (completed: 2026-06-27)`
 - `[done] Product Excel import — create-only bulk import from Products index [ProductImportController, ProductsImport, Products/Index.jsx] (completed: 2026-06-26)`
 - `[done] P1: Add MIDTRANS_* vars to .env.example [config/midtrans.php] (completed: 2026-06-20)`
 - `[done] P2: Remove duplicate logout route [routes/web.php] (completed: 2026-06-20)`
@@ -33,4 +34,4 @@ _(none)_
 - Default dev URL is `http://127.0.0.1:8000` (Laravel serve), not port 3000.
 - Run tests: `php artisan test` (SQLite in-memory; 16 tests as of 2026-06-20).
 - `.env.example` now defaults to MySQL (`pos_kasir`); create DB before `php artisan migrate --seed`.
-- Seeded login: `admin@gmail.com` / `kasir@gmail.com`, password `password`.
+- Seeded login: `admin` / `admin@gmail.com` or `kasir` / `kasir@gmail.com`, password `password`.

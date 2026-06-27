@@ -27,6 +27,7 @@ use App\Http\Controllers\Account\SettingController;
 use App\Http\Controllers\Account\PpobAccountController;
 use App\Http\Controllers\Account\PpobBalanceLogController;
 use App\Http\Controllers\Account\UnitController;
+use App\Http\Controllers\Account\PasswordController;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
@@ -58,6 +59,12 @@ Route::middleware(['auth'])
         Route::get('/dashboard', DashboardController::class)
             ->middleware('permission:dashboard.index')
             ->name('dashboard');
+
+        Route::get('/password', [PasswordController::class, 'edit'])
+            ->name('password.edit');
+
+        Route::put('/password', [PasswordController::class, 'update'])
+            ->name('password.update');
 
         Route::resource('/roles', RoleController::class)
             ->except(['show'])

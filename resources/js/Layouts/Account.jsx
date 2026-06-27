@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { NavDropdown } from "react-bootstrap";
-import { usePage, router } from "@inertiajs/react";
+import { usePage, router, Link } from "@inertiajs/react";
 import Sidebar from "../Components/Sidebar";
 
 export default function LayoutAccount({ children }) {
@@ -75,6 +75,17 @@ export default function LayoutAccount({ children }) {
                                     className="fw-bold"
                                     id="user-nav-dropdown"
                                 >
+                                    <NavDropdown.Item
+                                        as={Link}
+                                        href="/account/password"
+                                    >
+                                        <i
+                                            className="fas fa-key me-2"
+                                            aria-hidden="true"
+                                        ></i>
+                                        Ubah Kata Sandi
+                                    </NavDropdown.Item>
+                                    <NavDropdown.Divider />
                                     <NavDropdown.Item onClick={logoutHandler}>
                                         <i
                                             className="fas fa-sign-out-alt me-2"
