@@ -81,7 +81,6 @@ class CashierShiftController extends Controller
     {
         $request->validate([
             'cash_in_hand' => 'required|integer|min:0',
-            'ppob_opening_balance' => 'nullable|integer|min:0',
             'note'         => 'nullable|string|max:1000',
         ]);
 
@@ -91,13 +90,15 @@ class CashierShiftController extends Controller
                 ->with('error', 'Masih ada shift aktif. Tutup shift saat ini sebelum membuka shift baru.');
         }
 
+        // PPOB balance is a single pool shared by every cashier, so it is captured
+        // automatically for reporting only, not asked from the cashier like Kas Awal.
+        $ppobAccount = PpobAccount::activeAccount();
+
         $shift = CashierShift::create([
             'user_id'            => $request->user()->id,
             'opened_at'          => now(),
             'cash_in_hand'       => (int) $request->cash_in_hand,
-            'ppob_opening_balance' => filled($request->ppob_opening_balance)
-                ? (int) $request->ppob_opening_balance
-                : null,
+            'ppob_opening_balance' => $ppobAccount?->current_balance,
             'expected_cash'      => (int) $request->cash_in_hand,
             'actual_cash'        => 0,
             'difference'         => 0,
@@ -142,7 +143,6 @@ class CashierShiftController extends Controller
     {
         $request->validate([
             'actual_cash' => 'required|integer|min:0',
-            'ppob_closing_balance' => 'nullable|integer|min:0',
             'note'        => 'nullable|string|max:1000',
         ]);
 
@@ -159,10 +159,8 @@ class CashierShiftController extends Controller
         $expectedCash = $summary['expected_cash'];
         $closeNote = filled($request->note) ? trim($request->note) : null;
 
-        $ppobClosing = filled($request->ppob_closing_balance)
-            ? (int) $request->ppob_closing_balance
-            : null;
-
+        // PPOB balance is not counted per shift (it's a shared pool across cashiers);
+        // we only snapshot this shift's contribution for reporting, no cashier-entered "actual".
         $cashierShift->update([
             'closed_at'          => now(),
             'expected_cash'      => $expectedCash,
@@ -170,8 +168,7 @@ class CashierShiftController extends Controller
             'difference'         => $actualCash - $expectedCash,
             'total_transactions' => $summary['total_transactions'],
             'ppob_expected_balance' => $summary['ppob_expected_balance'],
-            'ppob_closing_balance' => $ppobClosing,
-            'note'               => $this->mergeNotes($cashierShift->note, $closeNote, $ppobClosing, $summary['ppob_expected_balance']),
+            'note'               => $this->mergeNotes($cashierShift->note, $closeNote),
             'status'             => 'closed',
         ]);
 
@@ -273,7 +270,7 @@ class CashierShiftController extends Controller
         ];
     }
 
-    protected function mergeNotes(?string $existingNote, ?string $closeNote, ?int $ppobClosing = null, ?int $ppobExpected = null): ?string
+    protected function mergeNotes(?string $existingNote, ?string $closeNote): ?string
     {
         $existing = filled($existingNote) ? trim($existingNote) : null;
         $closing = filled($closeNote) ? trim($closeNote) : null;
@@ -281,9 +278,6 @@ class CashierShiftController extends Controller
         $parts = array_filter([
             $existing,
             $closing ? 'Close: ' . $closing : null,
-            $ppobClosing !== null && $ppobExpected !== null
-                ? 'PPOB close: actual ' . $ppobClosing . ', expected ' . $ppobExpected
-                : null,
         ]);
 
         return $parts ? implode("\n\n", $parts) : null;

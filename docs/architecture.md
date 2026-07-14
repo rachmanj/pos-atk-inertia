@@ -114,7 +114,7 @@ config/
 - **Catalog (admin)**: PPOB products need barcode, title, category only — `buy_price` / `sell_price` optional (stored as 0); image optional. UI hides price fields when type is PPOB (`Products/Create.jsx`, `Edit.jsx`). Default display unit: `lembar`.
 - **POS checkout**: Cashier enters **`ppob_cost`** (from provider app); **`admin_fee`** pre-filled from `settings.ppob_admin_fee` (editable); optional **`customer_ref`**. Sell price = cost + fee; profit = `admin_fee × qty`. No stock movement.
 - **`ppob_accounts`** + **`ppob_balance_logs`**: saldo ledger (`top_up`, `sale`, `adjustment`); auto-debit `ppob_cost × qty` on sale via `PpobBalanceService`.
-- **`cashier_shifts`**: optional `ppob_opening_balance` / `ppob_closing_balance` for shift reconciliation vs `ppob_expected_balance`.
+- **`cashier_shifts`**: `ppob_opening_balance` auto-captured from `PpobAccount.current_balance` at shift open (not cashier-entered); `ppob_expected_balance` shows this shift's own contribution only (sums `ppob_balance_logs` filtered by `cashier_shift_id`). Since one PPOB account can be used by multiple concurrent shifts, physical balance verification is done account-wide via `/account/ppob-balance-logs` (Top Up / Adjustment), not per shift — `ppob_closing_balance` is no longer collected on shift close.
 
 ### Service products & BOM
 
@@ -178,7 +178,7 @@ erDiagram
 | `transactions` | Sales invoices; payment + void state |
 | `transaction_details` | Line items: `unit_id`, `conversion_factor`, snapshot `buy_price`; PPOB fields `ppob_cost`, `admin_fee`, `customer_ref` |
 | `profits` | Per-transaction revenue/cost/profit (`transaction_id` unique) |
-| `cashier_shifts` | Open/close with cash + optional PPOB balance reconciliation fields |
+| `cashier_shifts` | Open/close with cash reconciliation; PPOB fields are informational only (shared account, see PPOB section) |
 | `purchases`, `purchase_details` | Supplier inbound |
 | `supplier_returns`, `supplier_return_details` | Return to supplier |
 | `stock_movements` | Audit log: `in` / `out` / `adjustment`; polymorphic `reference_type/id` |

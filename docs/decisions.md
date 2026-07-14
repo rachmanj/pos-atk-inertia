@@ -248,3 +248,23 @@
 **Implementation**: `ProductComponent` model, `CheckoutService` service branch, `ProductController` recipe sync, `ProductComponentBuilder.jsx`, POS grid shows component availability hints.
 
 **Review Date**: 2026-12-26
+
+---
+
+## Decision: PPOB balance reconciliation moved to account-level, not per-shift — 2026-07-14
+
+**Context**: One `ppob_accounts` row (one provider app/wallet) can be used by multiple cashiers with different, concurrently open `cashier_shifts`. Unlike Kas (physically separate cash drawers per cashier), the PPOB balance is one shared pool. The prior UI asked each cashier to type an "actual" PPOB balance at shift open/close and compared it against a per-shift "expected" total computed only from that shift's own logs — producing a false discrepancy whenever another concurrently open shift also transacted PPOB in the meantime.
+
+**Options Considered**:
+
+1. **Time-window based expected balance**: Sum all `ppob_balance_logs` for the account within the shift's open/close window instead of filtering by `cashier_shift_id`. Rejected — overlapping shifts would double count the same movements and still can't be verified against one physical count taken at two different times by two different people.
+2. **Lock the PPOB account to one active shift at a time**: Rejected — too restrictive for stores that intentionally run multiple concurrent cashiers on the same PPOB app.
+3. **Account-level reconciliation (chosen)**: Keep per-shift PPOB numbers as informational-only (this shift's own top-ups/sales via `cashier_shift_id`), stop asking cashiers to enter/verify an "actual" balance per shift, and do physical balance verification as an account-wide activity via the existing Top Up / Adjustment flow on `/account/ppob-balance-logs`.
+
+**Decision**: Option 3. `ppob_opening_balance` is auto-captured from `PpobAccount.current_balance` at shift open (no manual input). `ppob_closing_balance` is no longer collected on shift close. `ppob_expected_balance` remains as "this shift's contribution" for shift-level reporting only. Sales/top-up movements still stay race-safe via `lockForUpdate()` in `CheckoutService` and `PpobBalanceLogController` (already in place).
+
+**Rationale**: Reconciling a shared resource per-shift is not physically meaningful when it's touched concurrently by other shifts; the account-level ledger (`ppob_balance_logs`) already gives an accurate running balance and audit trail regardless of which/how many shifts are open.
+
+**Implementation**: `CashierShiftController@store/close` (auto-capture, drop closing input), `CashierShifts/Create.jsx` + `Show.jsx` (remove manual PPOB balance inputs, add explanatory copy), `Ppob/BalanceLogs/Index.jsx` (surface current system balance per account as the reconciliation entry point).
+
+**Review Date**: 2026-10-14

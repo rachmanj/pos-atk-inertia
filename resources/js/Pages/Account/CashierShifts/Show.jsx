@@ -27,9 +27,6 @@ export default function CashierShiftShow() {
             ? shift.summary.expected_cash
             : shift.actual_cash,
     );
-    const [ppobClosingBalance, setPpobClosingBalance] = useState(
-        shift.ppob_closing_balance ?? shift.summary?.ppob_expected_balance ?? "",
-    );
     const [note, setNote] = useState("");
 
     const estimatedDifference = useMemo(() => {
@@ -44,7 +41,6 @@ export default function CashierShiftShow() {
 
         router.put(`/account/cashier-shifts/${shift.id}/close`, {
             actual_cash: actualCash,
-            ppob_closing_balance: ppobClosingBalance || null,
             note,
         });
     };
@@ -254,14 +250,19 @@ export default function CashierShiftShow() {
                                 </div>
 
                                 {shift.summary?.ppob_expected_balance != null && (
-                                    <div className="border rounded-3 p-3 bg-light mb-4">
+                                    <div className="border rounded-3 p-3 bg-light mb-4 text-white">
                                         <h6 className="fw-bold mb-3">Ringkasan PPOB Shift</h6>
                                         <div className="row g-3">
-                                            <div className="col-md-3"><small className="text-muted d-block">Saldo Awal</small><strong>{formatRupiah(shift.summary.ppob_opening_balance || shift.ppob_opening_balance || 0)}</strong></div>
-                                            <div className="col-md-3"><small className="text-muted d-block">Top Up</small><strong>{formatRupiah(shift.summary.ppob_top_ups || 0)}</strong></div>
-                                            <div className="col-md-3"><small className="text-muted d-block">Biaya Penjualan</small><strong>{formatRupiah(shift.summary.ppob_sales_cost || 0)}</strong></div>
-                                            <div className="col-md-3"><small className="text-muted d-block">Saldo Harusnya</small><strong>{formatRupiah(shift.summary.ppob_expected_balance || 0)}</strong></div>
+                                            <div className="col-md-3"><small className="text-white d-block">Saldo Awal</small><strong>{formatRupiah(shift.summary.ppob_opening_balance || shift.ppob_opening_balance || 0)}</strong></div>
+                                            <div className="col-md-3"><small className="text-white d-block">Top Up</small><strong>{formatRupiah(shift.summary.ppob_top_ups || 0)}</strong></div>
+                                            <div className="col-md-3"><small className="text-white d-block">Biaya Penjualan</small><strong>{formatRupiah(shift.summary.ppob_sales_cost || 0)}</strong></div>
+                                            <div className="col-md-3"><small className="text-white d-block">Kontribusi Shift Ini</small><strong>{formatRupiah(shift.summary.ppob_expected_balance || 0)}</strong></div>
                                         </div>
+                                        <small className="text-white d-block mt-3">
+                                            Akun PPOB ini dapat dipakai bersamaan oleh kasir lain, sehingga saldo di atas hanya mencerminkan kontribusi shift ini, bukan saldo fisik akun.
+                                            Verifikasi saldo fisik di app provider dilakukan di menu{" "}
+                                            <Link href="/account/ppob-balance-logs" className="link-light">Riwayat Saldo PPOB</Link>, bukan per shift.
+                                        </small>
                                     </div>
                                 )}
 
@@ -340,12 +341,6 @@ export default function CashierShiftShow() {
                                                             readOnly
                                                         />
                                                     </div>
-                                                    {shift.summary?.ppob_expected_balance != null && (
-                                                        <div className="col-md-4">
-                                                            <label className="fw-bold mb-2">Saldo PPOB Aktual</label>
-                                                            <input type="number" min="0" className="form-control" value={ppobClosingBalance} onChange={(e) => setPpobClosingBalance(e.target.value)} placeholder="Saldo di app PPOB" />
-                                                        </div>
-                                                    )}
                                                     <div className="col-12">
                                                         <label className="fw-bold mb-2">
                                                             Catatan Penutupan

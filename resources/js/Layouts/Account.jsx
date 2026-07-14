@@ -71,7 +71,7 @@ export default function LayoutAccount({ children }) {
 
                             <MenuSearchPalette />
 
-                            <ul className="navbar-nav mb-0">
+                            <ul className="navbar-nav mb-0 ms-auto">
                                 <NavDropdown
                                     align="end"
                                     title={userName}

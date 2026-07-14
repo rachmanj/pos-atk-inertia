@@ -168,7 +168,7 @@ export default function MenuSearchPalette({
     }, [highlightIndex]);
 
     return (
-        <div className="d-none d-md-flex align-items-center ms-auto me-2 position-relative menu-search-wrapper">
+        <div className="d-none d-md-flex align-items-center ms-2 position-relative menu-search-wrapper">
             {showLabel ? (
                 <label
                     htmlFor="menu-search-input"
@@ -186,7 +186,7 @@ export default function MenuSearchPalette({
                     id="menu-search-input"
                     type="text"
                     className="border-0 outline-none bg-transparent menu-search-input"
-                    style={{ width: '12rem', fontSize: '0.875rem' }}
+                    style={{ width: '12rem', fontSize: '0.875rem', color: '#000' }}
                     placeholder={placeholder}
                     value={query}
                     onChange={(e) => {

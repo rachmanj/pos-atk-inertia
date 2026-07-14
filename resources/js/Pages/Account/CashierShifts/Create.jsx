@@ -6,9 +6,6 @@ export default function CashierShiftCreate() {
     const { errors = {}, flash = {}, ppobAccount = null } = usePage().props;
 
     const [cashInHand, setCashInHand] = useState("");
-    const [ppobOpeningBalance, setPpobOpeningBalance] = useState(
-        ppobAccount?.current_balance != null ? String(ppobAccount.current_balance) : "",
-    );
     const [note, setNote] = useState("");
 
     const openShift = (e) => {
@@ -16,7 +13,6 @@ export default function CashierShiftCreate() {
 
         router.post("/account/cashier-shifts", {
             cash_in_hand: cashInHand,
-            ppob_opening_balance: ppobOpeningBalance || null,
             note,
         });
     };
@@ -84,11 +80,13 @@ export default function CashierShiftCreate() {
 
                                     {ppobAccount && (
                                         <div className="mb-4">
-                                            <label className="fw-bold mb-2">Saldo PPOB Awal ({ppobAccount.name})</label>
-                                            <input type="number" min="0" className={`form-control ${errors.ppob_opening_balance ? "is-invalid" : ""}`} value={ppobOpeningBalance} onChange={(e) => setPpobOpeningBalance(e.target.value)} placeholder="Saldo di app PPOB saat buka shift" />
-                                            <small className="d-block mt-1">
-                                                Terisi otomatis dari saldo sistem (Rp {Number(ppobAccount.current_balance || 0).toLocaleString("id-ID")}). Sesuaikan jika berbeda dengan saldo di app PPOB provider.
-                                            </small>
+                                            <label className="fw-bold mb-2">Saldo PPOB ({ppobAccount.name})</label>
+                                            <div className="alert alert-info shadow-sm mb-0">
+                                                Saldo sistem saat ini: <strong>Rp {Number(ppobAccount.current_balance || 0).toLocaleString("id-ID")}</strong>.
+                                                Akun ini dipakai bersama, bisa dipakai kasir lain secara bersamaan, jadi saldo tidak perlu dihitung ulang tiap buka/tutup shift.
+                                                Verifikasi saldo fisik di app provider dilakukan di menu{" "}
+                                                <Link href="/account/ppob-balance-logs">Riwayat Saldo PPOB</Link>.
+                                            </div>
                                         </div>
                                     )}
 

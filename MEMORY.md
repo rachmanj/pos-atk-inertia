@@ -100,6 +100,12 @@
 **Solution**: New `product_type=service` with `product_components` recipe table. Services sold at fixed catalog price; checkout deducts physical component stock and computes COGS from component `avg_cost`. Void reverses all `stock_movements` for the transaction (not detail-by-detail). Stock report scoped to `physical()` only.  
 **Key Learning**: Components must be `physical` products. Service keeps one base/default-sell `product_unit` for cart compatibility. Key files: `CheckoutService`, `ProductController`, `CartController`, `ProductComponentBuilder.jsx`, migration `create_product_components_table`.
 
+### POS-017 PPOB balance shared across concurrent shifts (2026-07-14) ✅ COMPLETE
+
+**Challenge/Decision**: Two cashiers with different Kas drawers but the same PPOB account, open at the same time — how to reconcile PPOB balance per shift?  
+**Solution**: You can't — it's one shared pool, not physically separable like cash drawers. `ppob_opening_balance` is now auto-captured from `PpobAccount.current_balance` (no cashier input); `ppob_closing_balance` manual input removed from shift close. Per-shift `ppob_expected_balance` still shown but is informational only (sums `ppob_balance_logs` by `cashier_shift_id`, correctly isolates each shift's own sales/top-ups even under concurrency). Physical balance verification against the provider app now happens only at `/account/ppob-balance-logs` (Top Up / Adjustment), which already locks the account row (`lockForUpdate()`) so concurrent sales never lose an update.  
+**Key Learning**: Don't try to make PPOB "expected vs actual" per-shift like Kas — that only makes sense for physically separate drawers. See `docs/decisions.md` "PPOB balance reconciliation moved to account-level" (2026-07-14).
+
 ### POS-016 Font Awesome version conflict (2026-06-26) ✅ COMPLETE
 
 **Challenge/Decision**: Sidebar icons (`fa-shield-alt`, `fa-store`, etc.) showed empty boxes or wrong glyphs.  

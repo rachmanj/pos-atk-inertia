@@ -78,6 +78,27 @@ export default function PpobBalanceLogIndex() {
                                 <h5 className="mb-0 fw-bold"><i className="fas fa-list me-2"></i>RIWAYAT SALDO PPOB</h5>
                             </div>
                             <div className="card-body">
+                                {accounts.length > 0 && (
+                                    <div className="row g-3 mb-4">
+                                        {accounts.map((a) => (
+                                            <div className="col-md-4" key={a.id}>
+                                                <div className={`border rounded-3 p-3 h-100 ${a.is_active ? "bg-light" : "bg-white"}`}>
+                                                    <small className="text-muted d-block mb-1">
+                                                        Saldo Sistem Saat Ini {a.is_active && <span className="badge bg-success ms-1">Aktif</span>}
+                                                    </small>
+                                                    <div className="fw-bold fs-5">{a.name}</div>
+                                                    <div className="fw-bold text-primary">{formatRupiah(a.current_balance)}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <div className="col-12">
+                                            <small className="text-muted">
+                                                Akun ini bisa dipakai bersamaan oleh beberapa kasir shift yang berbeda. Cocokkan saldo di atas dengan saldo di app provider, lalu catat selisihnya lewat Penyesuaian di bawah &mdash; bukan lewat form buka/tutup shift.
+                                            </small>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <form className="row g-2 mb-4" onSubmit={applyFilter}>
                                     <div className="col-md-3">
                                         <select className="form-select" value={ppobAccountId} onChange={(e) => setPpobAccountId(e.target.value)}>
