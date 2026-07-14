@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { NavDropdown } from "react-bootstrap";
 import { usePage, router, Link } from "@inertiajs/react";
 import Sidebar from "../Components/Sidebar";
+import MenuSearchPalette from "../Components/MenuSearch/MenuSearchPalette";
 
 export default function LayoutAccount({ children }) {
     const { auth, store } = usePage().props;
@@ -11,6 +12,9 @@ export default function LayoutAccount({ children }) {
     const storeLogo = store?.logo_url;
 
     const userName = auth?.user?.name || "User";
+
+    // Ref for the menu search trigger button (focus restore on close)
+    const menuSearchTriggerRef = useRef(null);
 
     const sidebarToggleHandler = (e) => {
         e.preventDefault();
@@ -33,6 +37,9 @@ export default function LayoutAccount({ children }) {
 
     return (
         <>
+            {/* ── Ctrl+K command palette (mounted once in layout) ──────── */}
+            <MenuSearchPalette triggerRef={menuSearchTriggerRef} />
+
             <div className="d-flex" id="wrapper">
                 <div className="bg-sidebar" id="sidebar-wrapper">
                     <div className="sidebar-heading bg-light">
@@ -66,6 +73,32 @@ export default function LayoutAccount({ children }) {
                                 onClick={sidebarToggleHandler}
                             >
                                 <i className="fas fa-list-ul"></i>
+                            </button>
+
+                            {/* ── menu search trigger ─────────────────────── */}
+                            <button
+                                ref={menuSearchTriggerRef}
+                                className="btn btn-outline-secondary ms-2 d-flex align-items-center gap-1"
+                                onClick={() => {
+                                    // Programmatically trigger the palette.
+                                    // We fire a synthetic Ctrl+K so the global
+                                    // listener inside MenuSearchPalette handles it.
+                                    const event = new KeyboardEvent(
+                                        "keydown",
+                                        {
+                                            key: "k",
+                                            ctrlKey: true,
+                                            bubbles: true,
+                                        },
+                                    );
+                                    document.dispatchEvent(event);
+                                }}
+                                title="Cari menu (Ctrl+K)"
+                            >
+                                <i className="fas fa-search small"></i>
+                                <kbd className="d-none d-sm-inline small bg-light text-dark border rounded px-1.5 py-0">
+                                    ⌘K
+                                </kbd>
                             </button>
 
                             <ul className="navbar-nav ms-auto mb-0">
