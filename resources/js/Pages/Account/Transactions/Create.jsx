@@ -73,14 +73,26 @@ export default function TransactionCreate() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const isCashLikePayment = ["cash", "qris", "transfer"].includes(paymentMethod);
+
+    const activeCarts = useMemo(
+        () => carts.filter((cart) => !cart.is_held),
+        [carts],
+    );
+
+    const heldCarts = useMemo(
+        () => carts.filter((cart) => cart.is_held),
+        [carts],
+    );
+
     const subtotal = useMemo(
         () =>
-            carts.reduce(
+            activeCarts.reduce(
                 (total, cart) =>
                     total + Number(cart.price || 0) * Number(cart.qty || 0),
                 0,
             ),
-        [carts],
+        [activeCarts],
     );
 
     const discountValue = Number(discount || 0);
@@ -90,17 +102,17 @@ export default function TransactionCreate() {
     const grandTotal = Math.max(subtotal - discountAmount, 0);
     const cashValue = Number(cash || 0);
     const change =
-        paymentMethod === "cash" && cashValue >= grandTotal
+        isCashLikePayment && cashValue >= grandTotal
             ? cashValue - grandTotal
             : 0;
 
-    const cartQty = carts.reduce(
+    const cartQty = activeCarts.reduce(
         (total, cart) => total + Number(cart.qty || 0),
         0,
     );
 
     const cashOptions = useMemo(() => {
-        if (paymentMethod !== "cash" || grandTotal <= 0) {
+        if (!isCashLikePayment || grandTotal <= 0) {
             return [];
         }
 
@@ -118,7 +130,7 @@ export default function TransactionCreate() {
         return [...new Set(options)]
             .filter((value) => value >= grandTotal)
             .slice(0, 5);
-    }, [grandTotal, paymentMethod]);
+    }, [grandTotal, isCashLikePayment]);
 
     const visitProductList = (nextCategoryId, nextSearchQuery) => {
         const query = new URLSearchParams();
@@ -360,6 +372,104 @@ export default function TransactionCreate() {
 
     const debounceTimers = useRef({});
 
+    const toggleCartHold = (cartId, isHeld) => {
+        router.patch(
+            `/account/carts/${cartId}/hold`,
+            { is_held: isHeld },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ["carts"],
+            },
+        );
+    };
+
+    const renderCartRow = (cart, { held = false } = {}) => (
+        <div
+            className={`pos-cart-row ${held ? "opacity-75" : ""}`}
+            key={cart.id}
+        >
+            <div className="pos-cart-main">
+                <strong>{cart.product.title}</strong>
+                {held && (
+                    <span className="badge bg-secondary ms-1">Ditahan</span>
+                )}
+                <span>
+                    {cart.ppob_cost != null ? (
+                        <>Modal {formatRupiah(cart.ppob_cost)} + Fee {formatRupiah(cart.admin_fee)}</>
+                    ) : (
+                        <>
+                            {cart.unit?.abbreviation || cart.product.unit} · {formatRupiah(cart.price)}
+                        </>
+                    )}
+                </span>
+                {cart.customer_ref && (
+                    <small className="text-muted d-block">Ref: {cart.customer_ref}</small>
+                )}
+            </div>
+
+            <div className="pos-cart-actions">
+                {!held && (
+                    <div className="pos-qty-stepper">
+                        <button
+                            type="button"
+                            onClick={() => updateCart(cart.id, cart.qty - 1)}
+                        >
+                            <i className="fas fa-minus"></i>
+                        </button>
+
+                        <input
+                            type="number"
+                            className="pos-qty-input"
+                            value={cart.qty}
+                            min="1"
+                            onChange={(e) => handleQtyChange(cart.id, e.target.value)}
+                        />
+
+                        <button
+                            type="button"
+                            onClick={() => updateCart(cart.id, cart.qty + 1)}
+                        >
+                            <i className="fas fa-plus"></i>
+                        </button>
+                    </div>
+                )}
+
+                <strong>{formatRupiah(cart.price * cart.qty)}</strong>
+
+                <div className="d-flex gap-1">
+                    {held ? (
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => toggleCartHold(cart.id, false)}
+                            title="Lanjutkan"
+                        >
+                            <i className="fas fa-play"></i>
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-warning"
+                            onClick={() => toggleCartHold(cart.id, true)}
+                            title="Tahan"
+                        >
+                            <i className="fas fa-pause"></i>
+                        </button>
+                    )}
+
+                    <button
+                        type="button"
+                        className="pos-cart-delete"
+                        onClick={() => deleteCart(cart.id)}
+                    >
+                        <i className="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
     const handleQtyChange = (cartId, rawValue) => {
         const newQty = parseInt(rawValue, 10);
 
@@ -437,7 +547,7 @@ export default function TransactionCreate() {
     const storeTransaction = (e) => {
         e.preventDefault();
 
-        if (carts.length === 0) {
+        if (activeCarts.length === 0) {
             Swal.fire({
                 title: "Error!",
                 text: "Keranjang masih kosong!",
@@ -459,7 +569,7 @@ export default function TransactionCreate() {
             return;
         }
 
-        if (paymentMethod === "cash" && cashValue < grandTotal) {
+        if (isCashLikePayment && cashValue < grandTotal) {
             Swal.fire({
                 title: "Error!",
                 text: "Uang pembayaran kurang!",
@@ -472,10 +582,9 @@ export default function TransactionCreate() {
 
         Swal.fire({
             title: "Proses Pembayaran?",
-            text:
-                paymentMethod === "cash"
-                    ? "Pastikan uang yang diterima sudah sesuai."
-                    : "Pembayaran digital akan diproses melalui Midtrans.",
+            text: isCashLikePayment
+                ? "Pastikan uang yang diterima sudah sesuai."
+                : "Pembayaran digital akan diproses melalui Midtrans.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#3085d6",
@@ -502,7 +611,7 @@ export default function TransactionCreate() {
                         customer_id: customerId,
                         discount: discountValue,
                         discount_type: discountType,
-                        cash: paymentMethod === "cash" ? cashValue : 0,
+                        cash: isCashLikePayment ? cashValue : 0,
                         payment_method: paymentMethod,
                     }),
                 });
@@ -753,89 +862,18 @@ export default function TransactionCreate() {
                                 )}
 
                                 <div className="pos-cart-list">
-                                    {carts.length > 0 ? (
-                                        carts.map((cart) => (
-                                            <div
-                                                className="pos-cart-row"
-                                                key={cart.id}
-                                            >
-                                                <div className="pos-cart-main">
-                                                    <strong>{cart.product.title}</strong>
-                                                    <span>
-                                                        {cart.ppob_cost != null ? (
-                                                            <>Modal {formatRupiah(cart.ppob_cost)} + Fee {formatRupiah(cart.admin_fee)}</>
-                                                        ) : (
-                                                            <>
-                                                                {cart.unit?.abbreviation || cart.product.unit} · {formatRupiah(cart.price)}
-                                                            </>
-                                                        )}
-                                                    </span>
-                                                    {cart.customer_ref && (
-                                                        <small className="text-muted d-block">Ref: {cart.customer_ref}</small>
-                                                    )}
+                                    {activeCarts.length > 0 || heldCarts.length > 0 ? (
+                                        <>
+                                            {activeCarts.map((cart) => renderCartRow(cart))}
+                                            {heldCarts.length > 0 && (
+                                                <div className="px-3 pt-2">
+                                                    <small className="text-muted fw-semibold">
+                                                        Item ditahan ({heldCarts.length})
+                                                    </small>
                                                 </div>
-
-                                                <div className="pos-cart-actions">
-                                                    <div className="pos-qty-stepper">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                updateCart(
-                                                                    cart.id,
-                                                                    cart.qty -
-                                                                        1,
-                                                                )
-                                                            }
-                                                        >
-                                                            <i className="fas fa-minus"></i>
-                                                        </button>
-
-                                                        <input
-                                                            type="number"
-                                                            className="pos-qty-input"
-                                                            value={cart.qty}
-                                                            min="1"
-                                                            onChange={(e) =>
-                                                                handleQtyChange(
-                                                                    cart.id,
-                                                                    e.target.value,
-                                                                )
-                                                            }
-                                                        />
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                updateCart(
-                                                                    cart.id,
-                                                                    cart.qty +
-                                                                        1,
-                                                                )
-                                                            }
-                                                        >
-                                                            <i className="fas fa-plus"></i>
-                                                        </button>
-                                                    </div>
-
-                                                    <strong>
-                                                        {formatRupiah(
-                                                            cart.price *
-                                                                cart.qty,
-                                                        )}
-                                                    </strong>
-
-                                                    <button
-                                                        type="button"
-                                                        className="pos-cart-delete"
-                                                        onClick={() =>
-                                                            deleteCart(cart.id)
-                                                        }
-                                                    >
-                                                        <i className="fas fa-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))
+                                            )}
+                                            {heldCarts.map((cart) => renderCartRow(cart, { held: true }))}
+                                        </>
                                     ) : (
                                         <div className="pos-empty-cart">
                                             <i className="fas fa-shopping-basket"></i>
@@ -901,6 +939,42 @@ export default function TransactionCreate() {
                                                 htmlFor="payment-digital"
                                             >
                                                 Digital
+                                            </label>
+
+                                            <input
+                                                type="radio"
+                                                className="btn-check"
+                                                name="payment_method"
+                                                id="payment-qris"
+                                                value="qris"
+                                                checked={paymentMethod === "qris"}
+                                                onChange={(e) =>
+                                                    setPaymentMethod(e.target.value)
+                                                }
+                                            />
+                                            <label
+                                                className="pos-method-option"
+                                                htmlFor="payment-qris"
+                                            >
+                                                QRIS
+                                            </label>
+
+                                            <input
+                                                type="radio"
+                                                className="btn-check"
+                                                name="payment_method"
+                                                id="payment-transfer"
+                                                value="transfer"
+                                                checked={paymentMethod === "transfer"}
+                                                onChange={(e) =>
+                                                    setPaymentMethod(e.target.value)
+                                                }
+                                            />
+                                            <label
+                                                className="pos-method-option"
+                                                htmlFor="payment-transfer"
+                                            >
+                                                Transfer
                                             </label>
                                         </div>
                                     </div>
@@ -1026,7 +1100,7 @@ export default function TransactionCreate() {
                                     <div className="row g-2 mb-3">
                                         <div
                                             className={
-                                                paymentMethod === "cash"
+                                                isCashLikePayment
                                                     ? "col-5"
                                                     : "col-12"
                                             }
@@ -1058,10 +1132,14 @@ export default function TransactionCreate() {
                                             </div>
                                         </div>
 
-                                        {paymentMethod === "cash" && (
+                                        {isCashLikePayment && (
                                             <div className="col-7">
                                                 <label className="form-label">
-                                                    Uang Tunai
+                                                    {paymentMethod === "cash"
+                                                        ? "Uang Tunai"
+                                                        : paymentMethod === "qris"
+                                                          ? "Nominal QRIS"
+                                                          : "Nominal Transfer"}
                                                 </label>
                                                 <input
                                                     type="number"
@@ -1135,12 +1213,12 @@ export default function TransactionCreate() {
 
                                         <div>
                                             <span>
-                                                {paymentMethod === "cash"
+                                                {isCashLikePayment
                                                     ? "Kembalian"
                                                     : "Status"}
                                             </span>
                                             <strong className="text-success">
-                                                {paymentMethod === "cash"
+                                                {isCashLikePayment
                                                     ? formatRupiah(change)
                                                     : "Menunggu pembayaran"}
                                             </strong>
@@ -1150,7 +1228,7 @@ export default function TransactionCreate() {
                                     <button
                                         type="submit"
                                         className="btn btn-success btn-lg w-100 pos-pay-button"
-                                        disabled={carts.length === 0}
+                                        disabled={activeCarts.length === 0}
                                     >
                                         <i className="fas fa-check-circle me-2"></i>
                                         Proses Pembayaran

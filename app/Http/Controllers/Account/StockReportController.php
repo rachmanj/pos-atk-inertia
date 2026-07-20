@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Exports\StockReportExport;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StockReportController extends Controller
 {
@@ -219,5 +221,32 @@ class StockReportController extends Controller
         }
 
         return class_basename($referenceType);
+    }
+
+    public function export(Request $request)
+    {
+        $user = $request->user();
+
+        abort_unless($user->can('reports.export'), 403);
+
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'category_id' => 'nullable|exists:categories,id',
+            'stock_status' => 'nullable|in:available,low,out,dead_stock',
+            'low_threshold' => 'nullable|integer|min:1|max:1000',
+        ]);
+
+        $filters = [
+            'q' => $request->q,
+            'category_id' => $request->category_id,
+            'stock_status' => $request->stock_status,
+            'low_threshold' => $request->low_threshold ?: 10,
+            'dead_stock_days' => $request->dead_stock_days ?: 90,
+        ];
+
+        return Excel::download(
+            new StockReportExport($filters),
+            'laporan-stok-' . now()->format('Ymd_His') . '.xlsx'
+        );
     }
 }

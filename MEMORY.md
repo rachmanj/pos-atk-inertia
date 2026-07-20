@@ -112,3 +112,9 @@
 **Solution**: `app.blade.php` was loading FA 4.7 **after** FA 5.15.4, overriding the FA5 font. Removed FA4; load FA5 `all.min.css` + `v4-shims.min.css` in blade. All React icons migrated from legacy `fa fa-*` to FA5 `fas fa-*` / `far fa-*` (outline icons like file-excel, clock).  
 **Key Learning**: Do not mix FA4 and FA5. Icons like `fa-store` and `fa-shield-alt` are FA5-only — they break if FA4 CSS loads last.
 
+### POS-017 SQLite tanpa sudo (2026-07-20) ✅ COMPLETE
+
+**Challenge/Decision**: `php artisan migrate` gagal `could not find driver` karena `php8.5-sqlite3` belum terpasang dan sudo tidak tersedia di environment agent.  
+**Solution**: Paket `.so` diunduh via `apt-get download php8.5-sqlite3` ke `.php-ext/` (gitignored). Wrapper `./pos_kasir` menjalankan artisan dengan extension flags. PHPUnit: `php -d extension=pdo -d extension=$PWD/.php-ext/sqlite3.so -d extension=$PWD/.php-ext/pdo_sqlite.so vendor/bin/phpunit`. Produksi/dev permanen: `sudo apt-get install -y php8.5-sqlite3`.  
+**Key Learning**: `.env` default SQLite (`database/database.sqlite`); jalankan `./pos_kasir migrate --seed` setelah clone jika extension sistem belum ada.
+

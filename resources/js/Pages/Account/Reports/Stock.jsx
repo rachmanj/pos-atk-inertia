@@ -1,5 +1,6 @@
 import LayoutAccount from "../../../Layouts/Account";
 import Pagination from "../../../Shared/Pagination";
+import DatePreset from "../../../Shared/DatePreset";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
@@ -70,8 +71,21 @@ export default function StockReport() {
         setCategoryId("");
         setStockStatus("");
         setLowThreshold(10);
+        setDeadStockDays(90);
 
         router.get("/account/reports/stock");
+    };
+
+    const handleExport = () => {
+        const params = new URLSearchParams({
+            q: search,
+            category_id: categoryId,
+            stock_status: stockStatus,
+            low_threshold: lowThreshold,
+            dead_stock_days: deadStockDays,
+        });
+
+        window.location.href = `/account/reports/stock/export?${params.toString()}`;
     };
 
     const formatDate = (value) => {
@@ -98,6 +112,16 @@ export default function StockReport() {
                                     <i className="fas fa-boxes me-2"></i>
                                     LAPORAN STOK
                                 </h5>
+                                {hasAnyPermission(["reports.export"], permissions) && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-success btn-sm shadow-sm"
+                                        onClick={handleExport}
+                                    >
+                                        <i className="far fa-file-excel me-1"></i>
+                                        Export Excel
+                                    </button>
+                                )}
                             </div>
 
                             <div className="card-body">
@@ -182,6 +206,21 @@ export default function StockReport() {
                                             />
                                         </div>
 
+                                        <div className="col-lg-2">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                className="form-control border-0 shadow-sm"
+                                                value={deadStockDays}
+                                                onChange={(e) =>
+                                                    setDeadStockDays(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Hari dead stock"
+                                            />
+                                        </div>
+
                                         <div className="col-lg-2 d-flex gap-2">
                                             <button
                                                 type="submit"
@@ -199,6 +238,22 @@ export default function StockReport() {
                                                 <i className="fas fa-sync-alt me-2"></i>
                                                 Reset
                                             </button>
+                                        </div>
+
+                                        <div className="col-12">
+                                            <DatePreset
+                                                onApply={(start, end) => {
+                                                    router.get("/account/reports/stock", {
+                                                        q: search,
+                                                        category_id: categoryId,
+                                                        stock_status: stockStatus,
+                                                        low_threshold: lowThreshold,
+                                                        dead_stock_days: deadStockDays,
+                                                        start_date: start,
+                                                        end_date: end,
+                                                    });
+                                                }}
+                                            />
                                         </div>
                                     </div>
                                 </form>

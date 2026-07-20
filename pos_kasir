@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EXT_DIR="$ROOT/.php-ext"
+
+ensure_sqlite_ext() {
+    if [[ -f "$EXT_DIR/pdo_sqlite.so" && -f "$EXT_DIR/sqlite3.so" ]]; then
+        return 0
+    fi
+
+    mkdir -p "$EXT_DIR"
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "$tmp_dir"' EXIT
+
+    if ! command -v apt-get >/dev/null 2>&1; then
+        echo "php-sqlite3 belum tersedia. Install dengan: sudo apt-get install -y php8.5-sqlite3" >&2
+        exit 1
+    fi
+
+    (cd "$tmp_dir" && apt-get download php8.5-sqlite3)
+    dpkg-deb -x "$tmp_dir"/php8.5-sqlite3_*.deb "$tmp_dir/extracted"
+    cp "$tmp_dir/extracted/usr/lib/php/20250925/pdo_sqlite.so" "$EXT_DIR/"
+    cp "$tmp_dir/extracted/usr/lib/php/20250925/sqlite3.so" "$EXT_DIR/"
+}
+
+ensure_sqlite_ext
+
+exec php \
+    -d extension=pdo \
+    -d "extension=$EXT_DIR/sqlite3.so" \
+    -d "extension=$EXT_DIR/pdo_sqlite.so" \
+    "$ROOT/artisan" "$@"

@@ -62,7 +62,8 @@ class SalesReportController extends Controller
 
         $summaryQuery = clone $baseQuery;
         $totalSales = (int) (clone $summaryQuery)->sum('grand_total');
-        $totalReturns = $this->calculateApprovedReturns($request, $user, $startDate, $endDate);
+        $returnsByMethod = $this->calculateApprovedReturnsGrouped($request, $user, $startDate, $endDate);
+        $totalReturns = $returnsByMethod['total'];
         $netSales = max(0, $totalSales - $totalReturns);
         $totalTransactions = (int) (clone $summaryQuery)->count();
         $totalItems = (int) (clone $summaryQuery)
@@ -111,8 +112,8 @@ class SalesReportController extends Controller
                     ? (int) round($netSales / $totalTransactions)
                     : 0,
                 'total_items' => $totalItems,
-                'cash_sales' => max(0, $cashGrossSales - $this->calculateApprovedReturns($request, $user, $startDate, $endDate, 'cash')),
-                'digital_sales' => max(0, $digitalGrossSales - $this->calculateApprovedReturns($request, $user, $startDate, $endDate, 'digital')),
+                'cash_sales' => max(0, $cashGrossSales - $returnsByMethod['cash']),
+                'digital_sales' => max(0, $digitalGrossSales - $returnsByMethod['digital']),
             ],
             'filters' => [
                 'q' => $request->q ?? '',
@@ -167,6 +168,42 @@ class SalesReportController extends Controller
                         });
                 });
             });
+    }
+
+    protected function calculateApprovedReturnsGrouped(
+        Request $request,
+        User $user,
+        Carbon $startDate,
+        Carbon $endDate,
+    ): array {
+        $filteredPaymentMethod = filled($request->payment_method) ? $request->payment_method : null;
+
+        $rows = ReturnTransaction::query()
+            ->join('transactions', 'transactions.id', '=', 'return_transactions.transaction_id')
+            ->where('return_transactions.status', 'approved')
+            ->whereBetween('return_transactions.updated_at', [$startDate, $endDate])
+            ->where('transactions.payment_status', 'paid')
+            ->where('transactions.status', '!=', 'voided')
+            ->when(!$user->isAdminUser(), function (Builder $query) use ($user) {
+                $query->where('transactions.cashier_id', $user->id);
+            })
+            ->when($user->isAdminUser() && filled($request->cashier_id), function (Builder $query) use ($request) {
+                $query->where('transactions.cashier_id', $request->cashier_id);
+            })
+            ->when(filled($filteredPaymentMethod), function (Builder $query) use ($filteredPaymentMethod) {
+                $query->where('transactions.payment_method', $filteredPaymentMethod);
+            })
+            ->select('transactions.payment_method', DB::raw('SUM(return_transactions.total_refund) as total_refund'))
+            ->groupBy('transactions.payment_method')
+            ->pluck('total_refund', 'payment_method');
+
+        return [
+            'total' => (int) $rows->sum(),
+            'cash' => (int) ($rows['cash'] ?? 0),
+            'digital' => (int) ($rows['digital'] ?? 0),
+            'qris' => (int) ($rows['qris'] ?? 0),
+            'transfer' => (int) ($rows['transfer'] ?? 0),
+        ];
     }
 
     protected function calculateApprovedReturns(

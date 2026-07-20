@@ -84,6 +84,21 @@ class CartController extends Controller
         return back();
     }
 
+    public function hold(Request $request, Cart $cart)
+    {
+        $this->authorizeCartOwner($request, $cart);
+
+        $request->validate([
+            'is_held' => 'required|boolean',
+        ]);
+
+        $cart->update([
+            'is_held' => $request->boolean('is_held'),
+        ]);
+
+        return back();
+    }
+
     protected function storePhysicalCart(Request $request, $user, Product $product)
     {
         if ((int) $product->stock < 1) {
@@ -107,6 +122,7 @@ class CartController extends Controller
             ->where('product_id', $product->id)
             ->where('unit_id', $productUnit->unit_id)
             ->whereNull('ppob_cost')
+            ->where('is_held', false)
             ->first();
 
         $nextQty = (int) ($cart?->qty ?? 0) + 1;
@@ -157,6 +173,7 @@ class CartController extends Controller
             ->where('product_id', $product->id)
             ->where('unit_id', $productUnit->unit_id)
             ->whereNull('ppob_cost')
+            ->where('is_held', false)
             ->first();
 
         $nextQty = (int) ($cart?->qty ?? 0) + 1;

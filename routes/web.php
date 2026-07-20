@@ -218,6 +218,10 @@ Route::middleware(['auth'])
             ->middleware('permission:transactions.create')
             ->name('carts.destroy');
 
+        Route::patch('/carts/{cart}/hold', [CartController::class, 'hold'])
+            ->middleware('permission:transactions.create')
+            ->name('carts.hold');
+
         Route::get('/transactions', [TransactionHistoryController::class, 'index'])
             ->middleware('permission:transactions.index')
             ->name('transactions.index');

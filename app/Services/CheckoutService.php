@@ -31,9 +31,12 @@ class CheckoutService
         }
 
         return DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $discountType, $activeShift) {
+            $isImmediatePayment = in_array($paymentMethod, ['cash', 'qris', 'transfer'], true);
+
             $carts = Cart::query()
                 ->with(['product.productUnits', 'product.components.componentProduct'])
                 ->where('cashier_id', $user->id)
+                ->where('is_held', false)
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
@@ -111,10 +114,15 @@ class CheckoutService
                 'discount' => $discountAmount,
                 'grand_total' => $grandTotal,
                 'payment_method' => $paymentMethod,
-                'payment_channel' => $paymentMethod === 'cash' ? 'cash' : 'midtrans',
-                'payment_status' => $paymentMethod === 'cash' ? 'paid' : 'pending',
-                'paid_at' => $paymentMethod === 'cash' ? now() : null,
-                'status' => $paymentMethod === 'cash' ? 'completed' : 'pending',
+                'payment_channel' => match ($paymentMethod) {
+                    'cash' => 'cash',
+                    'qris' => 'qris',
+                    'transfer' => 'transfer',
+                    default => 'midtrans',
+                },
+                'payment_status' => $isImmediatePayment ? 'paid' : 'pending',
+                'paid_at' => $isImmediatePayment ? now() : null,
+                'status' => $isImmediatePayment ? 'completed' : 'pending',
                 'note' => $data['note'] ?? null,
             ]);
 
@@ -282,7 +290,7 @@ class CheckoutService
                 ]);
             }
 
-            if ($paymentMethod === 'cash') {
+            if ($isImmediatePayment) {
                 Profit::create([
                     'transaction_id' => $transaction->id,
                     'total_revenue' => $grandTotal,
@@ -291,7 +299,9 @@ class CheckoutService
                 ]);
             }
 
-            Cart::whereIn('id', $carts->pluck('id'))->delete();
+            Cart::query()
+                ->whereIn('id', $carts->pluck('id'))
+                ->delete();
 
             return $transaction;
         });

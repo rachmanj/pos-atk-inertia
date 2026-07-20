@@ -57,6 +57,9 @@ class ProfitReportController extends Controller
         $totalCost = (int) (clone $summaryQuery)->sum('total_cost');
         $grossProfit = (int) (clone $summaryQuery)->sum('profit_amount');
         $totalExpense = $this->calculateExpenses($request, $user, $startDate, $endDate);
+        $totalTransactions = (int) (clone $summaryQuery)->count();
+        $netSales = $totalRevenue;
+        $netProfit = $grossProfit - $totalExpense;
 
         return Inertia::render('Account/Reports/Profit', [
             'profits' => $profits,
@@ -65,10 +68,17 @@ class ProfitReportController extends Controller
                 'total_cost' => $totalCost,
                 'gross_profit' => $grossProfit,
                 'total_expense' => $totalExpense,
-                'net_profit' => $grossProfit - $totalExpense,
-                'total_transactions' => (int) (clone $summaryQuery)->count(),
+                'net_profit' => $netProfit,
+                'net_sales' => $netSales,
+                'total_transactions' => $totalTransactions,
+                'average_sale' => $totalTransactions > 0
+                    ? (int) round($netSales / $totalTransactions)
+                    : 0,
                 'profit_margin' => $totalRevenue > 0
                     ? round(($grossProfit / $totalRevenue) * 100, 2)
+                    : 0,
+                'net_margin_pct' => $netSales > 0
+                    ? round(($netProfit / $netSales) * 100, 2)
                     : 0,
             ],
             'filters' => [

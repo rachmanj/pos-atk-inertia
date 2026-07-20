@@ -195,6 +195,9 @@ export default function ProfitReport() {
                                             <small className="text-muted">
                                                 Transaksi:{" "}
                                                 {summary.total_transactions}
+                                                {summary.average_sale > 0 && (
+                                                    <> · Rata-rata: {formatRupiah(summary.average_sale)}</>
+                                                )}
                                             </small>
                                         </Link>
                                     </div>
@@ -211,6 +214,9 @@ export default function ProfitReport() {
                                             </h6>
                                             <small className="text-muted">
                                                 Margin: {summary.profit_margin}%
+                                                {summary.net_margin_pct != null && (
+                                                    <> · Net: {summary.net_margin_pct}%</>
+                                                )}
                                             </small>
                                         </div>
                                     </div>
