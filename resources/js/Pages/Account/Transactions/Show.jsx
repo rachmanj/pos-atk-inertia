@@ -135,14 +135,26 @@ export default function TransactionShow() {
             title: "Void transaksi?",
             text: "Transaksi akan dibatalkan, stok produk dikembalikan, dan profit transaksi dinolkan.",
             icon: "warning",
+            input: "textarea",
+            inputLabel: "Alasan pembatalan (wajib)",
+            inputPlaceholder: "Tulis alasan void transaksi...",
+            inputAttributes: { required: "true" },
             showCancelButton: true,
             confirmButtonText: "Ya, void transaksi",
             cancelButtonText: "Batal",
             confirmButtonColor: "#dc3545",
             cancelButtonColor: "#6c757d",
+            inputValidator: (value) => {
+                if (!value || !value.trim()) {
+                    return "Alasan void wajib diisi!";
+                }
+                return null;
+            },
         }).then((result) => {
             if (result.isConfirmed) {
-                router.put(`/account/transactions/${transaction.invoice}/void`);
+                router.put(`/account/transactions/${transaction.invoice}/void`, {
+                    void_reason: result.value.trim(),
+                });
             }
         });
     };

@@ -23,13 +23,14 @@ class CheckoutService
     {
         $paymentMethod = $data['payment_method'];
         $discount = (int) ($data['discount'] ?? 0);
+        $discountType = $data['discount_type'] ?? 'nominal';
         $activeShift = $user->activeCashierShift;
 
         if (!$activeShift) {
             throw new DomainException('Buka shift kasir terlebih dahulu sebelum memproses transaksi.');
         }
 
-        return DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $activeShift) {
+        return DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $discountType, $activeShift) {
             $carts = Cart::query()
                 ->with(['product.productUnits', 'product.components.componentProduct'])
                 ->where('cashier_id', $user->id)
@@ -81,11 +82,17 @@ class CheckoutService
 
             $subtotal = (int) $carts->sum(fn ($cart) => (int) $cart->price * (int) $cart->qty);
 
-            if ($discount > $subtotal) {
+            // Hitung diskon: nominal atau persen
+            $discountAmount = $discount;
+            if ($discountType === 'percent') {
+                $discountAmount = (int) round($subtotal * $discount / 100);
+            }
+
+            if ($discountAmount > $subtotal) {
                 throw new DomainException('Diskon tidak boleh melebihi subtotal belanja.');
             }
 
-            $grandTotal = $subtotal - $discount;
+            $grandTotal = $subtotal - $discountAmount;
             $cash = $paymentMethod === 'cash' ? (int) ($data['cash'] ?? 0) : 0;
 
             if ($paymentMethod === 'cash' && $cash < $grandTotal) {
@@ -101,7 +108,7 @@ class CheckoutService
                 'invoice' => $invoice,
                 'cash' => $cash,
                 'change' => $change,
-                'discount' => $discount,
+                'discount' => $discountAmount,
                 'grand_total' => $grandTotal,
                 'payment_method' => $paymentMethod,
                 'payment_channel' => $paymentMethod === 'cash' ? 'cash' : 'midtrans',
@@ -290,9 +297,9 @@ class CheckoutService
         });
     }
 
-    public function void(User $user, string $invoice): Transaction
+    public function void(User $user, string $invoice, ?string $voidReason = null): Transaction
     {
-        return DB::transaction(function () use ($user, $invoice) {
+        return DB::transaction(function () use ($user, $invoice, $voidReason) {
             $transaction = Transaction::with(['details.product'])
                 ->where('invoice', $invoice)
                 ->when(!$user->isAdminUser(), function ($query) use ($user) {
@@ -400,6 +407,7 @@ class CheckoutService
 
             $transaction->update([
                 'status' => 'voided',
+                'void_reason' => $voidReason,
                 'voided_by' => $user->id,
                 'voided_at' => now(),
             ]);

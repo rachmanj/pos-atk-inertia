@@ -25,6 +25,7 @@ export default function TransactionCreate() {
     const [customerId, setCustomerId] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [discount, setDiscount] = useState(0);
+    const [discountType, setDiscountType] = useState("nominal");
     const [cash, setCash] = useState("");
     const [ppobModalProduct, setPpobModalProduct] = useState(null);
     const [unitModalProduct, setUnitModalProduct] = useState(null);
@@ -61,7 +62,10 @@ export default function TransactionCreate() {
     );
 
     const discountValue = Number(discount || 0);
-    const grandTotal = Math.max(subtotal - discountValue, 0);
+    const discountAmount = discountType === "percent"
+        ? Math.round(subtotal * discountValue / 100)
+        : discountValue;
+    const grandTotal = Math.max(subtotal - discountAmount, 0);
     const cashValue = Number(cash || 0);
     const change =
         paymentMethod === "cash" && cashValue >= grandTotal
@@ -78,18 +82,20 @@ export default function TransactionCreate() {
             return [];
         }
 
-        return [
-            ...new Set(
-                [
-                    grandTotal,
-                    Math.ceil(grandTotal / 10000) * 10000,
-                    Math.ceil(grandTotal / 50000) * 50000,
-                    50000,
-                    100000,
-                    200000,
-                ].filter((value) => value >= grandTotal),
-            ),
-        ].slice(0, 4);
+        const roundTo = (n, to) => Math.ceil(n / to) * to;
+        const options = [
+            grandTotal,
+            roundTo(grandTotal, 1000),
+            roundTo(grandTotal, 2000),
+            roundTo(grandTotal, 5000),
+            roundTo(grandTotal, 10000),
+            roundTo(grandTotal, 20000),
+            roundTo(grandTotal, 50000),
+            roundTo(grandTotal, 100000),
+        ];
+        return [...new Set(options)]
+            .filter((value) => value >= grandTotal)
+            .slice(0, 5);
     }, [grandTotal, paymentMethod]);
 
     const visitProductList = (nextCategoryId, nextSearchQuery) => {
@@ -169,7 +175,7 @@ export default function TransactionCreate() {
         router.post("/account/carts", {
             product_id: product.id,
             unit_id: units[0]?.unit_id || null,
-        }, { preserveState: true, preserveScroll: true });
+        }, { preserveState: true, preserveScroll: true, only: ["carts"] });
     };
 
     const submitPpobCart = (e) => {
@@ -182,6 +188,7 @@ export default function TransactionCreate() {
         }, {
             preserveState: true,
             preserveScroll: true,
+            only: ["carts"],
             onSuccess: () => setPpobModalProduct(null),
         });
     };
@@ -194,6 +201,7 @@ export default function TransactionCreate() {
         }, {
             preserveState: true,
             preserveScroll: true,
+            only: ["carts"],
             onSuccess: () => setUnitModalProduct(null),
         });
     };
@@ -210,6 +218,7 @@ export default function TransactionCreate() {
             {
                 preserveState: true,
                 preserveScroll: true,
+                only: ["carts"],
             },
         );
     };
@@ -218,6 +227,7 @@ export default function TransactionCreate() {
         router.delete(`/account/carts/${cartId}`, {
             preserveState: true,
             preserveScroll: true,
+            only: ["carts"],
         });
     };
 
@@ -236,6 +246,28 @@ export default function TransactionCreate() {
             updateCart(cartId, newQty);
         }, 500);
     };
+
+    // Keyboard shortcuts: F2 = bayar, F3 = fokus search, Esc = tutup modal
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "F2" || e.key === "f2") {
+                e.preventDefault();
+                storeTransaction(e);
+            } else if (e.key === "F3" || e.key === "f3") {
+                e.preventDefault();
+                document.querySelector(".pos-search-bar input")?.focus();
+            } else if (e.key === "Escape") {
+                if (ppobModalProduct) {
+                    setPpobModalProduct(null);
+                } else if (unitModalProduct) {
+                    setUnitModalProduct(null);
+                }
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [ppobModalProduct, unitModalProduct, carts, paymentMethod, discountValue, discountType, cashValue, customerId]);
 
     const openMidtransPopup = (snapToken, invoice) => {
         if (!window.snap) {
@@ -289,7 +321,7 @@ export default function TransactionCreate() {
             return;
         }
 
-        if (discountValue > subtotal) {
+        if (discountAmount > subtotal) {
             Swal.fire({
                 title: "Error!",
                 text: "Diskon tidak boleh melebihi subtotal.",
@@ -342,6 +374,7 @@ export default function TransactionCreate() {
                     body: JSON.stringify({
                         customer_id: customerId,
                         discount: discountValue,
+                        discount_type: discountType,
                         cash: paymentMethod === "cash" ? cashValue : 0,
                         payment_method: paymentMethod,
                     }),
@@ -780,15 +813,28 @@ export default function TransactionCreate() {
                                             <label className="form-label">
                                                 Diskon
                                             </label>
-                                            <input
-                                                type="number"
-                                                className="form-control"
-                                                value={discount}
-                                                onChange={(e) =>
-                                                    setDiscount(e.target.value)
-                                                }
-                                                min="0"
-                                            />
+                                            <div className="input-group">
+                                                <input
+                                                    type="number"
+                                                    className="form-control"
+                                                    value={discount}
+                                                    onChange={(e) =>
+                                                        setDiscount(e.target.value)
+                                                    }
+                                                    min="0"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className={`btn btn-outline-secondary ${discountType === "percent" ? "active" : ""}`}
+                                                    style={{ width: "4rem" }}
+                                                    onClick={() => setDiscountType(
+                                                        discountType === "nominal" ? "percent" : "nominal"
+                                                    )}
+                                                    title={discountType === "nominal" ? "Ubah ke persen" : "Ubah ke nominal"}
+                                                >
+                                                    {discountType === "nominal" ? "Rp" : "%"}
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {paymentMethod === "cash" && (
@@ -855,7 +901,7 @@ export default function TransactionCreate() {
                                         <div>
                                             <span>Diskon</span>
                                             <strong className="text-danger">
-                                                -{formatRupiah(discountValue)}
+                                                -{formatRupiah(discountAmount)}
                                             </strong>
                                         </div>
 

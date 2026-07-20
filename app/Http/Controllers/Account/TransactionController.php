@@ -167,7 +167,7 @@ class TransactionController extends Controller
         $user = $request->user();
 
         try {
-            $this->checkoutService->void($user, $invoice);
+            $this->checkoutService->void($user, $invoice, $request->void_reason);
 
             return redirect()
                 ->route('account.transactions.show', $invoice)
