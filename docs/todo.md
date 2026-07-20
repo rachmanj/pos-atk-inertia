@@ -1,11 +1,20 @@
 **Purpose**: Track current work and immediate priorities  
-**Last Updated**: 2026-07-14
+**Last Updated**: 2026-07-20
 
 ---
 
 # Current Tasks
 
 ## Working On Now
+
+### Integrasi Telegram Bot (PPOB)
+
+**Status**: Rencana teknis selesai — menunggu keputusan open questions  
+**Plan**: `docs/plan-telegram-integration.md`  
+**Goal**: Kasir kirim perintah teks (contoh: `beli meterai 100 lembar di Kantor Pos sebesar 1jt`) → parse → transaksi PPOB via `CheckoutService` → balasan konfirmasi.  
+**Blockers / keputusan dulu**: total vs harga per unit (#1), konfirmasi sebelum commit (#3), refactor `checkoutFromLines` vs hold-cart (#7).
+
+---
 
 ### Quick menu search / navigation (command palette)
 
