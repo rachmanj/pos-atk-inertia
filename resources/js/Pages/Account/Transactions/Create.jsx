@@ -9,7 +9,6 @@ export default function TransactionCreate() {
         products = { data: [], links: [] },
         carts = [],
         categories = [],
-        customers = [],
         ppobSettings = { ppob_admin_fee: 2000 },
         ppobAccount = null,
         errors = {},
@@ -34,6 +33,18 @@ export default function TransactionCreate() {
     const [ppobCost, setPpobCost] = useState("");
     const [adminFee, setAdminFee] = useState(String(ppobSettings.ppob_admin_fee || 2000));
 
+    // Customer typeahead
+    const [customerSearch, setCustomerSearch] = useState("");
+    const [customerResults, setCustomerResults] = useState([]);
+    const [customerLoading, setCustomerLoading] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+    const [showQuickCreateModal, setShowQuickCreateModal] = useState(false);
+    const [quickCustomerName, setQuickCustomerName] = useState("");
+    const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
+    const customerSearchTimer = useRef(null);
+    const customerDropdownRef = useRef(null);
+
     // Auto-add barcode scan: if search yields exactly 1 product with exact barcode match
     useEffect(() => {
         const q = params.get("q");
@@ -50,6 +61,17 @@ export default function TransactionCreate() {
             { preserveState: true, preserveScroll: true, replace: true },
         );
     }, [products.data]);
+
+    // Close customer dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target)) {
+                setShowCustomerDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const subtotal = useMemo(
         () =>
@@ -130,6 +152,111 @@ export default function TransactionCreate() {
         setCategoryId(id);
 
         visitProductList(id, searchQuery);
+    };
+
+    const handleCustomerSearch = (value) => {
+        setCustomerSearch(value);
+
+        if (customerSearchTimer.current) {
+            clearTimeout(customerSearchTimer.current);
+        }
+
+        if (!value || value.trim().length < 1) {
+            setCustomerResults([]);
+            setShowCustomerDropdown(false);
+            return;
+        }
+
+        customerSearchTimer.current = setTimeout(async () => {
+            setCustomerLoading(true);
+            try {
+                const response = await fetch(
+                    `/account/customers/search?q=${encodeURIComponent(value.trim())}`,
+                    {
+                        headers: {
+                            Accept: "application/json",
+                            "X-CSRF-TOKEN":
+                                document
+                                    .querySelector('meta[name="csrf-token"]')
+                                    ?.getAttribute("content") || "",
+                        },
+                    },
+                );
+                const data = await response.json();
+                setCustomerResults(data);
+                setShowCustomerDropdown(true);
+            } catch {
+                setCustomerResults([]);
+            } finally {
+                setCustomerLoading(false);
+            }
+        }, 300);
+    };
+
+    const selectCustomer = (customer) => {
+        setSelectedCustomer(customer);
+        setCustomerId(String(customer.id));
+        setCustomerSearch(customer.name);
+        setShowCustomerDropdown(false);
+    };
+
+    const clearCustomer = () => {
+        setSelectedCustomer(null);
+        setCustomerId("");
+        setCustomerSearch("");
+        setCustomerResults([]);
+    };
+
+    const submitQuickCreateCustomer = async (e) => {
+        e.preventDefault();
+
+        if (!quickCustomerName.trim()) return;
+
+        try {
+            const response = await fetch("/account/customers", {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN":
+                        document
+                            .querySelector('meta[name="csrf-token"]')
+                            ?.getAttribute("content") || "",
+                },
+                body: JSON.stringify({
+                    name: quickCustomerName.trim(),
+                    no_telp: quickCustomerPhone.trim() || null,
+                }),
+            });
+
+            if (response.ok && response.redirected) {
+                // Inertia redirect; extract customer from session or re-fetch
+                const searchResponse = await fetch(
+                    `/account/customers/search?q=${encodeURIComponent(quickCustomerName.trim())}`,
+                    {
+                        headers: {
+                            Accept: "application/json",
+                            "X-CSRF-TOKEN":
+                                document
+                                    .querySelector('meta[name="csrf-token"]')
+                                    ?.getAttribute("content") || "",
+                        },
+                    },
+                );
+                const customers = await searchResponse.json();
+                if (customers.length > 0) {
+                    selectCustomer(customers[0]);
+                }
+                setShowQuickCreateModal(false);
+                setQuickCustomerName("");
+                setQuickCustomerPhone("");
+            } else {
+                const data = await response.json().catch(() => ({}));
+                Swal.fire("Error!", data.message || "Gagal menambah pelanggan.", "error");
+            }
+        } catch {
+            Swal.fire("Error!", "Gagal menambah pelanggan.", "error");
+        }
     };
 
     const serviceComponentBlocked = (product) => {
@@ -778,28 +905,122 @@ export default function TransactionCreate() {
                                         </div>
                                     </div>
 
-                                    <div className="mb-3">
+                                    <div className="mb-3" ref={customerDropdownRef}>
                                         <label className="form-label">
                                             Pelanggan
                                         </label>
-                                        <select
-                                            className="form-select"
-                                            value={customerId}
-                                            onChange={(e) =>
-                                                setCustomerId(e.target.value)
-                                            }
-                                        >
-                                            <option value="">Umum</option>
-                                            {customers.map((customer) => (
-                                                <option
-                                                    value={customer.id}
-                                                    key={customer.id}
-                                                >
-                                                    {customer.name} -{" "}
-                                                    {customer.no_telp}
-                                                </option>
-                                            ))}
-                                        </select>
+
+                                        <div className="input-group">
+                                            {selectedCustomer ? (
+                                                <>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={selectedCustomer.name}
+                                                        readOnly
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-secondary"
+                                                        onClick={clearCustomer}
+                                                        title="Hapus pelanggan"
+                                                    >
+                                                        <i className="fas fa-times"></i>
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="Cari nama atau No. HP..."
+                                                    value={customerSearch}
+                                                    onChange={(e) =>
+                                                        handleCustomerSearch(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    onFocus={() => {
+                                                        if (
+                                                            customerResults.length > 0
+                                                        ) {
+                                                            setShowCustomerDropdown(true);
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-primary"
+                                                onClick={() =>
+                                                    setShowQuickCreateModal(true)
+                                                }
+                                                title="Tambah Pelanggan Cepat"
+                                            >
+                                                <i className="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+
+                                        {showCustomerDropdown &&
+                                            customerResults.length > 0 && (
+                                                <ul className="pos-customer-dropdown list-group mt-1">
+                                                    <li className="list-group-item list-group-item-light small">
+                                                        <em>Umum</em>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-link btn-sm float-end"
+                                                            onClick={clearCustomer}
+                                                        >
+                                                            Pilih
+                                                        </button>
+                                                    </li>
+                                                    {customerResults.map((c) => (
+                                                        <li
+                                                            key={c.id}
+                                                            className="list-group-item list-group-item-action"
+                                                            style={{ cursor: "pointer" }}
+                                                            onClick={() =>
+                                                                selectCustomer(c)
+                                                            }
+                                                        >
+                                                            <strong>{c.name}</strong>
+                                                            {c.no_telp && (
+                                                                <small className="d-block text-muted">
+                                                                    {c.no_telp}
+                                                                </small>
+                                                            )}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+
+                                        {showCustomerDropdown &&
+                                            customerResults.length === 0 &&
+                                            !customerLoading &&
+                                            customerSearch.trim().length > 0 && (
+                                                <div className="list-group mt-1">
+                                                    <div className="list-group-item text-muted small">
+                                                        Tidak ditemukan.{" "}
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-link btn-sm p-0"
+                                                            onClick={() =>
+                                                                setShowQuickCreateModal(
+                                                                    true,
+                                                                )
+                                                            }
+                                                        >
+                                                            Tambah baru?
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                        {customerLoading && (
+                                            <div className="text-muted small mt-1">
+                                                Mencari...
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="row g-2 mb-3">
@@ -1004,6 +1225,47 @@ export default function TransactionCreate() {
                         </div>
                     </div>
                 )}
+            {showQuickCreateModal && (
+                    <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+                        <div className="modal-dialog">
+                            <div className="modal-content">
+                                <form onSubmit={submitQuickCreateCustomer}>
+                                    <div className="modal-header">
+                                        <h5 className="modal-title">Tambah Pelanggan Cepat</h5>
+                                        <button type="button" className="btn-close" onClick={() => { setShowQuickCreateModal(false); setQuickCustomerName(""); setQuickCustomerPhone(""); }}></button>
+                                    </div>
+                                    <div className="modal-body">
+                                        <div className="mb-3">
+                                            <label className="form-label">Nama *</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={quickCustomerName}
+                                                onChange={(e) => setQuickCustomerName(e.target.value)}
+                                                required
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="mb-3">
+                                            <label className="form-label">No. HP (opsional)</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={quickCustomerPhone}
+                                                onChange={(e) => setQuickCustomerPhone(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => { setShowQuickCreateModal(false); setQuickCustomerName(""); setQuickCustomerPhone(""); }}>Batal</button>
+                                        <button type="submit" className="btn btn-success">Simpan & Pilih</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
             </LayoutAccount>
         </>
     );

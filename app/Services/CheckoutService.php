@@ -93,13 +93,13 @@ class CheckoutService
             }
 
             $grandTotal = $subtotal - $discountAmount;
-            $cash = $paymentMethod === 'cash' ? (int) ($data['cash'] ?? 0) : 0;
+            $cash = in_array($paymentMethod, ['cash', 'qris', 'transfer']) ? (int) ($data['cash'] ?? 0) : 0;
 
-            if ($paymentMethod === 'cash' && $cash < $grandTotal) {
+            if (in_array($paymentMethod, ['cash', 'qris', 'transfer']) && $cash < $grandTotal) {
                 throw new DomainException('Uang pembayaran kurang dari total belanja.');
             }
 
-            $change = $paymentMethod === 'cash' ? $cash - $grandTotal : 0;
+            $change = in_array($paymentMethod, ['cash', 'qris', 'transfer']) ? $cash - $grandTotal : 0;
             $invoice = $this->generateTransactionInvoice();
 
             $transaction = Transaction::create([

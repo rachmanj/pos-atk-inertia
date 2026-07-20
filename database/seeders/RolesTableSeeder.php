@@ -47,6 +47,8 @@ class RolesTableSeeder extends Seeder
             'cashier_shifts.close',
 
             'reports.sales',
+            'reports.product_sales',
+            'reports.expense',
 
             'ppob-balance-logs.index',
             'ppob-balance-logs.store',

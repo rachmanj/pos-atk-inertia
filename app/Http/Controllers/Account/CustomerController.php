@@ -9,6 +9,21 @@ use Inertia\Inertia;
 
 class CustomerController extends Controller
 {
+    public function search(Request $request)
+    {
+        $request->validate([
+            'q' => 'required|string|min:1|max:100',
+        ]);
+
+        $customers = Customer::where('name', 'like', '%' . $request->q . '%')
+            ->orWhere('no_telp', 'like', '%' . $request->q . '%')
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'no_telp']);
+
+        return response()->json($customers);
+    }
+
     public function index(Request $request)
     {
         $customers = Customer::when($request->q, function ($query) use ($request) {

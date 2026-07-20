@@ -89,6 +89,10 @@ class PermissionsTableSeeder extends Seeder
             'reports.sales',
             'reports.stock',
             'reports.export',
+            'reports.product_sales',
+            'reports.ppob',
+            'reports.expense',
+            'reports.customers',
 
             // Settings
             'settings.index',

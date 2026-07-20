@@ -1,5 +1,6 @@
 import LayoutAccount from "../../../Layouts/Account";
 import Pagination from "../../../Shared/Pagination";
+import DatePreset from "../../../Shared/DatePreset";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
@@ -42,6 +43,21 @@ export default function ProfitReport() {
         router.get("/account/reports/profit");
     };
 
+    const handleDatePreset = (start, end) => {
+        setStartDate(start);
+        setEndDate(end);
+        router.get("/account/reports/profit", {
+            q: search,
+            start_date: start,
+            end_date: end,
+            cashier_id: cashierId,
+        });
+    };
+
+    const handleExport = () => {
+        window.location.href = `/account/reports/profit/export?start_date=${startDate}&end_date=${endDate}&cashier_id=${cashierId}`;
+    };
+
     const formatDate = (value) => {
         if (!value) {
             return "-";
@@ -66,6 +82,16 @@ export default function ProfitReport() {
                                     <i className="fas fa-coins me-2"></i>
                                     LAPORAN LABA
                                 </h5>
+                                {hasAnyPermission(["reports.export"], permissions) && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-success btn-sm shadow-sm"
+                                        onClick={handleExport}
+                                    >
+                                        <i className="far fa-file-excel me-1"></i>
+                                        Export Excel
+                                    </button>
+                                )}
                             </div>
 
                             <div className="card-body">
@@ -154,7 +180,10 @@ export default function ProfitReport() {
 
                                 <div className="row g-3 mb-4">
                                     <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
+                                        <Link
+                                            href={`/account/reports/profit?start_date=${filters.start_date}&end_date=${filters.end_date}`}
+                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
+                                        >
                                             <small className="text-muted">
                                                 Pendapatan
                                             </small>
@@ -167,7 +196,7 @@ export default function ProfitReport() {
                                                 Transaksi:{" "}
                                                 {summary.total_transactions}
                                             </small>
-                                        </div>
+                                        </Link>
                                     </div>
 
                                     <div className="col-md-3">

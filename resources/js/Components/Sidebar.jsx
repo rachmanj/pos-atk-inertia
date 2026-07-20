@@ -300,7 +300,7 @@ export default function Sidebar() {
                 )}
 
                 {hasAnyPermission(
-                    ["reports.sales", "profits.index", "reports.stock"],
+                    ["reports.sales", "profits.index", "reports.stock", "reports.product_sales", "reports.ppob", "reports.expense", "reports.customers"],
                     permissions,
                 ) && (
                     <div className="list-group-item bg-sidebar-group text-uppercase fw-bold small mt-2 py-2">
@@ -318,6 +318,26 @@ export default function Sidebar() {
                     </Link>
                 )}
 
+                {hasAnyPermission(["reports.product_sales"], permissions) && (
+                    <Link
+                        href="/account/reports/product-sales"
+                        className={menuClass("/account/reports/product-sales")}
+                    >
+                        <i className="fas fa-star fa-fw me-2"></i>
+                        Produk Terlaris
+                    </Link>
+                )}
+
+                {hasAnyPermission(["reports.ppob"], permissions) && (
+                    <Link
+                        href="/account/reports/ppob"
+                        className={menuClass("/account/reports/ppob")}
+                    >
+                        <i className="fas fa-mobile-alt fa-fw me-2"></i>
+                        Laporan PPOB
+                    </Link>
+                )}
+
                 {hasAnyPermission(["profits.index"], permissions) && (
                     <Link
                         href="/account/reports/profit"
@@ -325,6 +345,26 @@ export default function Sidebar() {
                     >
                         <i className="fas fa-coins fa-fw me-2"></i>
                         Laporan Laba
+                    </Link>
+                )}
+
+                {hasAnyPermission(["reports.expense"], permissions) && (
+                    <Link
+                        href="/account/reports/expense"
+                        className={menuClass("/account/reports/expense")}
+                    >
+                        <i className="fas fa-receipt fa-fw me-2"></i>
+                        Laporan Biaya
+                    </Link>
+                )}
+
+                {hasAnyPermission(["reports.customers"], permissions) && (
+                    <Link
+                        href="/account/reports/customers"
+                        className={menuClass("/account/reports/customers")}
+                    >
+                        <i className="fas fa-users fa-fw me-2"></i>
+                        Laporan Pelanggan
                     </Link>
                 )}
 

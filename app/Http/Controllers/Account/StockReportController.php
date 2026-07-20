@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -21,15 +22,18 @@ class StockReportController extends Controller
         $request->validate([
             'q'             => 'nullable|string|max:100',
             'category_id'   => 'nullable|exists:categories,id',
-            'stock_status'  => 'nullable|in:available,low,out',
+            'stock_status'  => 'nullable|in:available,low,out,dead_stock',
             'low_threshold' => 'nullable|integer|min:1|max:1000',
+            'dead_stock_days' => 'nullable|integer|min:1|max:3650',
         ]);
 
         $lowThreshold = (int) ($request->low_threshold ?: 10);
+        $deadStockDays = (int) ($request->dead_stock_days ?: 90);
 
         $baseQuery = Product::query()->physical();
-        $this->applyFilters($baseQuery, $request, $lowThreshold);
+        $this->applyFilters($baseQuery, $request, $lowThreshold, $deadStockDays);
 
+        // Load last OUT movement date for dead stock calculation
         $products = (clone $baseQuery)
             ->with([
                 'category:id,name',
@@ -41,11 +45,32 @@ class StockReportController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $products->through(function (Product $product) {
+        $products->through(function (Product $product) use ($deadStockDays) {
             $baseSellPrice = (int) ($product->baseUnit?->sell_price ?? $product->sell_price);
             $inventoryCostValue = (int) $product->stock * (int) $product->avg_cost;
             $inventorySellValue = (int) $product->stock * $baseSellPrice;
             $latestMovement = $product->latestStockMovement;
+
+            // Cari pergerakan OUT terakhir untuk dead stock
+            $lastOutMovement = \App\Models\StockMovement::query()
+                ->where('product_id', $product->id)
+                ->where('type', 'out')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            $daysSinceLastOut = null;
+            $isDeadStock = false;
+
+            if ($lastOutMovement) {
+                $daysSinceLastOut = (int) Carbon::now()->diffInDays($lastOutMovement->created_at);
+                $isDeadStock = $daysSinceLastOut > $deadStockDays && (int) $product->stock > 0;
+            } elseif ((int) $product->stock > 0) {
+                // Belum pernah ada pergerakan OUT, anggap dead stock
+                $daysSinceLastOut = null; // never
+                $isDeadStock = (int) $product->stock > 0;
+            }
+
+            $needsReorder = (int) $product->stock <= $lowThreshold && (int) $product->stock > 0;
 
             return [
                 'id'                    => $product->id,
@@ -60,6 +85,9 @@ class StockReportController extends Controller
                 'category'              => $product->category,
                 'inventory_cost_value'  => $inventoryCostValue,
                 'inventory_sell_value'  => $inventorySellValue,
+                'days_since_last_out'   => $daysSinceLastOut,
+                'is_dead_stock'         => $isDeadStock,
+                'needs_reorder'         => $needsReorder,
                 'latest_movement'       => $latestMovement ? [
                     'type'         => $latestMovement->type,
                     'source_label' => $this->resolveSourceLabel($latestMovement->reference_type),
@@ -116,6 +144,7 @@ class StockReportController extends Controller
                 'category_id'   => $request->category_id ?? '',
                 'stock_status'  => $request->stock_status ?? '',
                 'low_threshold' => $lowThreshold,
+                'dead_stock_days' => $deadStockDays,
             ],
             'categories' => Category::query()
                 ->orderBy('name')
@@ -123,7 +152,7 @@ class StockReportController extends Controller
         ]);
     }
 
-    protected function applyFilters(Builder $query, Request $request, int $lowThreshold): void
+    protected function applyFilters(Builder $query, Request $request, int $lowThreshold, int $deadStockDays): void
     {
         $query
             ->when(filled($request->q), function (Builder $productQuery) use ($request) {
@@ -140,7 +169,7 @@ class StockReportController extends Controller
             ->when(filled($request->category_id), function (Builder $productQuery) use ($request) {
                 $productQuery->where('category_id', $request->category_id);
             })
-            ->when(filled($request->stock_status), function (Builder $productQuery) use ($request, $lowThreshold) {
+            ->when(filled($request->stock_status), function (Builder $productQuery) use ($request, $lowThreshold, $deadStockDays) {
                 if ($request->stock_status === 'available') {
                     $productQuery->where('stock', '>', $lowThreshold);
                 }
@@ -152,6 +181,17 @@ class StockReportController extends Controller
 
                 if ($request->stock_status === 'out') {
                     $productQuery->where('stock', 0);
+                }
+
+                if ($request->stock_status === 'dead_stock') {
+                    $productQuery->where('stock', '>', 0)
+                        ->where(function (Builder $q) use ($deadStockDays) {
+                            $q->whereDoesntHave('stockMovements', function (Builder $mq) {
+                                $mq->where('type', 'out');
+                            })->orWhereHas('stockMovements', function (Builder $mq) use ($deadStockDays) {
+                                $mq->where('type', 'out');
+                            }, '<', 1);
+                        });
                 }
             });
     }

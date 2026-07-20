@@ -17,6 +17,7 @@ class TransactionDetail extends Model
             'conversion_factor' => 'decimal:4',
             'ppob_cost' => 'integer',
             'admin_fee' => 'integer',
+            'discount_amount' => 'integer',
         ];
     }
 
@@ -32,6 +33,8 @@ class TransactionDetail extends Model
         'customer_ref',
         'ppob_cost',
         'admin_fee',
+        'discount_type',
+        'discount_amount',
     ];
 
     public function transaction(): BelongsTo

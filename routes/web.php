@@ -23,6 +23,10 @@ use App\Http\Controllers\Account\ExpenseController;
 use App\Http\Controllers\Account\SalesReportController;
 use App\Http\Controllers\Account\ProfitReportController;
 use App\Http\Controllers\Account\StockReportController;
+use App\Http\Controllers\Account\ProductSalesReportController;
+use App\Http\Controllers\Account\PpobReportController;
+use App\Http\Controllers\Account\ExpenseReportController;
+use App\Http\Controllers\Account\CustomerReportController;
 use App\Http\Controllers\Account\SettingController;
 use App\Http\Controllers\Account\PpobAccountController;
 use App\Http\Controllers\Account\PpobBalanceLogController;
@@ -122,6 +126,10 @@ Route::middleware(['auth'])
             ->middlewareFor(['create', 'store'], 'permission:suppliers.create')
             ->middlewareFor(['edit', 'update'], 'permission:suppliers.edit')
             ->middlewareFor('destroy', 'permission:suppliers.delete');
+
+        Route::get('customers/search', [CustomerController::class, 'search'])
+            ->middleware('permission:transactions.create')
+            ->name('customers.search');
 
         Route::resource('customers', CustomerController::class)
             ->except(['show'])
@@ -261,6 +269,36 @@ Route::middleware(['auth'])
         Route::get('/reports/stock', [StockReportController::class, 'index'])
             ->middleware('permission:reports.stock')
             ->name('reports.stock');
+
+        // Export endpoints
+        Route::get('/reports/sales/export', [SalesReportController::class, 'export'])
+            ->middleware('permission:reports.export')
+            ->name('reports.sales.export');
+
+        Route::get('/reports/profit/export', [ProfitReportController::class, 'export'])
+            ->middleware('permission:reports.export')
+            ->name('reports.profit.export');
+
+        Route::get('/reports/stock/export', [StockReportController::class, 'export'])
+            ->middleware('permission:reports.export')
+            ->name('reports.stock.export');
+
+        // New reports
+        Route::get('/reports/product-sales', [ProductSalesReportController::class, 'index'])
+            ->middleware('permission:reports.product_sales')
+            ->name('reports.product_sales');
+
+        Route::get('/reports/ppob', [PpobReportController::class, 'index'])
+            ->middleware('permission:reports.ppob')
+            ->name('reports.ppob');
+
+        Route::get('/reports/expense', [ExpenseReportController::class, 'index'])
+            ->middleware('permission:reports.expense')
+            ->name('reports.expense');
+
+        Route::get('/reports/customers', [CustomerReportController::class, 'index'])
+            ->middleware('permission:reports.customers')
+            ->name('reports.customers');
 
         Route::resource('/expenses', ExpenseController::class)
             ->except(['show'])

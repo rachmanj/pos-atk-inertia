@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Exports\SalesReportExport;
 use App\Models\ReturnTransaction;
 use App\Models\Transaction;
 use App\Models\User;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SalesReportController extends Controller
 {
@@ -73,8 +75,32 @@ class SalesReportController extends Controller
             ->where('payment_method', 'digital')
             ->sum('grand_total');
 
+        // Chart data: sales by day
+        $salesByDay = (clone $baseQuery)
+            ->select(
+                DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at)) as date'),
+                DB::raw('SUM(grand_total) as total'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->groupBy(DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at))'))
+            ->orderBy('date')
+            ->get();
+
+        // Chart data: sales by hour
+        $salesByHour = (clone $baseQuery)
+            ->select(
+                DB::raw('HOUR(COALESCE(transactions.paid_at, transactions.created_at)) as hour'),
+                DB::raw('SUM(grand_total) as total'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->groupBy(DB::raw('HOUR(COALESCE(transactions.paid_at, transactions.created_at))'))
+            ->orderBy('hour')
+            ->get();
+
         return Inertia::render('Account/Reports/Sales', [
             'sales' => $sales,
+            'salesByDay' => $salesByDay,
+            'salesByHour' => $salesByHour,
             'summary' => [
                 'total_sales' => $totalSales,
                 'total_returns' => $totalReturns,
@@ -174,5 +200,31 @@ class SalesReportController extends Controller
                     });
             })
             ->sum('total_refund');
+    }
+
+    public function export(Request $request)
+    {
+        $user = $request->user();
+
+        abort_unless($user->can('reports.export'), 403);
+
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'payment_method' => 'nullable|in:cash,digital',
+            'cashier_id' => 'nullable|exists:users,id',
+        ]);
+
+        $filters = [
+            'start_date' => $request->start_date ?: now()->startOfMonth()->toDateString(),
+            'end_date' => $request->end_date ?: now()->toDateString(),
+            'payment_method' => $request->payment_method,
+            'cashier_id' => !$user->isAdminUser() ? $user->id : $request->cashier_id,
+        ];
+
+        return Excel::download(
+            new SalesReportExport($filters),
+            'laporan-penjualan-' . now()->format('Ymd_His') . '.xlsx'
+        );
     }
 }

@@ -49,6 +49,9 @@ export default function StockReport() {
     const [lowThreshold, setLowThreshold] = useState(
         filters.low_threshold || 10,
     );
+    const [deadStockDays, setDeadStockDays] = useState(
+        filters.dead_stock_days || 90,
+    );
 
     const handleFilter = (e) => {
         e.preventDefault();
@@ -58,6 +61,7 @@ export default function StockReport() {
             category_id: categoryId,
             stock_status: stockStatus,
             low_threshold: lowThreshold,
+            dead_stock_days: deadStockDays,
         });
     };
 
@@ -157,6 +161,9 @@ export default function StockReport() {
                                                 <option value="out">
                                                     Habis
                                                 </option>
+                                                <option value="dead_stock">
+                                                    Dead Stock
+                                                </option>
                                             </select>
                                         </div>
 
@@ -246,7 +253,27 @@ export default function StockReport() {
                                     </div>
 
                                     <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
+                                        <Link
+                                            href={`/account/reports/stock?stock_status=out`}
+                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
+                                        >
+                                            <small className="text-muted">
+                                                Stok Habis
+                                            </small>
+                                            <h6 className="fw-bold text-danger mb-1">
+                                                {summary.out_of_stock_products}
+                                            </h6>
+                                            <small className="text-muted">
+                                                Klik untuk filter
+                                            </small>
+                                        </Link>
+                                    </div>
+
+                                    <div className="col-md-3">
+                                        <Link
+                                            href={`/account/reports/stock?stock_status=low&low_threshold=${filters.low_threshold}`}
+                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
+                                        >
                                             <small className="text-muted">
                                                 Produk Menipis
                                             </small>
@@ -256,7 +283,7 @@ export default function StockReport() {
                                             <small className="text-muted">
                                                 Ambang: {filters.low_threshold}
                                             </small>
-                                        </div>
+                                        </Link>
                                     </div>
                                 </div>
 
@@ -283,6 +310,9 @@ export default function StockReport() {
                                                 </th>
                                                 <th className="text-center">
                                                     Status
+                                                </th>
+                                                <th className="text-center">
+                                                    Terakhir Keluar
                                                 </th>
                                                 <th>Pergerakan Terakhir</th>
                                                 <th
@@ -374,6 +404,12 @@ export default function StockReport() {
                                                                     )}
                                                                 </td>
                                                                 <td className="text-center">
+                                                                    {product.is_dead_stock && (
+                                                                        <span className="badge bg-dark shadow-sm ms-1">Dead</span>
+                                                                    )}
+                                                                    {product.needs_reorder && (
+                                                                        <span className="badge bg-warning text-dark shadow-sm ms-1">Reorder</span>
+                                                                    )}
                                                                     <span
                                                                         className={
                                                                             badge.className
@@ -383,6 +419,22 @@ export default function StockReport() {
                                                                             badge.label
                                                                         }
                                                                     </span>
+                                                                </td>
+                                                                <td className="text-center">
+                                                                    {product.days_since_last_out === null
+                                                                        ? product.stock > 0 ? (
+                                                                            <span className="badge bg-dark shadow-sm">
+                                                                                Belum pernah
+                                                                            </span>
+                                                                        ) : "-"
+                                                                        : (
+                                                                            <span
+                                                                                className={`badge ${product.is_dead_stock ? "bg-dark" : product.days_since_last_out > 30 ? "bg-warning text-dark" : "bg-success"} shadow-sm`}
+                                                                            >
+                                                                                {product.days_since_last_out} hari
+                                                                            </span>
+                                                                        )
+                                                                    }
                                                                 </td>
                                                                 <td>
                                                                     {product.latest_movement ? (
@@ -467,7 +519,7 @@ export default function StockReport() {
                                             ) : (
                                                 <tr>
                                                     <td
-                                                        colSpan="10"
+                                                        colSpan="11"
                                                         className="text-center py-4"
                                                     >
                                                         Belum ada data stok

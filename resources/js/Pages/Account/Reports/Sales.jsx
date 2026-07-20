@@ -1,9 +1,22 @@
 import LayoutAccount from "../../../Layouts/Account";
 import Pagination from "../../../Shared/Pagination";
+import DatePreset from "../../../Shared/DatePreset";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import {
+    LineChart,
+    Line,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+} from "recharts";
 
 const paymentMethodLabels = {
     cash: "Tunai",
@@ -18,6 +31,8 @@ const paymentMethodBadges = {
 export default function SalesReport() {
     const {
         sales,
+        salesByDay = [],
+        salesByHour = [],
         summary,
         filters = {},
         cashiers = [],
@@ -57,6 +72,28 @@ export default function SalesReport() {
         router.get("/account/reports/sales");
     };
 
+    const handleDatePreset = (start, end) => {
+        setStartDate(start);
+        setEndDate(end);
+        router.get("/account/reports/sales", {
+            q: search,
+            start_date: start,
+            end_date: end,
+            payment_method: paymentMethod,
+            cashier_id: cashierId,
+        });
+    };
+
+    const handleExport = () => {
+        window.location.href = `/account/reports/sales/export?start_date=${startDate}&end_date=${endDate}&payment_method=${paymentMethod}&cashier_id=${cashierId}`;
+    };
+
+    const formatChartRupiah = (value) => {
+        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+        if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+        return value;
+    };
+
     const formatDate = (value) => {
         if (!value) {
             return "-";
@@ -81,6 +118,16 @@ export default function SalesReport() {
                                     <i className="fas fa-chart-line me-2"></i>
                                     LAPORAN PENJUALAN
                                 </h5>
+                                {hasAnyPermission(["reports.export"], permissions) && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-success btn-sm shadow-sm"
+                                        onClick={handleExport}
+                                    >
+                                        <i className="fas fa-file-excel me-1"></i>
+                                        Export Excel
+                                    </button>
+                                )}
                             </div>
 
                             <div className="card-body">
@@ -186,6 +233,10 @@ export default function SalesReport() {
                                                 Reset
                                             </button>
                                         </div>
+
+                                        <div className="col-12">
+                                            <DatePreset onApply={handleDatePreset} />
+                                        </div>
                                     </div>
                                 </form>
 
@@ -246,7 +297,10 @@ export default function SalesReport() {
                                     </div>
 
                                     <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
+                                        <Link
+                                            href={`/account/reports/sales?payment_method=digital`}
+                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
+                                        >
                                             <small className="text-muted">
                                                 Digital Bersih
                                             </small>
@@ -261,6 +315,75 @@ export default function SalesReport() {
                                                     summary.cash_sales,
                                                 )}
                                             </small>
+                                        </Link>
+                                    </div>
+                                </div>
+
+                                {/* Charts */}
+                                <div className="row g-3 mb-4">
+                                    <div className="col-lg-8">
+                                        <div className="border rounded-3 p-3">
+                                            <h6 className="fw-bold mb-3">
+                                                <i className="fas fa-chart-area me-2"></i>
+                                                Tren Penjualan Harian
+                                            </h6>
+                                            {salesByDay.length > 0 ? (
+                                                <ResponsiveContainer width="100%" height={300}>
+                                                    <LineChart data={salesByDay}>
+                                                        <CartesianGrid strokeDasharray="3 3" />
+                                                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                                        <YAxis tickFormatter={formatChartRupiah} />
+                                                        <Tooltip
+                                                            formatter={(value) => [
+                                                                formatRupiah(value),
+                                                                "Total",
+                                                            ]}
+                                                        />
+                                                        <Legend />
+                                                        <Line
+                                                            type="monotone"
+                                                            dataKey="total"
+                                                            stroke="#0d6efd"
+                                                            strokeWidth={2}
+                                                            dot={{ r: 3 }}
+                                                            name="Omzet (Rp)"
+                                                        />
+                                                    </LineChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <p className="text-muted text-center py-4">Belum ada data.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="col-lg-4">
+                                        <div className="border rounded-3 p-3">
+                                            <h6 className="fw-bold mb-3">
+                                                <i className="fas fa-clock me-2"></i>
+                                                Penjualan per Jam
+                                            </h6>
+                                            {salesByHour.length > 0 ? (
+                                                <ResponsiveContainer width="100%" height={300}>
+                                                    <BarChart data={salesByHour}>
+                                                        <CartesianGrid strokeDasharray="3 3" />
+                                                        <XAxis
+                                                            dataKey="hour"
+                                                            tick={{ fontSize: 11 }}
+                                                            label={{ value: "Jam", position: "insideBottom", offset: -5 }}
+                                                        />
+                                                        <YAxis tickFormatter={formatChartRupiah} />
+                                                        <Tooltip
+                                                            formatter={(value) => [
+                                                                formatRupiah(value),
+                                                                "Total",
+                                                            ]}
+                                                            labelFormatter={(label) => `Jam ${label}:00`}
+                                                        />
+                                                        <Bar dataKey="total" fill="#198754" name="Omzet (Rp)" radius={[4, 4, 0, 0]} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <p className="text-muted text-center py-4">Belum ada data.</p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

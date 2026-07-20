@@ -62,14 +62,12 @@ class TransactionController extends Controller
             ->latest()
             ->get();
 
-        $customers = Customer::latest()->get();
         $ppobAccount = PpobAccount::activeAccount();
 
         return Inertia::render('Account/Transactions/Create', [
             'categories' => $categories,
             'products' => $products,
             'carts' => $carts,
-            'customers' => $customers,
             'ppobSettings' => Setting::ppobSettings(),
             'ppobAccount' => $ppobAccount ? [
                 'id' => $ppobAccount->id,

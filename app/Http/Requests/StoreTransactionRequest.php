@@ -14,9 +14,10 @@ class StoreTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_method' => 'required|in:cash,digital',
+            'payment_method' => 'required|in:cash,digital,qris,transfer',
             'cash' => 'nullable|integer|min:0|required_if:payment_method,cash',
             'discount' => 'nullable|integer|min:0',
+            'discount_type' => 'nullable|in:nominal,percent',
             'customer_id' => 'nullable|exists:customers,id',
             'note' => 'nullable|string|max:1000',
         ];

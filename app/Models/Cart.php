@@ -15,6 +15,7 @@ class Cart extends Model
             'price' => 'integer',
             'ppob_cost' => 'integer',
             'admin_fee' => 'integer',
+            'is_held' => 'boolean',
         ];
     }
 
@@ -27,6 +28,7 @@ class Cart extends Model
         'customer_ref',
         'ppob_cost',
         'admin_fee',
+        'is_held',
     ];
 
     public function cashier(): BelongsTo
