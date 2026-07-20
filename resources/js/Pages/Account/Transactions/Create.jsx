@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import LayoutAccount from "../../../Layouts/Account";
 import Swal from "sweetalert2";
@@ -32,6 +32,23 @@ export default function TransactionCreate() {
     const [customerRef, setCustomerRef] = useState("");
     const [ppobCost, setPpobCost] = useState("");
     const [adminFee, setAdminFee] = useState(String(ppobSettings.ppob_admin_fee || 2000));
+
+    // Auto-add barcode scan: if search yields exactly 1 product with exact barcode match
+    useEffect(() => {
+        const q = params.get("q");
+        if (!q || products.data.length !== 1) return;
+
+        const product = products.data[0];
+        if (product.barcode !== q) return;
+
+        // Auto-add to cart then clear search
+        addToCart(product);
+        router.get(
+            "/account/transactions/create",
+            {},
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    }, [products.data]);
 
     const subtotal = useMemo(
         () =>
@@ -202,6 +219,22 @@ export default function TransactionCreate() {
             preserveState: true,
             preserveScroll: true,
         });
+    };
+
+    const debounceTimers = useRef({});
+
+    const handleQtyChange = (cartId, rawValue) => {
+        const newQty = parseInt(rawValue, 10);
+
+        if (debounceTimers.current[cartId]) {
+            clearTimeout(debounceTimers.current[cartId]);
+        }
+
+        if (isNaN(newQty) || newQty < 1) return;
+
+        debounceTimers.current[cartId] = setTimeout(() => {
+            updateCart(cartId, newQty);
+        }, 500);
     };
 
     const openMidtransPopup = (snapToken, invoice) => {
@@ -597,7 +630,18 @@ export default function TransactionCreate() {
                                                             <i className="fas fa-minus"></i>
                                                         </button>
 
-                                                        <span>{cart.qty}</span>
+                                                        <input
+                                                            type="number"
+                                                            className="pos-qty-input"
+                                                            value={cart.qty}
+                                                            min="1"
+                                                            onChange={(e) =>
+                                                                handleQtyChange(
+                                                                    cart.id,
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                        />
 
                                                         <button
                                                             type="button"

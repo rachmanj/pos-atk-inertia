@@ -158,6 +158,7 @@ class TransactionController extends Controller
 
         return Inertia::render('Account/Transactions/Show', [
             'transaction' => $transaction,
+            'store' => Setting::storeSettings(),
         ]);
     }
 
