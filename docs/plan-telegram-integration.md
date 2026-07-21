@@ -633,38 +633,38 @@ Bot: ✅ TRX-...
    - `beli meterai 100 @10rb` → ppob_cost = 10.000/lembar
    - Default (tanpa keyword): **tolak + minta klarifikasi**
 
-2. **Pembagian tidak bulat**  
-   Jika `1_000_001 / 100` — tolak, atau round, atau simpan cost total di satu baris `qty=1` dengan ref "100 lembar"? (Disarankan: tolak + minta angka yang divisible.)
+2. **Pembagian tidak bulat** ✅ DIPUTUSKAN  
+   **Tolak** — minta user kirim ulang dengan angka yang habis dibagi qty. Contoh balasan: "❌ Rp 1.000.001 tidak bisa dibagi rata ke 100 lembar. Gunakan angka yang habis dibagi 100."
 
-3. **Konfirmasi sebelum commit**  
-   Selalu konfirmasi, hanya di atas threshold, atau langsung commit (lebih cepat, lebih berisiko)?
+3. **Konfirmasi sebelum commit** ✅ DIPUTUSKAN  
+   **Threshold ≥ Rp 500.000** — transaksi di bawah threshold langsung diproses, di atas threshold minta konfirmasi "ya/tidak".
 
-4. **Payment method**  
-   v1 cash-only OK? Atau default `transfer` / `qris` dengan keyword?
+4. **Payment method** ✅ DIPUTUSKAN  
+   **v1 cash-only** — semua transaksi via Telegram dianggap lunas tunai (`payment_method=cash`, `cash=grand_total`).
 
-5. **Siapa yang boleh link Telegram**  
-   Hanya admin edit user, atau self-service pairing code?
+5. **Siapa yang boleh link Telegram** ✅ DIPUTUSKAN  
+   **Admin edit manual** — admin isi `telegram_id` di form edit User (paling sederhana, cocok untuk internal).
 
-6. **Satu user / banyak Telegram**  
-   Unique `telegram_id` → satu user. Apakah satu user boleh ganti nomor Telegram sering?
+6. **Satu user / banyak Telegram** ✅ DIPUTUSKAN  
+   **Boleh ganti** — `telegram_id` nullable unique, admin bisa update kapan saja.
 
 7. **Refactor `CheckoutService`** ✅ DIPUTUSKAN  
    **Opsi B `checkoutFromLines`** — refactor untuk ekstrak loop detail dari `checkout()` agar bisa dipanggil tanpa cart. Lebih aman concurrent, lebih bersih jangka panjang.
 
-8. **Perbaiki `CartController::storePpobCart` qty=1**  
-   Apakah ikut di scope (POS UI juga bisa qty > 1), atau tetap backlog terpisah?
+8. **Perbaiki `CartController::storePpobCart` qty=1** ✅ DIPUTUSKAN  
+   **Backlog terpisah** — tidak ikut scope Telegram. Bot bypass cart via `checkoutFromLines()`.
 
-9. **Alias produk**  
-   Apakah perlu kolom `telegram_aliases` / tabel alias (`mtr` → Meterai), atau cukup fuzzy title?
+9. **Alias produk** ✅ DIPUTUSKAN  
+   **v2** — v1 cukup fuzzy title matching (`LIKE %query%`). Alias (`mtr` → Meterai) ditunda.
 
-10. **Notifikasi ke grup**  
-    Setelah sukses, forward ringkasan ke grup supervisory? (di luar v1)
+10. **Notifikasi ke grup** ✅ DIPUTUSKAN  
+    **Di luar v1** — tidak termasuk MVP.
 
-11. **Hosting webhook**  
-    Produksi sudah HTTPS stabil? Jika belum, polling + supervisor/systemd dulu.
+11. **Hosting webhook** ✅ DIPUTUSKAN  
+    **Cek dulu saat implementasi** — kalau HTTPS belum stabil, fallback ke polling + supervisor/systemd.
 
-12. **Void via Telegram**  
-    Diinginkan di v2? Butuh permission + alasan void.
+12. **Void via Telegram** ✅ DIPUTUSKAN  
+    **v2** — butuh permission + alasan void. Tidak termasuk MVP.
 
 ---
 
@@ -696,4 +696,4 @@ Bot: ✅ TRX-...
 
 ---
 
-*Dokumen ini adalah rencana teknis actionable. Implementasi dimulai setelah open questions kunci (terutama #1, #3, #7) diputuskan.*
+*Seluruh 12 open questions sudah diputuskan ✅ — dokumen siap untuk implementasi.*
