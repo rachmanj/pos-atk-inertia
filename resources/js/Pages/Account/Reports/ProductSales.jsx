@@ -57,6 +57,17 @@ export default function ProductSalesReport() {
         });
     };
 
+    const handleExport = () => {
+        const params = new URLSearchParams({
+            q: search,
+            start_date: startDate,
+            end_date: endDate,
+            category_id: categoryId,
+            cashier_id: cashierId,
+        });
+        window.location.href = `/account/reports/product-sales/export?${params.toString()}`;
+    };
+
     return (
         <>
             <Head title="Produk Terlaris" />
@@ -70,6 +81,16 @@ export default function ProductSalesReport() {
                                     <i className="fas fa-star me-2"></i>
                                     PRODUK TERLARIS
                                 </h5>
+                                {hasAnyPermission(["reports.export"], permissions) && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-success btn-sm shadow-sm"
+                                        onClick={handleExport}
+                                    >
+                                        <i className="far fa-file-excel me-1"></i>
+                                        Export Excel
+                                    </button>
+                                )}
                             </div>
 
                             <div className="card-body">

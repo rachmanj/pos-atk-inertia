@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Exports\ExpenseReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Models\User;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ExpenseReportController extends Controller
 {
@@ -123,5 +125,34 @@ class ExpenseReportController extends Controller
                 : [],
             'isAdmin' => $user->isAdminUser(),
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        $user = $request->user();
+
+        abort_unless($user->can('reports.export'), 403);
+        abort_unless($user->can('reports.expense'), 403);
+
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'category' => 'nullable|string|max:100',
+            'cashier_id' => 'nullable|exists:users,id',
+        ]);
+
+        $filters = [
+            'q' => $request->q,
+            'start_date' => $request->start_date ?: now()->startOfMonth()->toDateString(),
+            'end_date' => $request->end_date ?: now()->toDateString(),
+            'category' => $request->category,
+            'cashier_id' => !$user->isAdminUser() ? $user->id : $request->cashier_id,
+        ];
+
+        return Excel::download(
+            new ExpenseReportExport($filters),
+            'laporan-pengeluaran-' . now()->format('Ymd_His') . '.xlsx'
+        );
     }
 }

@@ -42,18 +42,19 @@ class CartController extends Controller
 
         $product = Product::with(['productUnits'])->findOrFail($cart->product_id);
         $qty = (int) $request->qty;
+        $discountPayload = $this->discountPayload($request, $cart);
 
         if ($product->isPpob() || $product->isService()) {
-            $cart->update(['qty' => $qty]);
+            $payload = array_merge(['qty' => $qty], $discountPayload);
 
             if ($product->isService()) {
                 $productUnit = $product->productUnits->firstWhere('unit_id', $cart->unit_id)
                     ?? $product->productUnits->firstWhere('is_default_sell', true);
 
-                $cart->update([
-                    'price' => $productUnit?->sell_price ?? $product->sell_price,
-                ]);
+                $payload['price'] = $productUnit?->sell_price ?? $product->sell_price;
             }
+
+            $cart->update($payload);
 
             return back();
         }
@@ -67,10 +68,10 @@ class CartController extends Controller
 
         $productUnit = $product->productUnits->firstWhere('unit_id', $cart->unit_id);
 
-        $cart->update([
+        $cart->update(array_merge([
             'qty' => $qty,
             'price' => $productUnit?->sell_price ?? $product->sell_price,
-        ]);
+        ], $discountPayload));
 
         return back();
     }
@@ -231,5 +232,17 @@ class CartController extends Controller
         if ($cart->cashier_id !== $request->user()->id) {
             abort(403);
         }
+    }
+
+    protected function discountPayload(UpdateCartRequest $request, Cart $cart): array
+    {
+        if (!$request->exists('discount') && !$request->exists('discount_type')) {
+            return [];
+        }
+
+        return [
+            'discount' => (int) ($request->input('discount', $cart->discount ?? 0)),
+            'discount_type' => $request->input('discount_type', $cart->discount_type ?? 'nominal'),
+        ];
     }
 }

@@ -238,6 +238,7 @@ _(none)_
 
 ## Recently Completed
 
+- `[done] Remaining POS/laporan gaps — optimistic cart, per-item discount, export new reports, Sales qris/transfer + drill-down, Profit DatePreset [Create.jsx, CheckoutService, Exports/*, SalesReportController] (completed: 2026-07-21)`
 - `[done] Auth: login with username or email; self-service change password from navbar dropdown [LoginController, PasswordController, Account.jsx] (completed: 2026-06-27)`
 - `[done] Product Excel import — create-only bulk import from Products index [ProductImportController, ProductsImport, Products/Index.jsx] (completed: 2026-06-26)`
 - `[done] P1: Add MIDTRANS_* vars to .env.example [config/midtrans.php] (completed: 2026-06-20)`

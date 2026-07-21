@@ -292,17 +292,33 @@ Route::middleware(['auth'])
             ->middleware('permission:reports.product_sales')
             ->name('reports.product_sales');
 
+        Route::get('/reports/product-sales/export', [ProductSalesReportController::class, 'export'])
+            ->middleware('permission:reports.export')
+            ->name('reports.product_sales.export');
+
         Route::get('/reports/ppob', [PpobReportController::class, 'index'])
             ->middleware('permission:reports.ppob')
             ->name('reports.ppob');
+
+        Route::get('/reports/ppob/export', [PpobReportController::class, 'export'])
+            ->middleware('permission:reports.export')
+            ->name('reports.ppob.export');
 
         Route::get('/reports/expense', [ExpenseReportController::class, 'index'])
             ->middleware('permission:reports.expense')
             ->name('reports.expense');
 
+        Route::get('/reports/expense/export', [ExpenseReportController::class, 'export'])
+            ->middleware('permission:reports.export')
+            ->name('reports.expense.export');
+
         Route::get('/reports/customers', [CustomerReportController::class, 'index'])
             ->middleware('permission:reports.customers')
             ->name('reports.customers');
+
+        Route::get('/reports/customers/export', [CustomerReportController::class, 'export'])
+            ->middleware('permission:reports.export')
+            ->name('reports.customers.export');
 
         Route::resource('/expenses', ExpenseController::class)
             ->except(['show'])

@@ -21,11 +21,15 @@ import {
 const paymentMethodLabels = {
     cash: "Tunai",
     digital: "Digital",
+    qris: "QRIS",
+    transfer: "Transfer",
 };
 
 const paymentMethodBadges = {
     cash: "badge bg-success shadow-sm",
     digital: "badge bg-primary shadow-sm",
+    qris: "badge bg-info text-dark shadow-sm",
+    transfer: "badge bg-warning text-dark shadow-sm",
 };
 
 export default function SalesReport() {
@@ -186,6 +190,12 @@ export default function SalesReport() {
                                                 <option value="digital">
                                                     Digital
                                                 </option>
+                                                <option value="qris">
+                                                    QRIS
+                                                </option>
+                                                <option value="transfer">
+                                                    Transfer
+                                                </option>
                                             </select>
                                         </div>
 
@@ -242,7 +252,10 @@ export default function SalesReport() {
 
                                 <div className="row g-3 mb-4">
                                     <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
+                                        <Link
+                                            href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&cashier_id=${cashierId}`}
+                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
+                                        >
                                             <small className="text-muted">
                                                 Penjualan Bersih
                                             </small>
@@ -257,7 +270,7 @@ export default function SalesReport() {
                                                     summary.total_returns,
                                                 )}
                                             </small>
-                                        </div>
+                                        </Link>
                                     </div>
 
                                     <div className="col-md-3">
@@ -275,44 +288,51 @@ export default function SalesReport() {
                                                 {formatRupiah(
                                                     summary.total_discount,
                                                 )}
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">
-                                                Jumlah Transaksi
-                                            </small>
-                                            <h6 className="fw-bold mb-1">
-                                                {summary.total_transactions}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Rata-rata:{" "}
-                                                {formatRupiah(
-                                                    summary.average_sale,
-                                                )}
+                                                {" · "}
+                                                Tx: {summary.total_transactions}
                                             </small>
                                         </div>
                                     </div>
 
                                     <div className="col-md-3">
                                         <Link
-                                            href={`/account/reports/sales?payment_method=digital`}
+                                            href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&payment_method=cash&cashier_id=${cashierId}`}
                                             className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
                                         >
                                             <small className="text-muted">
-                                                Digital Bersih
+                                                Tunai Bersih
                                             </small>
-                                            <h6 className="fw-bold text-primary mb-1">
+                                            <h6 className="fw-bold text-success mb-1">
                                                 {formatRupiah(
-                                                    summary.digital_sales,
+                                                    summary.cash_sales,
                                                 )}
                                             </h6>
                                             <small className="text-muted">
-                                                Tunai Bersih:{" "}
+                                                Digital:{" "}
                                                 {formatRupiah(
-                                                    summary.cash_sales,
+                                                    summary.digital_sales,
+                                                )}
+                                            </small>
+                                        </Link>
+                                    </div>
+
+                                    <div className="col-md-3">
+                                        <Link
+                                            href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&payment_method=qris&cashier_id=${cashierId}`}
+                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
+                                        >
+                                            <small className="text-muted">
+                                                QRIS Bersih
+                                            </small>
+                                            <h6 className="fw-bold text-info mb-1">
+                                                {formatRupiah(
+                                                    summary.qris_sales || 0,
+                                                )}
+                                            </h6>
+                                            <small className="text-muted">
+                                                Transfer:{" "}
+                                                {formatRupiah(
+                                                    summary.transfer_sales || 0,
                                                 )}
                                             </small>
                                         </Link>

@@ -133,3 +133,26 @@ Lima rekomendasi paling *impactful* yang bisa diimplementasi paling cepat:
 
 ### Catatan penutup
 Prioritaskan **P0 POS (barcode + qty)** dan **P0 Laporan (produk terlaris)** lebih dulu — keduanya berdampak harian langsung ke kasir dan pemilik dengan effort kecil–sedang. Bug struk & export adalah *quick win* yang memberi kesan "profesional" dengan usaha minimal. Isu integritas data digital-pending (reconciliation) sebaiknya masuk sprint berikutnya sebelum volume transaksi digital naik.
+
+---
+
+## D. Status Implementasi (2026-07-21)
+
+Audit di atas menggambarkan kondisi **sebelum** implementasi. Status terkini:
+
+| Area | Status |
+|---|---|
+| POS P0 (barcode, qty, customer typeahead, optimistic cart) | Done |
+| POS P1 (struk, QRIS/transfer, void reason, reconcile, diskon %) | Done |
+| POS P1 diskon per item | Done (`carts.discount` + `transaction_details.discount_*`) |
+| POS P2 (hold sale, shortcuts, cash shortcuts) | Done |
+| Laporan P0–P2 (produk terlaris, charts, export, preset, PPOB, expense, pelanggan, dead stock) | Done |
+| Drill-down kartu Sales + filter qris/transfer | Done |
+| Export Excel laporan baru (produk/PPOB/expense/pelanggan) | Done |
+| DatePreset di Laporan Laba | Done |
+
+**Belum dikerjakan (out of scope / XL):**
+
+- Split payment
+- EDC / kartu
+- PWA / mode offline

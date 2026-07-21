@@ -83,9 +83,9 @@ class CheckoutService
                 }
             }
 
-            $subtotal = (int) $carts->sum(fn ($cart) => (int) $cart->price * (int) $cart->qty);
+            $subtotal = (int) $carts->sum(fn ($cart) => $cart->lineNet());
 
-            // Hitung diskon: nominal atau persen
+            // Hitung diskon order: nominal atau persen (di atas subtotal setelah diskon per item)
             $discountAmount = $discount;
             if ($discountType === 'percent') {
                 $discountAmount = (int) round($subtotal * $discount / 100);
@@ -138,7 +138,8 @@ class CheckoutService
                 if ($product->isPpob()) {
                     $ppobCost = (int) $cart->ppob_cost;
                     $adminFee = (int) $cart->admin_fee;
-                    $itemSubtotal = (int) $cart->price * (int) $cart->qty;
+                    $itemDiscount = $cart->lineDiscountAmount();
+                    $itemSubtotal = $cart->lineNet();
                     $itemCost = $ppobCost * (int) $cart->qty;
 
                     TransactionDetail::create([
@@ -153,6 +154,8 @@ class CheckoutService
                         'customer_ref' => $cart->customer_ref,
                         'ppob_cost' => $ppobCost,
                         'admin_fee' => $adminFee,
+                        'discount_type' => $itemDiscount > 0 ? ($cart->discount_type ?? 'nominal') : null,
+                        'discount_amount' => $itemDiscount,
                     ]);
 
                     $totalBuyPrice += $itemCost;
@@ -176,7 +179,8 @@ class CheckoutService
                         ?? $product->productUnits->firstWhere('is_default_sell', true);
 
                     $conversionFactor = (float) ($productUnit?->conversion_factor ?? 1);
-                    $itemSubtotal = (int) $cart->price * (int) $cart->qty;
+                    $itemDiscount = $cart->lineDiscountAmount();
+                    $itemSubtotal = $cart->lineNet();
                     $recipeCostPerUnit = 0;
                     $itemCost = 0;
 
@@ -232,6 +236,8 @@ class CheckoutService
                         'price' => $cart->price,
                         'buy_price' => $recipeCostPerUnit,
                         'subtotal' => $itemSubtotal,
+                        'discount_type' => $itemDiscount > 0 ? ($cart->discount_type ?? 'nominal') : null,
+                        'discount_amount' => $itemDiscount,
                     ]);
 
                     $totalBuyPrice += $itemCost;
@@ -257,7 +263,8 @@ class CheckoutService
 
                 $stockBefore = (int) $lockedProduct->stock;
                 $stockAfter = $stockBefore - $qtyInBase;
-                $itemSubtotal = (int) $cart->price * (int) $cart->qty;
+                $itemDiscount = $cart->lineDiscountAmount();
+                $itemSubtotal = $cart->lineNet();
                 $itemCost = (int) $lockedProduct->avg_cost * $qtyInBase;
 
                 TransactionDetail::create([
@@ -269,6 +276,8 @@ class CheckoutService
                     'price' => $cart->price,
                     'buy_price' => (int) $lockedProduct->avg_cost,
                     'subtotal' => $itemSubtotal,
+                    'discount_type' => $itemDiscount > 0 ? ($cart->discount_type ?? 'nominal') : null,
+                    'discount_amount' => $itemDiscount,
                 ]);
 
                 $totalBuyPrice += $itemCost;

@@ -44,6 +44,44 @@ export default function TransactionCreate() {
     const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
     const customerSearchTimer = useRef(null);
     const customerDropdownRef = useRef(null);
+    const debounceTimers = useRef({});
+    const discountTimers = useRef({});
+
+    const [localCarts, setLocalCarts] = useState(carts);
+
+    useEffect(() => {
+        setLocalCarts(carts);
+    }, [carts]);
+
+    const lineDiscountAmount = (cart) => {
+        const gross = Number(cart.price || 0) * Number(cart.qty || 0);
+        const value = Number(cart.discount || 0);
+        if (value <= 0 || gross <= 0) return 0;
+        const amount = (cart.discount_type || "nominal") === "percent"
+            ? Math.round((gross * value) / 100)
+            : value;
+        return Math.min(amount, gross);
+    };
+
+    const lineNet = (cart) =>
+        Number(cart.price || 0) * Number(cart.qty || 0) - lineDiscountAmount(cart);
+
+    const inertiaCartOptions = (snapshot, extra = {}) => ({
+        preserveState: true,
+        preserveScroll: true,
+        only: ["carts"],
+        onError: () => {
+            setLocalCarts(snapshot);
+            Swal.fire({
+                icon: "error",
+                title: "Gagal",
+                text: "Perubahan keranjang gagal. Data dikembalikan.",
+                timer: 2000,
+                showConfirmButton: false,
+            });
+        },
+        ...extra,
+    });
 
     // Auto-add barcode scan: if search yields exactly 1 product with exact barcode match
     useEffect(() => {
@@ -76,22 +114,17 @@ export default function TransactionCreate() {
     const isCashLikePayment = ["cash", "qris", "transfer"].includes(paymentMethod);
 
     const activeCarts = useMemo(
-        () => carts.filter((cart) => !cart.is_held),
-        [carts],
+        () => localCarts.filter((cart) => !cart.is_held),
+        [localCarts],
     );
 
     const heldCarts = useMemo(
-        () => carts.filter((cart) => cart.is_held),
-        [carts],
+        () => localCarts.filter((cart) => cart.is_held),
+        [localCarts],
     );
 
     const subtotal = useMemo(
-        () =>
-            activeCarts.reduce(
-                (total, cart) =>
-                    total + Number(cart.price || 0) * Number(cart.qty || 0),
-                0,
-            ),
+        () => activeCarts.reduce((total, cart) => total + lineNet(cart), 0),
         [activeCarts],
     );
 
@@ -311,38 +344,150 @@ export default function TransactionCreate() {
             return;
         }
 
-        router.post("/account/carts", {
-            product_id: product.id,
-            unit_id: units[0]?.unit_id || null,
-        }, { preserveState: true, preserveScroll: true, only: ["carts"] });
+        const unitId = units[0]?.unit_id || null;
+        const price = Number(units[0]?.sell_price ?? product.sell_price ?? 0);
+        const snapshot = localCarts;
+        const existing = localCarts.find(
+            (cart) =>
+                !cart.is_held &&
+                cart.product_id === product.id &&
+                Number(cart.unit_id || 0) === Number(unitId || 0) &&
+                cart.ppob_cost == null,
+        );
+
+        if (existing) {
+            setLocalCarts((prev) =>
+                prev.map((cart) =>
+                    cart.id === existing.id
+                        ? { ...cart, qty: Number(cart.qty || 0) + 1 }
+                        : cart,
+                ),
+            );
+        } else {
+            setLocalCarts((prev) => [
+                ...prev,
+                {
+                    id: `temp-${Date.now()}`,
+                    product_id: product.id,
+                    unit_id: unitId,
+                    qty: 1,
+                    price,
+                    product,
+                    unit: units[0]?.unit || null,
+                    is_held: false,
+                    discount: 0,
+                    discount_type: "nominal",
+                    ppob_cost: null,
+                    admin_fee: null,
+                    customer_ref: null,
+                },
+            ]);
+        }
+
+        router.post(
+            "/account/carts",
+            {
+                product_id: product.id,
+                unit_id: unitId,
+            },
+            inertiaCartOptions(snapshot),
+        );
     };
 
     const submitPpobCart = (e) => {
         e.preventDefault();
-        router.post("/account/carts", {
-            product_id: ppobModalProduct.id,
-            customer_ref: customerRef,
-            ppob_cost: ppobCost,
-            admin_fee: adminFee,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ["carts"],
-            onSuccess: () => setPpobModalProduct(null),
-        });
+        const snapshot = localCarts;
+        const fee = Number(adminFee || 0);
+        const cost = Number(ppobCost || 0);
+
+        setLocalCarts((prev) => [
+            ...prev,
+            {
+                id: `temp-${Date.now()}`,
+                product_id: ppobModalProduct.id,
+                unit_id: null,
+                qty: 1,
+                price: cost + fee,
+                product: ppobModalProduct,
+                unit: null,
+                is_held: false,
+                discount: 0,
+                discount_type: "nominal",
+                ppob_cost: cost,
+                admin_fee: fee,
+                customer_ref: customerRef || null,
+            },
+        ]);
+
+        router.post(
+            "/account/carts",
+            {
+                product_id: ppobModalProduct.id,
+                customer_ref: customerRef,
+                ppob_cost: ppobCost,
+                admin_fee: adminFee,
+            },
+            inertiaCartOptions(snapshot, {
+                onSuccess: () => setPpobModalProduct(null),
+            }),
+        );
     };
 
     const submitUnitCart = (e) => {
         e.preventDefault();
-        router.post("/account/carts", {
-            product_id: unitModalProduct.id,
-            unit_id: selectedUnitId,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ["carts"],
-            onSuccess: () => setUnitModalProduct(null),
-        });
+        const snapshot = localCarts;
+        const units = unitModalProduct.product_units || [];
+        const selectedUnit = units.find(
+            (unit) => String(unit.unit_id) === String(selectedUnitId),
+        );
+        const price = Number(selectedUnit?.sell_price ?? unitModalProduct.sell_price ?? 0);
+        const existing = localCarts.find(
+            (cart) =>
+                !cart.is_held &&
+                cart.product_id === unitModalProduct.id &&
+                Number(cart.unit_id || 0) === Number(selectedUnitId || 0) &&
+                cart.ppob_cost == null,
+        );
+
+        if (existing) {
+            setLocalCarts((prev) =>
+                prev.map((cart) =>
+                    cart.id === existing.id
+                        ? { ...cart, qty: Number(cart.qty || 0) + 1 }
+                        : cart,
+                ),
+            );
+        } else {
+            setLocalCarts((prev) => [
+                ...prev,
+                {
+                    id: `temp-${Date.now()}`,
+                    product_id: unitModalProduct.id,
+                    unit_id: Number(selectedUnitId) || null,
+                    qty: 1,
+                    price,
+                    product: unitModalProduct,
+                    unit: selectedUnit?.unit || null,
+                    is_held: false,
+                    discount: 0,
+                    discount_type: "nominal",
+                    ppob_cost: null,
+                    admin_fee: null,
+                    customer_ref: null,
+                },
+            ]);
+        }
+
+        router.post(
+            "/account/carts",
+            {
+                product_id: unitModalProduct.id,
+                unit_id: selectedUnitId,
+            },
+            inertiaCartOptions(snapshot, {
+                onSuccess: () => setUnitModalProduct(null),
+            }),
+        );
     };
 
     const updateCart = (cartId, newQty) => {
@@ -351,124 +496,256 @@ export default function TransactionCreate() {
             return;
         }
 
+        if (String(cartId).startsWith("temp-")) {
+            setLocalCarts((prev) =>
+                prev.map((cart) =>
+                    cart.id === cartId ? { ...cart, qty: newQty } : cart,
+                ),
+            );
+            return;
+        }
+
+        const snapshot = localCarts;
+        const current = localCarts.find((cart) => cart.id === cartId);
+
+        setLocalCarts((prev) =>
+            prev.map((cart) =>
+                cart.id === cartId ? { ...cart, qty: newQty } : cart,
+            ),
+        );
+
         router.put(
             `/account/carts/${cartId}`,
-            { qty: newQty },
             {
-                preserveState: true,
-                preserveScroll: true,
-                only: ["carts"],
+                qty: newQty,
+                discount: current?.discount ?? 0,
+                discount_type: current?.discount_type || "nominal",
             },
+            inertiaCartOptions(snapshot),
         );
     };
 
     const deleteCart = (cartId) => {
-        router.delete(`/account/carts/${cartId}`, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ["carts"],
-        });
-    };
+        const snapshot = localCarts;
+        setLocalCarts((prev) => prev.filter((cart) => cart.id !== cartId));
 
-    const debounceTimers = useRef({});
+        if (String(cartId).startsWith("temp-")) {
+            return;
+        }
 
-    const toggleCartHold = (cartId, isHeld) => {
-        router.patch(
-            `/account/carts/${cartId}/hold`,
-            { is_held: isHeld },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                only: ["carts"],
-            },
+        router.delete(
+            `/account/carts/${cartId}`,
+            inertiaCartOptions(snapshot),
         );
     };
 
-    const renderCartRow = (cart, { held = false } = {}) => (
-        <div
-            className={`pos-cart-row ${held ? "opacity-75" : ""}`}
-            key={cart.id}
-        >
-            <div className="pos-cart-main">
-                <strong>{cart.product.title}</strong>
-                {held && (
-                    <span className="badge bg-secondary ms-1">Ditahan</span>
-                )}
-                <span>
-                    {cart.ppob_cost != null ? (
-                        <>Modal {formatRupiah(cart.ppob_cost)} + Fee {formatRupiah(cart.admin_fee)}</>
-                    ) : (
-                        <>
-                            {cart.unit?.abbreviation || cart.product.unit} · {formatRupiah(cart.price)}
-                        </>
+    const toggleCartHold = (cartId, isHeld) => {
+        if (String(cartId).startsWith("temp-")) {
+            return;
+        }
+
+        const snapshot = localCarts;
+        setLocalCarts((prev) =>
+            prev.map((cart) =>
+                cart.id === cartId ? { ...cart, is_held: isHeld } : cart,
+            ),
+        );
+
+        router.patch(
+            `/account/carts/${cartId}/hold`,
+            { is_held: isHeld },
+            inertiaCartOptions(snapshot),
+        );
+    };
+
+    const updateCartDiscount = (cartId, discount, discountType) => {
+        if (String(cartId).startsWith("temp-")) {
+            setLocalCarts((prev) =>
+                prev.map((cart) =>
+                    cart.id === cartId
+                        ? { ...cart, discount, discount_type: discountType }
+                        : cart,
+                ),
+            );
+            return;
+        }
+
+        const snapshot = localCarts;
+        const current = localCarts.find((cart) => cart.id === cartId);
+
+        setLocalCarts((prev) =>
+            prev.map((cart) =>
+                cart.id === cartId
+                    ? { ...cart, discount, discount_type: discountType }
+                    : cart,
+            ),
+        );
+
+        router.put(
+            `/account/carts/${cartId}`,
+            {
+                qty: current?.qty || 1,
+                discount,
+                discount_type: discountType,
+            },
+            inertiaCartOptions(snapshot),
+        );
+    };
+
+    const handleDiscountChange = (cartId, rawValue, discountType) => {
+        const value = parseInt(rawValue, 10);
+        const discount = isNaN(value) || value < 0 ? 0 : value;
+
+        setLocalCarts((prev) =>
+            prev.map((cart) =>
+                cart.id === cartId
+                    ? { ...cart, discount, discount_type: discountType }
+                    : cart,
+            ),
+        );
+
+        if (discountTimers.current[cartId]) {
+            clearTimeout(discountTimers.current[cartId]);
+        }
+
+        discountTimers.current[cartId] = setTimeout(() => {
+            updateCartDiscount(cartId, discount, discountType);
+        }, 500);
+    };
+
+    const renderCartRow = (cart, { held = false } = {}) => {
+        const itemDiscount = lineDiscountAmount(cart);
+        const net = lineNet(cart);
+
+        return (
+            <div
+                className={`pos-cart-row ${held ? "opacity-75" : ""}`}
+                key={cart.id}
+            >
+                <div className="pos-cart-main">
+                    <strong>{cart.product?.title || "Produk"}</strong>
+                    {held && (
+                        <span className="badge bg-secondary ms-1">Ditahan</span>
                     )}
-                </span>
-                {cart.customer_ref && (
-                    <small className="text-muted d-block">Ref: {cart.customer_ref}</small>
-                )}
-            </div>
+                    <span>
+                        {cart.ppob_cost != null ? (
+                            <>Modal {formatRupiah(cart.ppob_cost)} + Fee {formatRupiah(cart.admin_fee)}</>
+                        ) : (
+                            <>
+                                {cart.unit?.abbreviation || cart.product?.unit} · {formatRupiah(cart.price)}
+                            </>
+                        )}
+                    </span>
+                    {cart.customer_ref && (
+                        <small className="text-muted d-block">Ref: {cart.customer_ref}</small>
+                    )}
+                    {!held && (
+                        <div className="d-flex align-items-center gap-1 mt-1">
+                            <small className="text-muted">Diskon</small>
+                            <div className="input-group input-group-sm" style={{ maxWidth: 140 }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary"
+                                    onClick={() =>
+                                        handleDiscountChange(
+                                            cart.id,
+                                            cart.discount || 0,
+                                            (cart.discount_type || "nominal") === "nominal"
+                                                ? "percent"
+                                                : "nominal",
+                                        )
+                                    }
+                                    title="Toggle Rp / %"
+                                >
+                                    {(cart.discount_type || "nominal") === "percent" ? "%" : "Rp"}
+                                </button>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    min="0"
+                                    value={cart.discount || 0}
+                                    onChange={(e) =>
+                                        handleDiscountChange(
+                                            cart.id,
+                                            e.target.value,
+                                            cart.discount_type || "nominal",
+                                        )
+                                    }
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-            <div className="pos-cart-actions">
-                {!held && (
-                    <div className="pos-qty-stepper">
+                <div className="pos-cart-actions">
+                    {!held && (
+                        <div className="pos-qty-stepper">
+                            <button
+                                type="button"
+                                onClick={() => updateCart(cart.id, cart.qty - 1)}
+                            >
+                                <i className="fas fa-minus"></i>
+                            </button>
+
+                            <input
+                                type="number"
+                                className="pos-qty-input"
+                                value={cart.qty}
+                                min="1"
+                                onChange={(e) => handleQtyChange(cart.id, e.target.value)}
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => updateCart(cart.id, cart.qty + 1)}
+                            >
+                                <i className="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="text-end">
+                        <strong>{formatRupiah(net)}</strong>
+                        {itemDiscount > 0 && (
+                            <small className="text-danger d-block">
+                                -{formatRupiah(itemDiscount)}
+                            </small>
+                        )}
+                    </div>
+
+                    <div className="d-flex gap-1">
+                        {held ? (
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => toggleCartHold(cart.id, false)}
+                                title="Lanjutkan"
+                            >
+                                <i className="fas fa-play"></i>
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-outline-warning"
+                                onClick={() => toggleCartHold(cart.id, true)}
+                                title="Tahan"
+                            >
+                                <i className="fas fa-pause"></i>
+                            </button>
+                        )}
+
                         <button
                             type="button"
-                            onClick={() => updateCart(cart.id, cart.qty - 1)}
+                            className="pos-cart-delete"
+                            onClick={() => deleteCart(cart.id)}
                         >
-                            <i className="fas fa-minus"></i>
-                        </button>
-
-                        <input
-                            type="number"
-                            className="pos-qty-input"
-                            value={cart.qty}
-                            min="1"
-                            onChange={(e) => handleQtyChange(cart.id, e.target.value)}
-                        />
-
-                        <button
-                            type="button"
-                            onClick={() => updateCart(cart.id, cart.qty + 1)}
-                        >
-                            <i className="fas fa-plus"></i>
+                            <i className="fas fa-trash"></i>
                         </button>
                     </div>
-                )}
-
-                <strong>{formatRupiah(cart.price * cart.qty)}</strong>
-
-                <div className="d-flex gap-1">
-                    {held ? (
-                        <button
-                            type="button"
-                            className="btn btn-sm btn-outline-primary"
-                            onClick={() => toggleCartHold(cart.id, false)}
-                            title="Lanjutkan"
-                        >
-                            <i className="fas fa-play"></i>
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            className="btn btn-sm btn-outline-warning"
-                            onClick={() => toggleCartHold(cart.id, true)}
-                            title="Tahan"
-                        >
-                            <i className="fas fa-pause"></i>
-                        </button>
-                    )}
-
-                    <button
-                        type="button"
-                        className="pos-cart-delete"
-                        onClick={() => deleteCart(cart.id)}
-                    >
-                        <i className="fas fa-trash"></i>
-                    </button>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const handleQtyChange = (cartId, rawValue) => {
         const newQty = parseInt(rawValue, 10);
@@ -478,6 +755,12 @@ export default function TransactionCreate() {
         }
 
         if (isNaN(newQty) || newQty < 1) return;
+
+        setLocalCarts((prev) =>
+            prev.map((cart) =>
+                cart.id === cartId ? { ...cart, qty: newQty } : cart,
+            ),
+        );
 
         debounceTimers.current[cartId] = setTimeout(() => {
             updateCart(cartId, newQty);
@@ -552,6 +835,17 @@ export default function TransactionCreate() {
                 title: "Error!",
                 text: "Keranjang masih kosong!",
                 icon: "error",
+                timer: 1500,
+                showConfirmButton: false,
+            });
+            return;
+        }
+
+        if (activeCarts.some((cart) => String(cart.id).startsWith("temp-"))) {
+            Swal.fire({
+                title: "Sebentar...",
+                text: "Masih menyimpan item ke keranjang. Coba lagi sebentar.",
+                icon: "info",
                 timer: 1500,
                 showConfirmButton: false,
             });
@@ -840,7 +1134,7 @@ export default function TransactionCreate() {
                                     <div>
                                         <h5>Keranjang</h5>
                                         <span>
-                                            {carts.length} baris transaksi
+                                            {localCarts.length} baris transaksi
                                         </span>
                                     </div>
 

@@ -56,6 +56,17 @@ export default function PpobReport() {
         });
     };
 
+    const handleExport = () => {
+        const params = new URLSearchParams({
+            q: search,
+            start_date: startDate,
+            end_date: endDate,
+            cashier_id: cashierId,
+            group_by: groupBy,
+        });
+        window.location.href = `/account/reports/ppob/export?${params.toString()}`;
+    };
+
     return (
         <>
             <Head title="Laporan PPOB" />
@@ -69,6 +80,16 @@ export default function PpobReport() {
                                     <i className="fas fa-mobile-alt me-2"></i>
                                     LAPORAN PPOB
                                 </h5>
+                                {hasAnyPermission(["reports.export"], permissions) && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-success btn-sm shadow-sm"
+                                        onClick={handleExport}
+                                    >
+                                        <i className="far fa-file-excel me-1"></i>
+                                        Export Excel
+                                    </button>
+                                )}
                             </div>
 
                             <div className="card-body">

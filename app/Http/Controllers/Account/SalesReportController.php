@@ -26,7 +26,7 @@ class SalesReportController extends Controller
             'q' => 'nullable|string|max:100',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'payment_method' => 'nullable|in:cash,digital',
+            'payment_method' => 'nullable|in:cash,digital,qris,transfer',
             'cashier_id' => 'nullable|exists:users,id',
         ]);
 
@@ -75,6 +75,12 @@ class SalesReportController extends Controller
         $digitalGrossSales = (int) (clone $summaryQuery)
             ->where('payment_method', 'digital')
             ->sum('grand_total');
+        $qrisGrossSales = (int) (clone $summaryQuery)
+            ->where('payment_method', 'qris')
+            ->sum('grand_total');
+        $transferGrossSales = (int) (clone $summaryQuery)
+            ->where('payment_method', 'transfer')
+            ->sum('grand_total');
 
         // Chart data: sales by day
         $salesByDay = (clone $baseQuery)
@@ -114,6 +120,8 @@ class SalesReportController extends Controller
                 'total_items' => $totalItems,
                 'cash_sales' => max(0, $cashGrossSales - $returnsByMethod['cash']),
                 'digital_sales' => max(0, $digitalGrossSales - $returnsByMethod['digital']),
+                'qris_sales' => max(0, $qrisGrossSales - $returnsByMethod['qris']),
+                'transfer_sales' => max(0, $transferGrossSales - $returnsByMethod['transfer']),
             ],
             'filters' => [
                 'q' => $request->q ?? '',
@@ -248,7 +256,7 @@ class SalesReportController extends Controller
         $request->validate([
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'payment_method' => 'nullable|in:cash,digital',
+            'payment_method' => 'nullable|in:cash,digital,qris,transfer',
             'cashier_id' => 'nullable|exists:users,id',
         ]);
 

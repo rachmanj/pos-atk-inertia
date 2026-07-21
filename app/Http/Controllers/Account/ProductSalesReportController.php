@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Exports\ProductSalesReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\TransactionDetail;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductSalesReportController extends Controller
 {
@@ -139,5 +141,34 @@ class ProductSalesReportController extends Controller
                 : [],
             'isAdmin' => $user->isAdminUser(),
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        $user = $request->user();
+
+        abort_unless($user->can('reports.export'), 403);
+        abort_unless($user->can('reports.product_sales'), 403);
+
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'category_id' => 'nullable|exists:categories,id',
+            'cashier_id' => 'nullable|exists:users,id',
+        ]);
+
+        $filters = [
+            'q' => $request->q,
+            'start_date' => $request->start_date ?: now()->startOfMonth()->toDateString(),
+            'end_date' => $request->end_date ?: now()->toDateString(),
+            'category_id' => $request->category_id,
+            'cashier_id' => !$user->isAdminUser() ? $user->id : $request->cashier_id,
+        ];
+
+        return Excel::download(
+            new ProductSalesReportExport($filters),
+            'laporan-produk-terlaris-' . now()->format('Ymd_His') . '.xlsx'
+        );
     }
 }

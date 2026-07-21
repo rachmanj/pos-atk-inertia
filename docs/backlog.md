@@ -80,6 +80,18 @@
 - **Potential Value**: Retention
 - **Complexity**: Medium
 
+### Split payment & EDC
+
+- **Concept**: Allow paying one transaction with multiple methods (cash+QRIS) and optional EDC/card channel.
+- **Potential Value**: Matches real Indonesian retail checkout
+- **Complexity**: High — schema + checkout + shift cash reconciliation
+
+### PWA / offline POS
+
+- **Concept**: Service worker + IndexedDB queue for sales when internet drops.
+- **Potential Value**: Continuity during outages
+- **Complexity**: Extra large — stock conflict design required
+
 ## Technical Improvements
 
 ### Performance & Code Quality

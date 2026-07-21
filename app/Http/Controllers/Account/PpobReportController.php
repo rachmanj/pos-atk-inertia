@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Exports\PpobReportExport;
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PpobReportController extends Controller
 {
@@ -140,5 +141,34 @@ class PpobReportController extends Controller
                 : [],
             'isAdmin' => $user->isAdminUser(),
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        $user = $request->user();
+
+        abort_unless($user->can('reports.export'), 403);
+        abort_unless($user->can('reports.ppob'), 403);
+
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'cashier_id' => 'nullable|exists:users,id',
+            'group_by' => 'nullable|in:product,date',
+        ]);
+
+        $filters = [
+            'q' => $request->q,
+            'start_date' => $request->start_date ?: now()->startOfMonth()->toDateString(),
+            'end_date' => $request->end_date ?: now()->toDateString(),
+            'cashier_id' => !$user->isAdminUser() ? $user->id : $request->cashier_id,
+            'group_by' => $request->group_by ?: 'product',
+        ];
+
+        return Excel::download(
+            new PpobReportExport($filters),
+            'laporan-ppob-' . now()->format('Ymd_His') . '.xlsx'
+        );
     }
 }

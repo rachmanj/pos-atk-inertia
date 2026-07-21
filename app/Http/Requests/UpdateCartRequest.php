@@ -15,6 +15,8 @@ class UpdateCartRequest extends FormRequest
     {
         return [
             'qty' => 'required|integer|min:1',
+            'discount' => 'nullable|integer|min:0',
+            'discount_type' => 'nullable|in:nominal,percent',
         ];
     }
 }

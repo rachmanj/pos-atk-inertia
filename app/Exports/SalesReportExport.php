@@ -65,7 +65,13 @@ class SalesReportExport implements FromQuery, WithHeadings, WithMapping, ShouldA
         static $no = 0;
         $no++;
 
-        $paymentMethod = $row->payment_method === 'cash' ? 'Tunai' : 'Digital';
+        $paymentMethod = match ($row->payment_method) {
+            'cash' => 'Tunai',
+            'digital' => 'Digital',
+            'qris' => 'QRIS',
+            'transfer' => 'Transfer',
+            default => $row->payment_method ?? '-',
+        };
 
         return [
             $no,

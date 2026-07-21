@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings  
-**Last Updated**: 2026-06-26 (Service products with BOM)
+**Last Updated**: 2026-07-21 (POS/laporan remaining gaps)
 
 ---
 
@@ -117,4 +117,10 @@
 **Challenge/Decision**: `php artisan migrate` gagal `could not find driver` karena `php8.5-sqlite3` belum terpasang dan sudo tidak tersedia di environment agent.  
 **Solution**: Paket `.so` diunduh via `apt-get download php8.5-sqlite3` ke `.php-ext/` (gitignored). Wrapper `./pos_kasir` menjalankan artisan dengan extension flags. PHPUnit: `php -d extension=pdo -d extension=$PWD/.php-ext/sqlite3.so -d extension=$PWD/.php-ext/pdo_sqlite.so vendor/bin/phpunit`. Produksi/dev permanen: `sudo apt-get install -y php8.5-sqlite3`.  
 **Key Learning**: `.env` default SQLite (`database/database.sqlite`); jalankan `./pos_kasir migrate --seed` setelah clone jika extension sistem belum ada.
+
+### POS-018 Cart optimistic UI + diskon per item (2026-07-21) ✅ COMPLETE
+
+**Challenge/Decision**: Remaining gaps from `docs/rekomendasi-pos-laporan.md`.  
+**Solution**: POS uses local cart state with rollback on Inertia error; line discount via `carts.discount`/`discount_type` → `transaction_details.discount_amount` at checkout (`Cart::lineNet()`). Export Excel added for product-sales/PPOB/expense/customers. Sales report filters/summary include `qris`/`transfer`.  
+**Key Learning**: Order-level discount applies on top of sum of line nets. Deferred: split payment, EDC, PWA/offline.
 

@@ -69,6 +69,17 @@ export default function ExpenseReport() {
         });
     };
 
+    const handleExport = () => {
+        const params = new URLSearchParams({
+            q: search,
+            start_date: startDate,
+            end_date: endDate,
+            category: category,
+            cashier_id: cashierId,
+        });
+        window.location.href = `/account/reports/expense/export?${params.toString()}`;
+    };
+
     const formatChartRupiah = (value) => {
         if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
         if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
@@ -88,6 +99,16 @@ export default function ExpenseReport() {
                                     <i className="fas fa-receipt me-2"></i>
                                     LAPORAN PENGELUARAN
                                 </h5>
+                                {hasAnyPermission(["reports.export"], permissions) && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-success btn-sm shadow-sm"
+                                        onClick={handleExport}
+                                    >
+                                        <i className="far fa-file-excel me-1"></i>
+                                        Export Excel
+                                    </button>
+                                )}
                             </div>
 
                             <div className="card-body">

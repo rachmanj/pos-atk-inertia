@@ -175,6 +175,10 @@ export default function ProfitReport() {
                                                 Reset
                                             </button>
                                         </div>
+
+                                        <div className="col-12">
+                                            <DatePreset onApply={handleDatePreset} />
+                                        </div>
                                     </div>
                                 </form>
 

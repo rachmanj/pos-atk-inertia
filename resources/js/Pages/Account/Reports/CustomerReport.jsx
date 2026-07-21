@@ -52,6 +52,16 @@ export default function CustomerReport() {
         });
     };
 
+    const handleExport = () => {
+        const params = new URLSearchParams({
+            q: search,
+            start_date: startDate,
+            end_date: endDate,
+            cashier_id: cashierId,
+        });
+        window.location.href = `/account/reports/customers/export?${params.toString()}`;
+    };
+
     const formatDate = (value) => {
         if (!value) return "-";
         return new Date(value).toLocaleString("id-ID", {
@@ -73,6 +83,16 @@ export default function CustomerReport() {
                                     <i className="fas fa-users me-2"></i>
                                     LAPORAN PELANGGAN
                                 </h5>
+                                {hasAnyPermission(["reports.export"], permissions) && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-success btn-sm shadow-sm"
+                                        onClick={handleExport}
+                                    >
+                                        <i className="far fa-file-excel me-1"></i>
+                                        Export Excel
+                                    </button>
+                                )}
                             </div>
 
                             <div className="card-body">
