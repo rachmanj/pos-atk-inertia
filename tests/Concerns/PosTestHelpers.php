@@ -92,6 +92,30 @@ trait PosTestHelpers
         return compact('category', 'unit', 'product', 'productUnit');
     }
 
+    protected function createPpobProduct(array $overrides = []): array
+    {
+        $category = Category::create([
+            'name' => 'PPOB Category ' . uniqid(),
+            'slug' => 'ppob-category-' . uniqid(),
+        ]);
+
+        $product = Product::create(array_merge([
+            'category_id' => $category->id,
+            'barcode' => 'PPOB-' . uniqid(),
+            'title' => 'Meterai Test',
+            'slug' => 'meterai-test-' . uniqid(),
+            'product_type' => 'ppob',
+            'buy_price' => 0,
+            'sell_price' => 0,
+            'avg_cost' => 0,
+            'unit' => 'lembar',
+            'stock' => 0,
+            'is_active' => true,
+        ], $overrides));
+
+        return compact('category', 'product');
+    }
+
     protected function createServiceProduct(array $componentCatalogs, array $overrides = []): array
     {
         $category = Category::create([
