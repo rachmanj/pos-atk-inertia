@@ -32,6 +32,7 @@ use App\Http\Controllers\Account\PpobAccountController;
 use App\Http\Controllers\Account\PpobBalanceLogController;
 use App\Http\Controllers\Account\UnitController;
 use App\Http\Controllers\Account\PasswordController;
+use App\Http\Controllers\Telegram\TelegramWebhookController;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
@@ -55,6 +56,10 @@ Route::post('/logout', [LoginController::class, 'destroy'])
 
 Route::post('/midtrans/callback', [TransactionController::class, 'callback'])
     ->name('midtrans.callback');
+
+Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
+    ->middleware([\App\Http\Middleware\VerifyTelegramWebhook::class, 'throttle:60,1'])
+    ->name('telegram.webhook');
 
 Route::middleware(['auth'])
     ->prefix('account')
