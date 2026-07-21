@@ -24,6 +24,9 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
+        'telegram_id',
+        'telegram_username',
+        'telegram_linked_at',
     ];
 
     /**
@@ -43,6 +46,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'telegram_linked_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -91,5 +95,10 @@ class User extends Authenticatable
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
+    }
+
+    public static function findByTelegramId(int $telegramId): ?self
+    {
+        return static::query()->where('telegram_id', $telegramId)->first();
     }
 }

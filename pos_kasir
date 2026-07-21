@@ -26,6 +26,15 @@ ensure_sqlite_ext() {
 
 ensure_sqlite_ext
 
+if [[ "${1:-}" == "test" ]]; then
+    shift
+    exec php \
+        -d extension=pdo \
+        -d "extension=$EXT_DIR/sqlite3.so" \
+        -d "extension=$EXT_DIR/pdo_sqlite.so" \
+        "$ROOT/vendor/bin/phpunit" "$@"
+fi
+
 exec php \
     -d extension=pdo \
     -d "extension=$EXT_DIR/sqlite3.so" \

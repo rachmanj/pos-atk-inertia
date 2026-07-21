@@ -209,7 +209,7 @@ All authenticated routes are prefixed `/account` with name prefix `account.`. Pe
 | Shifts | `cashier-shifts` resource + `PUT .../close` |
 | Reports | `/account/reports/sales`, `profit`, `stock` |
 | Admin | `roles`, `users`, `settings`, `expenses` |
-| Public | `POST /midtrans/callback` (CSRF exempt) |
+| Public | `POST /midtrans/callback`, `POST /telegram/webhook` (CSRF exempt) |
 
 Route definitions: `routes/web.php`.
 
@@ -278,6 +278,30 @@ sequenceDiagram
     Note over POS,DB: No stock_movements for PPOB lines
 ```
 
+### PPOB sale (Telegram Bot)
+
+```mermaid
+sequenceDiagram
+    participant Kasir as Kasir Telegram
+    participant WH as TelegramWebhookController
+    participant Handler as TelegramUpdateHandler
+    participant CO as CheckoutService
+    participant DB as Database
+
+    Kasir->>WH: POST /telegram/webhook
+    WH->>Handler: parse + match produk
+    Handler->>CO: checkoutFromLines (tanpa cart POS)
+    CO->>DB: transaction + detail PPOB + profit
+    CO->>DB: ppob_balance_logs type sale
+    Handler-->>Kasir: sendMessage konfirmasi
+```
+
+- **Config**: `config/telegram.php` — `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_ALLOWED_CHAT_IDS`, `TELEGRAM_MODE`.
+- **Auth**: header `X-Telegram-Bot-Api-Secret-Token`; user harus punya `users.telegram_id` + permission `transactions.create`.
+- **Parser**: keyword `total` = biaya keseluruhan, `@` = biaya per unit; tanpa keyword → tolak.
+- **Checkout**: `CheckoutService::checkoutFromLines()` — isolasi dari cart kasir UI.
+- **Dev/prod**: `php artisan telegram:poll` (lokal) / `php artisan telegram:set-webhook` (produksi).
+
 ## Frontend Patterns
 
 - Entry: `resources/js/app.jsx` — Inertia resolves `./Pages/{name}.jsx`.
@@ -288,7 +312,7 @@ sequenceDiagram
 
 ## Security Implementation
 
-- CSRF on all web routes except `midtrans/callback` (`bootstrap/app.php`).
+- CSRF on all web routes except `midtrans/callback` and `telegram/webhook` (`bootstrap/app.php`).
 - Login rate limiting: `throttle:5,1` on `POST /login`.
 - Route-level `permission:*` middleware (Spatie).
 - Midtrans callback validates SHA-512 `signature_key`; inbound notifications logged via `Log::info` / `Log::warning`.
@@ -315,8 +339,9 @@ php artisan migrate --seed   # permissions, roles, default users
 
 - `APP_URL`, `DB_*` (MySQL default: `DB_CONNECTION=mysql`, database `pos_kasir`), `STORE_LOGO_PATH`
 - `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION` (`config/midtrans.php`)
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_MODE`, `TELEGRAM_ALLOWED_CHAT_IDS` (`config/telegram.php`)
 
-**Testing**: `php artisan test` uses SQLite in-memory via `phpunit.xml` (`DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`).
+**Testing**: `composer test` atau `./pos_kasir test` (PHPUnit, SQLite in-memory).
 
 **URLs**: Laravel `php artisan serve` defaults to `http://127.0.0.1:8000`. Vite HMR runs on its own port via `npm run dev`.
 

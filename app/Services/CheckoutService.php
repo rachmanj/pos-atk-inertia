@@ -21,18 +21,13 @@ class CheckoutService
 
     public function checkout(User $user, array $data): Transaction
     {
-        $paymentMethod = $data['payment_method'];
-        $discount = (int) ($data['discount'] ?? 0);
-        $discountType = $data['discount_type'] ?? 'nominal';
         $activeShift = $user->activeCashierShift;
 
-        if (!$activeShift) {
+        if (! $activeShift) {
             throw new DomainException('Buka shift kasir terlebih dahulu sebelum memproses transaksi.');
         }
 
-        return DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $discountType, $activeShift) {
-            $isImmediatePayment = in_array($paymentMethod, ['cash', 'qris', 'transfer'], true);
-
+        return DB::transaction(function () use ($user, $data) {
             $carts = Cart::query()
                 ->with(['product.productUnits', 'product.components.componentProduct'])
                 ->where('cashier_id', $user->id)
@@ -45,14 +40,64 @@ class CheckoutService
                 throw new DomainException('Keranjang masih kosong!');
             }
 
-            $stockProductIds = $carts
-                ->flatMap(function ($cart) {
-                    if ($cart->product?->isPhysical()) {
-                        return [$cart->product_id];
+            $lines = $carts->map(fn (Cart $cart) => [
+                'product_id' => $cart->product_id,
+                'qty' => (int) $cart->qty,
+                'price' => (int) $cart->price,
+                'unit_id' => $cart->unit_id,
+                'ppob_cost' => $cart->ppob_cost,
+                'admin_fee' => $cart->admin_fee,
+                'customer_ref' => $cart->customer_ref,
+                'discount' => (int) ($cart->discount ?? 0),
+                'discount_type' => $cart->discount_type ?? 'nominal',
+            ])->all();
+
+            $transaction = $this->checkoutFromLines($user, $lines, $data);
+
+            Cart::query()
+                ->whereIn('id', $carts->pluck('id'))
+                ->delete();
+
+            return $transaction;
+        });
+    }
+
+    public function checkoutFromLines(User $user, array $lines, array $data): Transaction
+    {
+        $paymentMethod = $data['payment_method'];
+        $discount = (int) ($data['discount'] ?? 0);
+        $discountType = $data['discount_type'] ?? 'nominal';
+        $activeShift = $user->activeCashierShift;
+
+        if (! $activeShift) {
+            throw new DomainException('Buka shift kasir terlebih dahulu sebelum memproses transaksi.');
+        }
+
+        if ($lines === []) {
+            throw new DomainException('Keranjang masih kosong!');
+        }
+
+        return DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $discountType, $activeShift, $lines) {
+            $isImmediatePayment = in_array($paymentMethod, ['cash', 'qris', 'transfer'], true);
+
+            $productIds = collect($lines)->pluck('product_id')->unique()->values()->all();
+
+            $lineProducts = Product::query()
+                ->with(['productUnits', 'components.componentProduct'])
+                ->whereIn('id', $productIds)
+                ->get()
+                ->keyBy('id');
+
+            $stockProductIds = collect($lines)
+                ->flatMap(function (array $line) use ($lineProducts) {
+                    $product = $lineProducts->get($line['product_id']);
+
+                    if ($product?->isPhysical()) {
+                        return [$product->id];
                     }
 
-                    if ($cart->product?->isService()) {
-                        return $cart->product->components->pluck('component_product_id');
+                    if ($product?->isService()) {
+                        return $product->components->pluck('component_product_id');
                     }
 
                     return [];
@@ -71,21 +116,21 @@ class CheckoutService
 
             $ppobAccount = null;
 
-            if ($carts->contains(fn ($cart) => $cart->product?->isPpob())) {
+            if ($lineProducts->contains(fn (Product $product) => $product->isPpob())) {
                 $ppobAccount = PpobAccount::query()
                     ->where('is_active', true)
                     ->orderBy('id')
                     ->lockForUpdate()
                     ->first();
 
-                if (!$ppobAccount) {
+                if (! $ppobAccount) {
                     throw new DomainException('Akun PPOB aktif belum dikonfigurasi.');
                 }
             }
 
-            $subtotal = (int) $carts->sum(fn ($cart) => $cart->lineNet());
+            $subtotal = (int) collect($lines)->sum(fn (array $line) => $this->lineNet($line));
 
-            // Hitung diskon order: nominal atau persen (di atas subtotal setelah diskon per item)
+            // Order-level discount applies on top of line nets (after per-item discount)
             $discountAmount = $discount;
             if ($discountType === 'percent') {
                 $discountAmount = (int) round($subtotal * $discount / 100);
@@ -128,33 +173,37 @@ class CheckoutService
 
             $totalBuyPrice = 0;
 
-            foreach ($carts as $cart) {
-                $product = $cart->product;
+            foreach ($lines as $line) {
+                $product = $lineProducts->get($line['product_id']);
 
-                if (!$product) {
+                if (! $product) {
                     throw new DomainException('Produk pada keranjang tidak valid.');
                 }
 
+                $itemDiscount = $this->lineDiscountAmount($line);
+                $itemSubtotal = $this->lineNet($line);
+                $lineDiscountType = $itemDiscount > 0
+                    ? ($line['discount_type'] ?? 'nominal')
+                    : null;
+
                 if ($product->isPpob()) {
-                    $ppobCost = (int) $cart->ppob_cost;
-                    $adminFee = (int) $cart->admin_fee;
-                    $itemDiscount = $cart->lineDiscountAmount();
-                    $itemSubtotal = $cart->lineNet();
-                    $itemCost = $ppobCost * (int) $cart->qty;
+                    $ppobCost = (int) ($line['ppob_cost'] ?? 0);
+                    $adminFee = (int) ($line['admin_fee'] ?? 0);
+                    $itemCost = $ppobCost * (int) $line['qty'];
 
                     TransactionDetail::create([
                         'transaction_id' => $transaction->id,
-                        'product_id' => $cart->product_id,
+                        'product_id' => $line['product_id'],
                         'unit_id' => null,
                         'conversion_factor' => 1,
-                        'qty' => $cart->qty,
-                        'price' => $cart->price,
+                        'qty' => $line['qty'],
+                        'price' => $line['price'],
                         'buy_price' => $ppobCost,
                         'subtotal' => $itemSubtotal,
-                        'customer_ref' => $cart->customer_ref,
+                        'customer_ref' => $line['customer_ref'] ?? null,
                         'ppob_cost' => $ppobCost,
                         'admin_fee' => $adminFee,
-                        'discount_type' => $itemDiscount > 0 ? ($cart->discount_type ?? 'nominal') : null,
+                        'discount_type' => $lineDiscountType,
                         'discount_amount' => $itemDiscount,
                     ]);
 
@@ -175,12 +224,10 @@ class CheckoutService
                 }
 
                 if ($product->isService()) {
-                    $productUnit = $product->productUnits->firstWhere('unit_id', $cart->unit_id)
+                    $productUnit = $product->productUnits->firstWhere('unit_id', $line['unit_id'])
                         ?? $product->productUnits->firstWhere('is_default_sell', true);
 
                     $conversionFactor = (float) ($productUnit?->conversion_factor ?? 1);
-                    $itemDiscount = $cart->lineDiscountAmount();
-                    $itemSubtotal = $cart->lineNet();
                     $recipeCostPerUnit = 0;
                     $itemCost = 0;
 
@@ -191,11 +238,11 @@ class CheckoutService
                     foreach ($product->components as $componentRow) {
                         $componentProduct = $products->get($componentRow->component_product_id);
 
-                        if (!$componentProduct || !$componentProduct->isPhysical()) {
+                        if (! $componentProduct || ! $componentProduct->isPhysical()) {
                             throw new DomainException('Bahan baku layanan ' . $product->title . ' tidak valid.');
                         }
 
-                        $qtyNeeded = (int) round((float) $componentRow->qty_per_unit * (int) $cart->qty);
+                        $qtyNeeded = (int) round((float) $componentRow->qty_per_unit * (int) $line['qty']);
 
                         if ($qtyNeeded > (int) $componentProduct->stock) {
                             throw new DomainException('Stok bahan ' . $componentProduct->title . ' tidak mencukupi.');
@@ -229,14 +276,14 @@ class CheckoutService
 
                     TransactionDetail::create([
                         'transaction_id' => $transaction->id,
-                        'product_id' => $cart->product_id,
-                        'unit_id' => $cart->unit_id,
+                        'product_id' => $line['product_id'],
+                        'unit_id' => $line['unit_id'],
                         'conversion_factor' => $conversionFactor,
-                        'qty' => $cart->qty,
-                        'price' => $cart->price,
+                        'qty' => $line['qty'],
+                        'price' => $line['price'],
                         'buy_price' => $recipeCostPerUnit,
                         'subtotal' => $itemSubtotal,
-                        'discount_type' => $itemDiscount > 0 ? ($cart->discount_type ?? 'nominal') : null,
+                        'discount_type' => $lineDiscountType,
                         'discount_amount' => $itemDiscount,
                     ]);
 
@@ -245,17 +292,17 @@ class CheckoutService
                     continue;
                 }
 
-                $lockedProduct = $products->get($cart->product_id);
+                $lockedProduct = $products->get($line['product_id']);
 
-                if (!$lockedProduct) {
+                if (! $lockedProduct) {
                     throw new DomainException('Produk fisik pada keranjang tidak valid.');
                 }
 
-                $productUnit = $lockedProduct->productUnits->firstWhere('unit_id', $cart->unit_id)
+                $productUnit = $lockedProduct->productUnits->firstWhere('unit_id', $line['unit_id'])
                     ?? $lockedProduct->productUnits->firstWhere('is_default_sell', true);
 
                 $conversionFactor = (float) ($productUnit?->conversion_factor ?? 1);
-                $qtyInBase = (int) round((int) $cart->qty * $conversionFactor);
+                $qtyInBase = (int) round((int) $line['qty'] * $conversionFactor);
 
                 if ($qtyInBase > (int) $lockedProduct->stock) {
                     throw new DomainException('Stok produk ' . $lockedProduct->title . ' tidak mencukupi.');
@@ -263,27 +310,25 @@ class CheckoutService
 
                 $stockBefore = (int) $lockedProduct->stock;
                 $stockAfter = $stockBefore - $qtyInBase;
-                $itemDiscount = $cart->lineDiscountAmount();
-                $itemSubtotal = $cart->lineNet();
                 $itemCost = (int) $lockedProduct->avg_cost * $qtyInBase;
 
                 TransactionDetail::create([
                     'transaction_id' => $transaction->id,
-                    'product_id' => $cart->product_id,
-                    'unit_id' => $cart->unit_id,
+                    'product_id' => $line['product_id'],
+                    'unit_id' => $line['unit_id'],
                     'conversion_factor' => $conversionFactor,
-                    'qty' => $cart->qty,
-                    'price' => $cart->price,
+                    'qty' => $line['qty'],
+                    'price' => $line['price'],
                     'buy_price' => (int) $lockedProduct->avg_cost,
                     'subtotal' => $itemSubtotal,
-                    'discount_type' => $itemDiscount > 0 ? ($cart->discount_type ?? 'nominal') : null,
+                    'discount_type' => $lineDiscountType,
                     'discount_amount' => $itemDiscount,
                 ]);
 
                 $totalBuyPrice += $itemCost;
 
                 StockMovement::create([
-                    'product_id' => $cart->product_id,
+                    'product_id' => $line['product_id'],
                     'user_id' => $user->id,
                     'type' => 'out',
                     'qty' => $qtyInBase,
@@ -308,10 +353,6 @@ class CheckoutService
                 ]);
             }
 
-            Cart::query()
-                ->whereIn('id', $carts->pluck('id'))
-                ->delete();
-
             return $transaction;
         });
     }
@@ -321,7 +362,7 @@ class CheckoutService
         return DB::transaction(function () use ($user, $invoice, $voidReason) {
             $transaction = Transaction::with(['details.product'])
                 ->where('invoice', $invoice)
-                ->when(!$user->isAdminUser(), function ($query) use ($user) {
+                ->when(! $user->isAdminUser(), function ($query) use ($user) {
                     $query->where('cashier_id', $user->id);
                 })
                 ->lockForUpdate()
@@ -352,11 +393,11 @@ class CheckoutService
             foreach ($transaction->details as $detail) {
                 $product = $detail->product;
 
-                if (!$product) {
+                if (! $product) {
                     throw new DomainException('Produk pada transaksi tidak ditemukan.');
                 }
 
-                if (!$product->isPpob()) {
+                if (! $product->isPpob()) {
                     continue;
                 }
 
@@ -389,7 +430,7 @@ class CheckoutService
                     ->lockForUpdate()
                     ->first();
 
-                if (!$lockedProduct) {
+                if (! $lockedProduct) {
                     throw new DomainException('Produk pada transaksi tidak ditemukan.');
                 }
 
@@ -433,6 +474,32 @@ class CheckoutService
 
             return $transaction->fresh();
         });
+    }
+
+    protected function lineGross(array $line): int
+    {
+        return (int) $line['price'] * (int) $line['qty'];
+    }
+
+    protected function lineDiscountAmount(array $line): int
+    {
+        $gross = $this->lineGross($line);
+        $value = (int) ($line['discount'] ?? 0);
+
+        if ($value <= 0 || $gross <= 0) {
+            return 0;
+        }
+
+        $amount = ($line['discount_type'] ?? 'nominal') === 'percent'
+            ? (int) round($gross * $value / 100)
+            : $value;
+
+        return min($amount, $gross);
+    }
+
+    protected function lineNet(array $line): int
+    {
+        return $this->lineGross($line) - $this->lineDiscountAmount($line);
     }
 
     protected function generateTransactionInvoice(): string
