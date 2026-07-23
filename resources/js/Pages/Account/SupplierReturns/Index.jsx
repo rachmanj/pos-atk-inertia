@@ -4,6 +4,13 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
+import {
+    EyeOutlined,
+    FilterOutlined,
+    ReloadOutlined,
+    ShoppingOutlined,
+    UndoOutlined,
+} from "@ant-design/icons";
 
 const reasonLabels = {
     defect: "Barang Rusak",
@@ -52,7 +59,7 @@ export default function SupplierReturnIndex() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-undo me-2"></i>
+                                    <UndoOutlined className="me-2" />
                                     RETUR SUPPLIER
                                 </h5>
 
@@ -61,7 +68,7 @@ export default function SupplierReturnIndex() {
                                         href="/account/purchases"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-shopping-bag me-2"></i>
+                                        <ShoppingOutlined className="me-2" />
                                         LIHAT PEMBELIAN
                                     </Link>
                                 )}
@@ -146,7 +153,7 @@ export default function SupplierReturnIndex() {
                                                 type="submit"
                                                 className="btn btn-primary shadow-sm w-100"
                                             >
-                                                <i className="fas fa-filter me-2"></i>
+                                                <FilterOutlined className="me-2" />
                                                 Filter
                                             </button>
 
@@ -155,7 +162,7 @@ export default function SupplierReturnIndex() {
                                                 className="btn btn-secondary shadow-sm w-100"
                                                 onClick={handleReset}
                                             >
-                                                <i className="fas fa-sync-alt me-2"></i>
+                                                <ReloadOutlined className="me-2" />
                                                 Reset
                                             </button>
                                         </div>
@@ -252,7 +259,7 @@ export default function SupplierReturnIndex() {
                                                                         href={`/account/supplier-returns/${item.invoice}`}
                                                                         className="btn btn-secondary btn-sm shadow-sm"
                                                                     >
-                                                                        <i className="fas fa-eye me-1"></i>
+                                                                        <EyeOutlined className="me-1" />
                                                                         Detail
                                                                     </Link>
                                                                 )}

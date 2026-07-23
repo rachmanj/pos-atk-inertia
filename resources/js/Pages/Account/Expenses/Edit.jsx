@@ -1,7 +1,12 @@
 import { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import Swal from "sweetalert2";
+import { notification } from "antd";
+import {
+    ArrowLeftOutlined,
+    EditOutlined,
+    SaveOutlined,
+} from "@ant-design/icons";
 
 export default function ExpenseEdit() {
     const { errors = {}, expense = {}, categories = [] } = usePage().props;
@@ -26,12 +31,10 @@ export default function ExpenseEdit() {
             },
             {
                 onSuccess: () => {
-                    Swal.fire({
-                        title: "Berhasil",
-                        text: "Pengeluaran berhasil diperbarui.",
-                        icon: "success",
-                        showConfirmButton: false,
-                        timer: 1500,
+                    notification.success({
+                        message: "Berhasil",
+                        description: "Pengeluaran berhasil diperbarui.",
+                        duration: 1.5,
                     });
                 },
             },
@@ -49,7 +52,7 @@ export default function ExpenseEdit() {
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <div>
                                     <h5 className="mb-1 fw-bold">
-                                        <i className="fas fa-pencil-alt me-2"></i>
+                                        <EditOutlined className="me-2" />
                                         EDIT PENGELUARAN
                                     </h5>
                                     <small className="text-muted">
@@ -61,7 +64,7 @@ export default function ExpenseEdit() {
                                     href="/account/expenses"
                                     className="btn btn-secondary shadow-sm rounded-sm"
                                 >
-                                    <i className="fas fa-arrow-left me-2"></i>
+                                    <ArrowLeftOutlined className="me-2" />
                                     BACK
                                 </Link>
                             </div>
@@ -206,7 +209,7 @@ export default function ExpenseEdit() {
                                         type="submit"
                                         className="btn btn-success shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-save me-2"></i>
+                                        <SaveOutlined className="me-2" />
                                         UPDATE
                                     </button>
                                 </form>

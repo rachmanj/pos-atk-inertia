@@ -3,6 +3,12 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
+import {
+    ArrowLeftOutlined,
+    FileTextOutlined,
+    PlusCircleOutlined,
+    UndoOutlined,
+} from "@ant-design/icons";
 
 export default function PurchaseShow() {
     const { purchase, auth = {} } = usePage().props;
@@ -21,7 +27,7 @@ export default function PurchaseShow() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-file-invoice me-2"></i>
+                                    <FileTextOutlined className="me-2" />
                                     DETAIL PEMBELIAN
                                 </h5>
 
@@ -30,7 +36,7 @@ export default function PurchaseShow() {
                                         href="/account/purchases"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-arrow-left me-2"></i>
+                                        <ArrowLeftOutlined className="me-2" />
                                         KEMBALI
                                     </Link>
 
@@ -42,7 +48,7 @@ export default function PurchaseShow() {
                                             href="/account/purchases/create"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fas fa-plus-circle me-2"></i>
+                                            <PlusCircleOutlined className="me-2" />
                                             PEMBELIAN BARU
                                         </Link>
                                     )}
@@ -55,7 +61,7 @@ export default function PurchaseShow() {
                                             href={`/account/supplier-returns/create/${purchase.invoice}`}
                                             className="btn btn-danger shadow-sm rounded-sm"
                                         >
-                                            <i className="fas fa-undo me-2"></i>
+                                            <UndoOutlined className="me-2" />
                                             RETUR SUPPLIER
                                         </Link>
                                     )}

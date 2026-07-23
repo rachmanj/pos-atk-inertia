@@ -19,11 +19,8 @@
         "@ant-design/icons": "^6.3.2",
         "@inertiajs/react": "^3.0.3",
         "antd": "^6.5.1",
-        "bootstrap": "^5.3.8",
         "react": "^19.2.5",
-        "react-bootstrap": "^2.10.10",
         "react-dom": "^19.2.5",
-        "recharts": "^3.9.2",
-        "sweetalert2": "^11.26.24"
+        "recharts": "^3.9.2"
     }
 }

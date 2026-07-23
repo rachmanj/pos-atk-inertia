@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
+import { SearchOutlined } from '@ant-design/icons';
 import hasAnyPermission from '../../Utils/Permissions';
 import { NAV_MENUS } from '../../Utils/navMenu';
 
@@ -61,12 +62,12 @@ export default function MenuSearchPalette({
         );
     };
 
-    const modalOrSwalOpen = () => {
-        return !!document.querySelector('.swal2-container, .modal.show');
+    const modalOpen = () => {
+        return !!document.querySelector('.ant-modal-wrap, .ant-modal-root');
     };
 
     const focusInput = useCallback(() => {
-        if (modalOrSwalOpen()) return;
+        if (modalOpen()) return;
         if (isEditableFocused()) return;
         document.getElementById('menu-search-input')?.focus();
     }, []);
@@ -180,7 +181,7 @@ export default function MenuSearchPalette({
             {/* <label htmlFor="menu-search-input" className="menu-search-label">Search Menu</label> */}
 
             <div className="d-flex align-items-center border rounded bg-white px-2 py-1 menu-search-field">
-                <i className="fas fa-search text-muted small me-2"></i>
+                <SearchOutlined className="text-muted small me-2" />
                 <input
                     ref={inputRef}
                     id="menu-search-input"

@@ -3,6 +3,13 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
+import {
+    AuditOutlined,
+    EyeOutlined,
+    FilterOutlined,
+    PlusCircleOutlined,
+    ReloadOutlined,
+} from "@ant-design/icons";
 
 const differenceClass = (difference) => {
     if (difference > 0) {
@@ -69,7 +76,7 @@ export default function StockOpnameIndex() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-clipboard me-2"></i>
+                                    <AuditOutlined className="me-2" />
                                     STOCK OPNAME
                                 </h5>
 
@@ -81,7 +88,7 @@ export default function StockOpnameIndex() {
                                         href="/account/stock-opnames/create"
                                         className="btn btn-success shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-plus-circle me-2"></i>
+                                        <PlusCircleOutlined className="me-2" />
                                         BUAT OPNAME
                                     </Link>
                                 )}
@@ -141,7 +148,7 @@ export default function StockOpnameIndex() {
                                                 type="submit"
                                                 className="btn btn-primary shadow-sm w-100"
                                             >
-                                                <i className="fas fa-filter me-2"></i>
+                                                <FilterOutlined className="me-2" />
                                                 Terapkan
                                             </button>
 
@@ -150,7 +157,7 @@ export default function StockOpnameIndex() {
                                                 className="btn btn-secondary shadow-sm w-100"
                                                 onClick={handleReset}
                                             >
-                                                <i className="fas fa-sync-alt me-2"></i>
+                                                <ReloadOutlined className="me-2" />
                                                 Reset
                                             </button>
                                         </div>
@@ -252,7 +259,7 @@ export default function StockOpnameIndex() {
                                                                         href={`/account/stock-opnames/${stockOpname.code}`}
                                                                         className="btn btn-secondary btn-sm shadow-sm"
                                                                     >
-                                                                        <i className="fas fa-eye me-1"></i>
+                                                                        <EyeOutlined className="me-1" />
                                                                         Detail
                                                                     </Link>
                                                                 )}

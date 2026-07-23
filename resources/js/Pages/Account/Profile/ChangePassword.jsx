@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router } from "@inertiajs/react";
-import Swal from "sweetalert2";
+import { notification } from "antd";
+import { KeyOutlined, SaveOutlined } from "@ant-design/icons";
 
 export default function ChangePassword() {
     const { errors = {} } = usePage().props;
@@ -26,12 +27,10 @@ export default function ChangePassword() {
                     setPassword("");
                     setPasswordConfirmation("");
 
-                    Swal.fire({
-                        title: "Berhasil!",
-                        text: "Kata sandi berhasil diperbarui.",
-                        icon: "success",
-                        showConfirmButton: false,
-                        timer: 1500,
+                    notification.success({
+                        message: "Berhasil!",
+                        description: "Kata sandi berhasil diperbarui.",
+                        duration: 1.5,
                     });
                 },
             },
@@ -48,7 +47,7 @@ export default function ChangePassword() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-key me-2"></i>
+                                    <KeyOutlined className="me-2" />
                                     UBAH KATA SANDI
                                 </h5>
                             </div>
@@ -134,7 +133,7 @@ export default function ChangePassword() {
                                         type="submit"
                                         className="btn btn-success shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-save me-2"></i>
+                                        <SaveOutlined className="me-2" />
                                         SIMPAN KATA SANDI
                                     </button>
                                 </form>

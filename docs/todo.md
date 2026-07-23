@@ -230,15 +230,7 @@ const visible = NAV_MENUS.filter(m => {
 
 ## Up Next (This Week)
 
-### Migrasi UI Bootstrap → Ant Design
-
-**Status**: Rencana teknis selesai — menunggu keputusan prioritas & branch demo  
-**Plan**: `docs/migration-antd.md`  
-**Goal**: Ganti UI dari Bootstrap 5 + React-Bootstrap + Font Awesome ke Ant Design 5.x + `@ant-design/icons`, sambil mempertahankan Tailwind CSS untuk utility khusus (POS grid, login page).  
-**Scope**: 67 file JSX (`resources/js/Pages/Account/*`, `Components/`, `Shared/`, `Layouts/`, `Pages/Auth/Login.jsx`).  
-**Effort estimate**: 13-19 hari (1 developer senior).  
-**Risiko utama**: POS Kasir (`Transactions/Create.jsx`, 1350 baris) — perlu dipecah dulu ke sub-komponen.  
-**Rekomendasi start**: Fase 1 = layout shell (`Account.jsx`, `Sidebar.jsx`) + Dashboard demo untuk validasi Inertia + AntD compatibility.
+_(no active UI migration — Ant Design rollout complete)_
 
 ## Blocked/Waiting
 
@@ -246,7 +238,7 @@ _(none)_
 
 ## Recently Completed
 
-- `[done] Remaining POS/laporan gaps — optimistic cart, per-item discount, export new reports, Sales qris/transfer + drill-down, Profit DatePreset [Create.jsx, CheckoutService, Exports/*, SalesReportController] (completed: 2026-07-21)`
+- `[done] Migrasi UI Bootstrap → Ant Design — 5 fase selesai: layout shell, shared components, halaman CRUD/report, POS sub-komponen, polish & cleanup (hapus Bootstrap/SweetAlert2/Font Awesome CDN, ganti ikon @ant-design/icons) [docs/migration-antd.md] (completed: 2026-07-23)`
 - `[done] Auth: login with username or email; self-service change password from navbar dropdown [LoginController, PasswordController, Account.jsx] (completed: 2026-06-27)`
 - `[done] Product Excel import — create-only bulk import from Products index [ProductImportController, ProductsImport, Products/Index.jsx] (completed: 2026-06-26)`
 - `[done] P1: Add MIDTRANS_* vars to .env.example [config/midtrans.php] (completed: 2026-06-20)`

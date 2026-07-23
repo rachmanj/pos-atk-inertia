@@ -1,5 +1,5 @@
 **Purpose**: Technical reference for understanding system design and development patterns  
-**Last Updated**: 2026-06-26 (Service products with BOM)
+**Last Updated**: 2026-07-23 (Ant Design migration complete)
 
 ---
 
@@ -14,8 +14,8 @@
 | Layer | Technology |
 |-------|------------|
 | Backend | Laravel 12, PHP 8.2+ |
-| Frontend | Inertia.js 3, React 19, Vite 7 |
-| Styling | Bootstrap 5, React-Bootstrap, Tailwind CSS 4 |
+| Frontend | Inertia.js 3, React 19, Ant Design 6, Vite 7 |
+| Styling | Ant Design (`ConfigProvider` + `zenTheme`), Tailwind CSS 4 (utility) |
 | Auth & RBAC | Laravel session auth, Spatie Laravel Permission |
 | Payments | Midtrans Snap (`midtrans/midtrans-php`) |
 | Spreadsheet | Maatwebsite Excel (`maatwebsite/excel`) — product bulk import |
@@ -39,8 +39,8 @@ database/
   seeders/                    # Permissions, roles, default users
 resources/js/
   Pages/Account/              # Inertia page components (mirror controller names)
-  Components/Sidebar.jsx      # Permission-gated navigation
-  Layouts/Account.jsx         # Main authenticated shell
+  Components/Sidebar.jsx      # Permission-gated navigation (Ant Design Menu)
+  Layouts/Account.jsx         # Main authenticated shell (Ant Design Layout)
   Utils/                      # Permissions, format, role helpers
 routes/web.php                # All web routes + Midtrans callback
 config/

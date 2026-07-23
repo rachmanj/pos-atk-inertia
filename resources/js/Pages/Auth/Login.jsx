@@ -1,5 +1,11 @@
 import React, { useState } from "react";
 import { Head, usePage, router } from "@inertiajs/react";
+import {
+    LockOutlined,
+    LoginOutlined,
+    SafetyOutlined,
+    UserOutlined,
+} from "@ant-design/icons";
 
 export default function Login() {
     const { errors = {}, store = {} } = usePage().props;
@@ -51,7 +57,7 @@ export default function Login() {
                     <div className="pos-login-card">
                         <div className="pos-login-card-header">
                             <span className="pos-login-card-icon">
-                                <i className="fas fa-user-lock"></i>
+                                <SafetyOutlined />
                             </span>
                             <div>
                                 <h2>Masuk ke POS</h2>
@@ -66,7 +72,7 @@ export default function Login() {
                             <div className="pos-login-field">
                                 <label>Username atau Email</label>
                                 <div className="pos-login-input">
-                                    <i className="fas fa-user"></i>
+                                    <UserOutlined />
                                     <input
                                         type="text"
                                         value={login}
@@ -87,7 +93,7 @@ export default function Login() {
                             <div className="pos-login-field">
                                 <label>Password</label>
                                 <div className="pos-login-input">
-                                    <i className="fas fa-lock"></i>
+                                    <LockOutlined />
                                     <input
                                         type="password"
                                         value={password}
@@ -106,7 +112,7 @@ export default function Login() {
                             </div>
 
                             <button className="pos-login-button" type="submit">
-                                <i className="fas fa-sign-in-alt"></i>
+                                <LoginOutlined />
                                 Masuk
                             </button>
                         </form>

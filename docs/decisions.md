@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference  
-**Last Updated**: 2026-06-26 (Service products with BOM decision)
+**Last Updated**: 2026-07-23 (Ant Design migration complete)
 
 # Technical Decision Records
 
@@ -124,7 +124,28 @@
 
 **Rationale**: Existing SB Admin-style layout (`Account.jsx`, `Sidebar.jsx`); incremental styling without full rewrite.
 
+**Status**: **Superseded** by Ant Design migration (2026-07-23). See decision below.
+
 **Review Date**: 2026-12-18
+
+---
+
+## Decision: Ant Design as primary UI framework — 2026-07-23
+
+**Context**: Bootstrap 5 + React-Bootstrap + Font Awesome + SweetAlert2 + SB Admin 2 CSS created a fragmented stack. Need consistent enterprise UI for POS and admin modules.
+
+**Options Considered**:
+
+1. **Keep Bootstrap, polish incrementally**: Low migration cost, inconsistent component APIs.
+2. **Ant Design phased migration**: Higher upfront effort, unified Table/Form/Modal/Layout.
+
+**Decision**: Ant Design 6.x + `@ant-design/icons` via `ConfigProvider` and `zenTheme` in `resources/js/app.jsx`. Tailwind retained for POS grid and login page utilities only.
+
+**Rationale**: Single component library; `Modal.confirm` + `notification` replace SweetAlert2; layout shell uses `Layout.Sider` + `Menu`. Phased migration (5 phases) completed without big-bang POS rewrite — POS split into `resources/js/Components/Pos/*` first.
+
+**Implementation**: Removed `bootstrap`, `react-bootstrap`, `sweetalert2` from `package.json`; removed Font Awesome and SB Admin 2 CDN from `resources/views/app.blade.php`. Plan: `docs/migration-antd.md`.
+
+**Review Date**: 2027-01-23
 
 ---
 

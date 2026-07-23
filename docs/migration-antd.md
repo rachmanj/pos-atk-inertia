@@ -1,8 +1,9 @@
 # Rencana Migrasi UI: Bootstrap → Ant Design
 
 **Dokumen ini**: Rencana teknis migrasi UI POS Kasir dari Bootstrap 5 + React-Bootstrap ke Ant Design (antd).  
-**Target stack**: Laravel 12 + Inertia.js 3 + React 19 + Ant Design 5.x + Tailwind CSS 4 (utility).  
+**Target stack**: Laravel 12 + Inertia.js 3 + React 19 + Ant Design 6.x + Tailwind CSS 4 (utility).  
 **Tanggal analisis**: 2026-07-23.  
+**Status migrasi**: **Selesai** (Phase 5 polish & cleanup, 2026-07-23).  
 **Analisis berdasarkan file aktual di codebase**.
 
 ---

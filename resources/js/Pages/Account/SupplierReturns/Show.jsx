@@ -2,6 +2,11 @@ import React from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { formatRupiah } from "../../../Utils/format";
+import {
+    ArrowLeftOutlined,
+    ExportOutlined,
+    ShoppingOutlined,
+} from "@ant-design/icons";
 
 const reasonLabels = {
     defect: "Barang Rusak",
@@ -25,7 +30,7 @@ export default function SupplierReturnShow() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-file-export me-2"></i>
+                                    <ExportOutlined className="me-2" />
                                     DETAIL RETUR SUPPLIER
                                 </h5>
 
@@ -34,7 +39,7 @@ export default function SupplierReturnShow() {
                                         href="/account/supplier-returns"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-arrow-left me-2"></i>
+                                        <ArrowLeftOutlined className="me-2" />
                                         KEMBALI
                                     </Link>
 
@@ -42,7 +47,7 @@ export default function SupplierReturnShow() {
                                         href={`/account/purchases/${supplierReturn.purchase?.invoice}`}
                                         className="btn btn-primary shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-shopping-bag me-2"></i>
+                                        <ShoppingOutlined className="me-2" />
                                         PEMBELIAN ASAL
                                     </Link>
                                 </div>

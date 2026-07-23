@@ -2,6 +2,11 @@ import React from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
+import {
+    ArrowLeftOutlined,
+    PlusCircleOutlined,
+    ProfileOutlined,
+} from "@ant-design/icons";
 
 const differenceClass = (difference) => {
     if (difference > 0) {
@@ -32,7 +37,7 @@ export default function StockOpnameShow() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-clipboard-list me-2"></i>
+                                    <ProfileOutlined className="me-2" />
                                     DETAIL STOCK OPNAME
                                 </h5>
 
@@ -41,7 +46,7 @@ export default function StockOpnameShow() {
                                         href="/account/stock-opnames"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-arrow-left me-2"></i>
+                                        <ArrowLeftOutlined className="me-2" />
                                         KEMBALI
                                     </Link>
 
@@ -53,7 +58,7 @@ export default function StockOpnameShow() {
                                             href="/account/stock-opnames/create"
                                             className="btn btn-success shadow-sm rounded-sm"
                                         >
-                                            <i className="fas fa-plus-circle me-2"></i>
+                                            <PlusCircleOutlined className="me-2" />
                                             OPNAME BARU
                                         </Link>
                                     )}

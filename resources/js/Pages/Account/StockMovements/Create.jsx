@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
+import {
+    AppstoreOutlined,
+    ArrowLeftOutlined,
+    SaveOutlined,
+} from "@ant-design/icons";
 
 export default function StockMovementCreate() {
     const {
@@ -79,7 +84,7 @@ export default function StockMovementCreate() {
                         <div className="card border-0 shadow-sm rounded-3">
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-layer-group me-2"></i>
+                                    <AppstoreOutlined className="me-2" />
                                     KOREKSI STOK
                                 </h5>
 
@@ -88,7 +93,7 @@ export default function StockMovementCreate() {
                                         href="/account/stock-movements"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-arrow-left me-2"></i>
+                                        <ArrowLeftOutlined className="me-2" />
                                         KEMBALI
                                     </Link>
                                 </div>
@@ -217,7 +222,7 @@ export default function StockMovementCreate() {
                                                     !hasStockChange
                                                 }
                                             >
-                                                <i className="fas fa-save me-2"></i>
+                                                <SaveOutlined className="me-2" />
                                                 SIMPAN KOREKSI
                                             </button>
                                         </div>

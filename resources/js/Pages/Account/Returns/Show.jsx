@@ -3,7 +3,13 @@ import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useEffect } from "react";
 import hasAnyPermission from "../../../Utils/Permissions";
-import Swal from "sweetalert2";
+import { Modal, notification } from "antd";
+import {
+    ArrowLeftOutlined,
+    CheckOutlined,
+    CloseOutlined,
+    UndoOutlined,
+} from "@ant-design/icons";
 
 export default function Show() {
     const { return: returnData, flash = {}, auth = {} } = usePage().props;
@@ -102,42 +108,35 @@ export default function Show() {
     const handleUpdateStatus = (status) => {
         const isApproved = status === "approved";
 
-        Swal.fire({
+        Modal.confirm({
             title: isApproved ? "Setujui retur?" : "Tolak retur?",
-            text: isApproved
+            content: isApproved
                 ? "Retur yang disetujui akan memproses stok dan penyesuaian profit."
                 : "Retur ini akan ditandai sebagai ditolak.",
-            icon: isApproved ? "question" : "warning",
-            showCancelButton: true,
-            confirmButtonText: isApproved ? "Ya, setujui" : "Ya, tolak",
-            cancelButtonText: "Batal",
-            confirmButtonColor: isApproved ? "#198754" : "#dc3545",
-            cancelButtonColor: "#6c757d",
-        }).then((result) => {
-            if (result.isConfirmed) {
+            okText: isApproved ? "Ya, setujui" : "Ya, tolak",
+            cancelText: "Batal",
+            okType: isApproved ? "primary" : "danger",
+            onOk: () => {
                 router.put(`/account/returns/${returnData.id}`, {
                     status,
                 });
-            }
+            },
         });
     };
 
     useEffect(() => {
         if (flash.success) {
-            Swal.fire({
-                icon: "success",
-                title: "Berhasil",
-                text: flash.success,
-                timer: 2000,
-                showConfirmButton: false,
+            notification.success({
+                message: "Berhasil",
+                description: flash.success,
+                duration: 2,
             });
         }
 
         if (flash.error) {
-            Swal.fire({
-                icon: "error",
-                title: "Gagal",
-                text: flash.error,
+            notification.error({
+                message: "Gagal",
+                description: flash.error,
             });
         }
     }, [flash]);
@@ -153,7 +152,7 @@ export default function Show() {
                             <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                                 <div>
                                     <h5 className="mb-1 fw-bold">
-                                        <i className="fas fa-undo me-2"></i>
+                                        <UndoOutlined className="me-2" />
                                         DETAIL RETUR
                                     </h5>
                                     <small className="text-muted">
@@ -166,7 +165,7 @@ export default function Show() {
                                         href="/account/returns"
                                         className="btn btn-secondary shadow-sm rounded-sm"
                                     >
-                                        <i className="fas fa-arrow-left me-2"></i>
+                                        <ArrowLeftOutlined className="me-2" />
                                         Kembali
                                     </Link>
 
@@ -181,7 +180,7 @@ export default function Show() {
                                                     )
                                                 }
                                             >
-                                                <i className="fas fa-check me-2"></i>
+                                                <CheckOutlined className="me-2" />
                                                 Setujui
                                             </button>
 
@@ -194,7 +193,7 @@ export default function Show() {
                                                     )
                                                 }
                                             >
-                                                <i className="fas fa-times me-2"></i>
+                                                <CloseOutlined className="me-2" />
                                                 Tolak
                                             </button>
                                         </>
