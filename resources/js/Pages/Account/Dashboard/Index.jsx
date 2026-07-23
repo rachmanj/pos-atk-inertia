@@ -1,6 +1,31 @@
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage } from "@inertiajs/react";
+import {
+    Alert,
+    Card,
+    Col,
+    Descriptions,
+    Empty,
+    List,
+    Row,
+    Space,
+    Statistic,
+    Table,
+    Tag,
+    Typography,
+} from "antd";
+import {
+    ClockCircleOutlined,
+    DollarOutlined,
+    FileTextOutlined,
+    LineChartOutlined,
+    PieChartOutlined,
+    ShoppingOutlined,
+    WalletOutlined,
+} from "@ant-design/icons";
 import { formatRupiah } from "../../../Utils/format";
+
+const { Title, Text } = Typography;
 
 const paymentMethodLabels = {
     cash: "Tunai",
@@ -15,12 +40,12 @@ const paymentStatusLabels = {
     failed: "Gagal",
 };
 
-const paymentStatusClasses = {
-    unpaid: "bg-secondary",
-    pending: "bg-warning text-dark",
-    paid: "bg-success",
-    expired: "bg-dark",
-    failed: "bg-danger",
+const paymentStatusColors = {
+    unpaid: "default",
+    pending: "warning",
+    paid: "success",
+    expired: "default",
+    failed: "error",
 };
 
 const formatDateTime = (value) => {
@@ -34,35 +59,54 @@ const formatDateTime = (value) => {
     });
 };
 
-const quickPanelScrollStyle = {
-    maxHeight: "260px",
-    overflowY: "auto",
-    paddingRight: "6px",
+const statIconColors = {
+    primary: "#3b82f6",
+    info: "#0ea5e9",
+    success: "#22c55e",
+    danger: "#ef4444",
+    secondary: "#94a3b8",
 };
 
 function StatCard({ title, value, subtitle, icon, color }) {
+    const iconColor = statIconColors[color] || statIconColors.primary;
+
     return (
-        <div className="col-12 col-md-6 col-xl-3">
-            <div className="card border-0 shadow-sm rounded-3 h-100">
-                <div className="card-body p-4">
-                    <div className="d-flex align-items-start justify-content-between gap-3">
-                        <div>
-                            <div className="text-secondary fw-bold small text-uppercase mb-2">
-                                {title}
-                            </div>
-                            <h4 className="fw-bold text-dark mb-1">{value}</h4>
-                            <small className="text-muted">{subtitle}</small>
-                        </div>
-                        <div
-                            className={`bg-${color} bg-opacity-10 text-${color} rounded-3 d-flex align-items-center justify-content-center shrink-0`}
-                            style={{ width: "46px", height: "46px" }}
-                        >
-                            <i className={`${icon} fa-lg`}></i>
-                        </div>
-                    </div>
+        <Card>
+            <Space align="start" style={{ width: "100%", justifyContent: "space-between" }}>
+                <Statistic
+                    title={
+                        <Text type="secondary" style={{ fontSize: 12, textTransform: "uppercase" }}>
+                            {title}
+                        </Text>
+                    }
+                    value={value}
+                    valueStyle={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: color === "danger" ? statIconColors.danger : undefined,
+                    }}
+                />
+                <div
+                    style={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: 8,
+                        background: `${iconColor}1a`,
+                        color: iconColor,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 20,
+                        flexShrink: 0,
+                    }}
+                >
+                    {icon}
                 </div>
-            </div>
-        </div>
+            </Space>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+                {subtitle}
+            </Text>
+        </Card>
     );
 }
 
@@ -86,29 +130,68 @@ export default function Dashboard() {
             title: "Penjualan Bruto Hari Ini",
             value: formatRupiah(summary.today_sales || 0),
             subtitle: `${summary.today_transactions || 0} transaksi lunas aktif, tidak termasuk void`,
-            icon: "fas fa-money-bill-wave",
+            icon: <DollarOutlined />,
             color: "primary",
         },
         {
             title: "Transaksi Hari Ini",
             value: summary.today_transactions || 0,
             subtitle: `Rata-rata ${formatRupiah(summary.today_average_sale || 0)}`,
-            icon: "far fa-file-alt",
+            icon: <FileTextOutlined />,
             color: "info",
         },
         {
             title: "Laba Bersih",
             value: formatRupiah(summary.today_net_profit || 0),
             subtitle: `Pengeluaran ${formatRupiah(summary.today_expense || 0)}`,
-            icon: "fas fa-chart-line",
+            icon: <LineChartOutlined />,
             color: netProfitColor,
         },
         {
             title: "Stok Menipis",
             value: summary.low_stock_count || 0,
             subtitle: `Dari ${summary.active_products || 0} produk aktif`,
-            icon: "fas fa-cubes",
+            icon: <ShoppingOutlined />,
             color: lowStockColor,
+        },
+    ];
+
+    const transactionColumns = [
+        {
+            title: "Transaksi",
+            dataIndex: "invoice",
+            key: "invoice",
+            render: (_, record) => (
+                <div>
+                    <Text strong>{record.invoice}</Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                        {record.customer?.name || "Umum"} ·{" "}
+                        {paymentMethodLabels[record.payment_method] ||
+                            record.payment_method}
+                    </Text>
+                </div>
+            ),
+        },
+        {
+            title: "Total",
+            key: "total",
+            align: "right",
+            render: (_, record) => (
+                <div>
+                    <Text strong>{formatRupiah(record.grand_total)}</Text>
+                    <br />
+                    <Tag
+                        color={
+                            paymentStatusColors[record.payment_status] ||
+                            "default"
+                        }
+                    >
+                        {paymentStatusLabels[record.payment_status] ||
+                            record.payment_status}
+                    </Tag>
+                </div>
+            ),
         },
     ];
 
@@ -118,254 +201,287 @@ export default function Dashboard() {
                 <title>Dashboard - ZenPOS</title>
             </Head>
             <LayoutAccount>
-                <div className="row mt-4 px-2">
-                    <div className="col-12 mb-4">
-                        <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-                            <div>
-                                <h4 className="fw-bold text-dark mb-1">
-                                    Dashboard
-                                </h4>
-                                <div className="text-muted">
-                                    Ringkasan operasional hari ini
-                                </div>
-                            </div>
-                            <div className="alert alert-success border-0 shadow-sm mb-0 py-2 px-3">
-                                Selamat datang,{" "}
-                                <strong>{auth.user.name}</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <Space
+                    direction="vertical"
+                    size="large"
+                    style={{ width: "100%" }}
+                >
+                    <FlexHeader
+                        userName={auth.user.name}
+                    />
 
-                <div className="row g-4 px-2 mb-4">
-                    {stats.map((stat) => (
-                        <StatCard key={stat.title} {...stat} />
-                    ))}
-                </div>
+                    <Row gutter={[16, 16]}>
+                        {stats.map((stat) => (
+                            <Col key={stat.title} xs={24} sm={12} xl={6}>
+                                <StatCard {...stat} />
+                            </Col>
+                        ))}
+                    </Row>
 
-                {ppobAccount && (
-                    <div className="row g-4 px-2 mb-4">
-                        <div className="col-12 col-md-6 col-xl-3">
-                            <div className={`card border-0 shadow-sm rounded-3 h-100 ${ppobAccount.is_low_balance ? "border-danger" : ""}`}>
-                                <div className="card-body p-4">
-                                    <div className="text-secondary fw-bold small text-uppercase mb-2">Saldo PPOB</div>
-                                    <h4 className={`fw-bold mb-1 ${ppobAccount.is_low_balance ? "text-danger" : "text-dark"}`}>{formatRupiah(ppobAccount.current_balance)}</h4>
-                                    <small className="text-muted">{ppobAccount.name}{ppobAccount.is_low_balance ? " · Saldo rendah" : ""}</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                    {ppobAccount && (
+                        <Row gutter={[16, 16]}>
+                            <Col xs={24} sm={12} xl={6}>
+                                <Card
+                                    style={
+                                        ppobAccount.is_low_balance
+                                            ? { borderColor: "#ef4444" }
+                                            : undefined
+                                    }
+                                >
+                                    <Statistic
+                                        title={
+                                            <Text
+                                                type="secondary"
+                                                style={{
+                                                    fontSize: 12,
+                                                    textTransform: "uppercase",
+                                                }}
+                                            >
+                                                Saldo PPOB
+                                            </Text>
+                                        }
+                                        value={formatRupiah(
+                                            ppobAccount.current_balance,
+                                        )}
+                                        prefix={<WalletOutlined />}
+                                        valueStyle={{
+                                            color: ppobAccount.is_low_balance
+                                                ? "#ef4444"
+                                                : undefined,
+                                            fontWeight: 700,
+                                        }}
+                                    />
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        {ppobAccount.name}
+                                        {ppobAccount.is_low_balance
+                                            ? " · Saldo rendah"
+                                            : ""}
+                                    </Text>
+                                </Card>
+                            </Col>
+                        </Row>
+                    )}
 
-                <div className="row g-4 px-2 mb-4">
-                    <div className="col-12 col-xl-4">
-                        <div className="card border-0 shadow-sm rounded-3 h-100">
-                            <div className="card-header bg-white border-0 p-4 pb-0">
-                                <h5 className="mb-0 fw-bold text-dark">
-                                    <i className="far fa-clock text-success me-2" aria-hidden="true"></i>
-                                    Shift Kasir
-                                </h5>
-                            </div>
-                            <div className="card-body p-4">
+                    <Row gutter={[16, 16]}>
+                        <Col xs={24} xl={8}>
+                            <Card
+                                title={
+                                    <Space>
+                                        <ClockCircleOutlined
+                                            style={{ color: "#0d9488" }}
+                                        />
+                                        Shift Kasir
+                                    </Space>
+                                }
+                            >
                                 {activeShift ? (
-                                    <>
-                                        <div className="d-flex justify-content-between align-items-start mb-3">
-                                            <div>
-                                                <div className="text-secondary small fw-bold text-uppercase mb-1">
-                                                    Status
-                                                </div>
-                                                <h5 className="fw-bold text-success mb-0">
-                                                    Aktif
-                                                </h5>
-                                            </div>
-                                            <span className="badge bg-success shadow-sm">
-                                                #{activeShift.id}
-                                            </span>
-                                        </div>
-                                        <div className="text-muted small mb-4">
-                                            Dibuka{" "}
-                                            {formatDateTime(
-                                                activeShift.opened_at,
-                                            )}
-                                        </div>
-                                        <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
-                                            <span className="text-muted">
-                                                Uang Awal
-                                            </span>
-                                            <strong>
-                                                {formatRupiah(
-                                                    activeShift.cash_in_hand,
-                                                )}
-                                            </strong>
-                                        </div>
-                                        <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
-                                            <span className="text-muted">
-                                                Penjualan Tunai
-                                            </span>
-                                            <strong>
-                                                {formatRupiah(
-                                                    activeShift.cash_sales,
-                                                )}
-                                            </strong>
-                                        </div>
-                                        <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
-                                            <span className="text-muted">
-                                                Estimasi Kas
-                                            </span>
-                                            <strong className="text-success">
-                                                {formatRupiah(
-                                                    activeShift.expected_cash,
-                                                )}
-                                            </strong>
-                                        </div>
-                                        <div className="d-flex justify-content-between mb-4">
-                                            <span className="text-muted">
-                                                Transaksi Shift
-                                            </span>
-                                            <strong>
-                                                {activeShift.total_transactions}
-                                            </strong>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="text-center py-4">
-                                        <i className="far fa-clock fa-3x text-secondary opacity-50 mb-3" aria-hidden="true"></i>
-                                        <h6 className="fw-bold mb-2">
-                                            Belum ada shift aktif
-                                        </h6>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="col-12 col-xl-8">
-                        <div className="card border-0 shadow-sm rounded-3 h-100">
-                            <div className="card-header bg-white border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold text-dark">
-                                    <i className="fas fa-chart-pie text-primary me-2" aria-hidden="true"></i>
-                                    Pantauan Cepat
-                                </h5>
-                            </div>
-                            <div className="card-body p-4">
-                                <div className="row g-4">
-                                    <div className="col-12 col-lg-7">
-                                        <div className="d-flex justify-content-between align-items-center mb-3">
-                                            <h6 className="fw-bold mb-0">
-                                                Transaksi Terakhir
-                                            </h6>
-                                        </div>
-                                        <div
-                                            className="table-responsive"
-                                            style={quickPanelScrollStyle}
+                                    <Space
+                                        direction="vertical"
+                                        size="middle"
+                                        style={{ width: "100%" }}
+                                    >
+                                        <Space
+                                            align="start"
+                                            style={{
+                                                width: "100%",
+                                                justifyContent: "space-between",
+                                            }}
                                         >
-                                            <table className="table table-borderless align-middle mb-0">
-                                                <tbody>
-                                                    {recentTransactions.length >
-                                                    0 ? (
-                                                        recentTransactions.map(
-                                                            (transaction) => (
-                                                                <tr
-                                                                    key={
-                                                                        transaction.id
-                                                                    }
-                                                                >
-                                                                    <td className="ps-0">
-                                                                        <div className="fw-bold text-dark">
-                                                                            {
-                                                                                transaction.invoice
-                                                                            }
-                                                                        </div>
-                                                                        <small className="text-muted">
-                                                                            {transaction
-                                                                                .customer
-                                                                                ?.name ||
-                                                                                "Umum"}{" "}
-                                                                            ·{" "}
-                                                                            {paymentMethodLabels[
-                                                                                transaction
-                                                                                    .payment_method
-                                                                            ] ||
-                                                                                transaction.payment_method}
-                                                                        </small>
-                                                                    </td>
-                                                                    <td className="text-end">
-                                                                        <div className="fw-bold">
-                                                                            {formatRupiah(
-                                                                                transaction.grand_total,
-                                                                            )}
-                                                                        </div>
-                                                                        <span
-                                                                            className={`badge shadow-sm ${paymentStatusClasses[transaction.payment_status] || "bg-secondary"}`}
-                                                                        >
-                                                                            {paymentStatusLabels[
-                                                                                transaction
-                                                                                    .payment_status
-                                                                            ] ||
-                                                                                transaction.payment_status}
-                                                                        </span>
-                                                                    </td>
-                                                                </tr>
-                                                            ),
-                                                        )
-                                                    ) : (
-                                                        <tr>
-                                                            <td className="text-center text-muted py-4">
-                                                                Belum ada
-                                                                transaksi.
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
+                                            <div>
+                                                <Text
+                                                    type="secondary"
+                                                    style={{
+                                                        fontSize: 12,
+                                                        textTransform:
+                                                            "uppercase",
+                                                    }}
+                                                >
+                                                    Status
+                                                </Text>
+                                                <Title
+                                                    level={5}
+                                                    style={{
+                                                        margin: 0,
+                                                        color: "#22c55e",
+                                                    }}
+                                                >
+                                                    Aktif
+                                                </Title>
+                                            </div>
+                                            <Tag color="success">
+                                                #{activeShift.id}
+                                            </Tag>
+                                        </Space>
 
-                                    <div className="col-12 col-lg-5">
-                                        <div className="d-flex justify-content-between align-items-center mb-3">
-                                            <h6 className="fw-bold mb-0">
-                                                Stok Menipis
-                                            </h6>
-                                        </div>
-                                        <div style={quickPanelScrollStyle}>
-                                            {lowStockProducts.length > 0 ? (
-                                                lowStockProducts.map(
-                                                    (product) => (
-                                                        <div
-                                                            key={product.id}
-                                                            className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2"
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                            Dibuka{" "}
+                                            {formatDateTime(activeShift.opened_at)}
+                                        </Text>
+
+                                        <Descriptions
+                                            column={1}
+                                            size="small"
+                                            colon={false}
+                                            items={[
+                                                {
+                                                    key: "cash",
+                                                    label: "Uang Awal",
+                                                    children: formatRupiah(
+                                                        activeShift.cash_in_hand,
+                                                    ),
+                                                },
+                                                {
+                                                    key: "sales",
+                                                    label: "Penjualan Tunai",
+                                                    children: formatRupiah(
+                                                        activeShift.cash_sales,
+                                                    ),
+                                                },
+                                                {
+                                                    key: "expected",
+                                                    label: "Estimasi Kas",
+                                                    children: (
+                                                        <Text
+                                                            strong
+                                                            style={{
+                                                                color: "#22c55e",
+                                                            }}
                                                         >
-                                                            <div className="me-3">
-                                                                <div className="fw-bold text-dark">
-                                                                    {
-                                                                        product.title
-                                                                    }
-                                                                </div>
-                                                                <small className="text-muted">
-                                                                    Perlu
-                                                                    restock
-                                                                </small>
-                                                            </div>
-                                                            <span className="badge bg-danger shadow-sm">
+                                                            {formatRupiah(
+                                                                activeShift.expected_cash,
+                                                            )}
+                                                        </Text>
+                                                    ),
+                                                },
+                                                {
+                                                    key: "transactions",
+                                                    label: "Transaksi Shift",
+                                                    children:
+                                                        activeShift.total_transactions,
+                                                },
+                                            ]}
+                                        />
+                                    </Space>
+                                ) : (
+                                    <Empty
+                                        image={
+                                            <ClockCircleOutlined
+                                                style={{
+                                                    fontSize: 48,
+                                                    color: "#94a3b8",
+                                                }}
+                                            />
+                                        }
+                                        description="Belum ada shift aktif"
+                                    />
+                                )}
+                            </Card>
+                        </Col>
+
+                        <Col xs={24} xl={16}>
+                            <Card
+                                title={
+                                    <Space>
+                                        <PieChartOutlined
+                                            style={{ color: "#3b82f6" }}
+                                        />
+                                        Pantauan Cepat
+                                    </Space>
+                                }
+                            >
+                                <Row gutter={[24, 24]}>
+                                    <Col xs={24} lg={14}>
+                                        <Title level={5} style={{ marginTop: 0 }}>
+                                            Transaksi Terakhir
+                                        </Title>
+                                        <Table
+                                            columns={transactionColumns}
+                                            dataSource={recentTransactions}
+                                            rowKey="id"
+                                            pagination={false}
+                                            size="small"
+                                            scroll={{ y: 260 }}
+                                            locale={{
+                                                emptyText: "Belum ada transaksi.",
+                                            }}
+                                        />
+                                    </Col>
+
+                                    <Col xs={24} lg={10}>
+                                        <Title level={5} style={{ marginTop: 0 }}>
+                                            Stok Menipis
+                                        </Title>
+                                        {lowStockProducts.length > 0 ? (
+                                            <List
+                                                size="small"
+                                                dataSource={lowStockProducts}
+                                                style={{
+                                                    maxHeight: 260,
+                                                    overflowY: "auto",
+                                                }}
+                                                renderItem={(product) => (
+                                                    <List.Item
+                                                        actions={[
+                                                            <Tag
+                                                                color="error"
+                                                                key="stock"
+                                                            >
                                                                 {product.stock}{" "}
                                                                 {product.unit}
-                                                            </span>
-                                                        </div>
-                                                    ),
-                                                )
-                                            ) : (
-                                                <div className="text-center text-muted py-4">
-                                                    Stok aman.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                                            </Tag>,
+                                                        ]}
+                                                    >
+                                                        <List.Item.Meta
+                                                            title={
+                                                                <Text strong>
+                                                                    {product.title}
+                                                                </Text>
+                                                            }
+                                                            description="Perlu restock"
+                                                        />
+                                                    </List.Item>
+                                                )}
+                                            />
+                                        ) : (
+                                            <Empty
+                                                description="Stok aman."
+                                                style={{ padding: "24px 0" }}
+                                            />
+                                        )}
+                                    </Col>
+                                </Row>
+                            </Card>
+                        </Col>
+                    </Row>
+                </Space>
             </LayoutAccount>
         </>
+    );
+}
+
+function FlexHeader({ userName }) {
+    return (
+        <Space
+            align="center"
+            style={{ width: "100%", justifyContent: "space-between" }}
+            wrap
+        >
+            <div>
+                <Title level={4} style={{ marginBottom: 4 }}>
+                    Dashboard
+                </Title>
+                <Text type="secondary">Ringkasan operasional hari ini</Text>
+            </div>
+            <Alert
+                type="success"
+                showIcon
+                message={
+                    <>
+                        Selamat datang, <strong>{userName}</strong>
+                    </>
+                }
+                style={{ marginBottom: 0 }}
+            />
+        </Space>
     );
 }

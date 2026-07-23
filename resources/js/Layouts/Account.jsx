@@ -1,109 +1,165 @@
 import React, { useState } from "react";
-import { NavDropdown } from "react-bootstrap";
+import { Alert, Dropdown, Flex, Layout, Menu, Space } from "antd";
+import {
+    DownOutlined,
+    KeyOutlined,
+    LogoutOutlined,
+    ShopOutlined,
+} from "@ant-design/icons";
 import { usePage, router, Link } from "@inertiajs/react";
-import Sidebar from "../Components/Sidebar";
 import MenuSearchPalette from "../Components/MenuSearch/MenuSearchPalette";
+import {
+    resolveMenuSelectedKey,
+    useSidebarMenuItems,
+} from "../Components/Sidebar";
+
+const { Header, Sider, Content } = Layout;
 
 export default function LayoutAccount({ children }) {
-    const { auth, store } = usePage().props;
-    const [sidebarToggle, setSidebarToggle] = useState(false);
+    const page = usePage();
+    const { auth, store, flash } = page.props;
+    const { url } = page;
+    const [collapsed, setCollapsed] = useState(false);
 
     const storeName = store?.name || "VASIA STORE";
     const storeLogo = store?.logo_url;
-
     const userName = auth?.user?.name || "User";
+    const permissions = auth?.permissions || {};
 
-    const sidebarToggleHandler = (e) => {
-        e.preventDefault();
+    const menuItems = useSidebarMenuItems(permissions);
+    const selectedKey = resolveMenuSelectedKey(url);
 
-        if (!sidebarToggle) {
-            document.body.classList.add("sb-sidenav-toggled");
-            setSidebarToggle(true);
-        } else {
-            document.body.classList.remove("sb-sidenav-toggled");
-            setSidebarToggle(false);
-        }
-    };
-
-    // function logout
-    const logoutHandler = (e) => {
-        e.preventDefault();
-
+    const logoutHandler = () => {
         router.post("/logout");
     };
 
+    const userMenuItems = [
+        {
+            key: "password",
+            icon: <KeyOutlined />,
+            label: <Link href="/account/password">Ubah Kata Sandi</Link>,
+        },
+        { type: "divider" },
+        {
+            key: "logout",
+            icon: <LogoutOutlined />,
+            label: "Keluar",
+            onClick: logoutHandler,
+        },
+    ];
+
     return (
-        <>
-            <div className="d-flex" id="wrapper">
-                <div className="bg-sidebar" id="sidebar-wrapper">
-                    <div className="sidebar-heading bg-light">
-                        <div className="sidebar-store-brand">
-                            {storeLogo ? (
-                                <img
-                                    src={storeLogo}
-                                    className="sidebar-store-logo"
-                                    alt={storeName}
-                                />
-                            ) : (
-                                <span className="sidebar-store-logo-placeholder">
-                                    <i className="fas fa-store"></i>
-                                </span>
-                            )}
-
-                            <strong className="sidebar-store-name">
-                                {storeName}
-                            </strong>
-                        </div>
-                    </div>
-
-                    <Sidebar />
+        <Layout style={{ minHeight: "100vh" }}>
+            <Sider
+                collapsible
+                collapsed={collapsed}
+                onCollapse={setCollapsed}
+                collapsedWidth={64}
+                width={240}
+                theme="dark"
+            >
+                <div
+                    style={{
+                        height: 64,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: collapsed ? "center" : "flex-start",
+                        gap: 12,
+                        padding: collapsed ? "0 8px" : "0 16px",
+                        overflow: "hidden",
+                    }}
+                >
+                    {storeLogo ? (
+                        <img
+                            src={storeLogo}
+                            alt={storeName}
+                            style={{
+                                width: 32,
+                                height: 32,
+                                objectFit: "contain",
+                                flexShrink: 0,
+                            }}
+                        />
+                    ) : (
+                        <ShopOutlined
+                            style={{ fontSize: 24, color: "#fff" }}
+                        />
+                    )}
+                    {!collapsed && (
+                        <strong
+                            style={{
+                                color: "#fff",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                            }}
+                        >
+                            {storeName}
+                        </strong>
+                    )}
                 </div>
 
-                <div id="page-content-wrapper">
-                    <nav className="navbar navbar-expand-lg navbar-light bg-light">
-                        <div className="container-fluid">
-                            <button
-                                className="btn btn-success-dark"
-                                onClick={sidebarToggleHandler}
-                            >
-                                <i className="fas fa-list-ul"></i>
-                            </button>
+                <Menu
+                    theme="dark"
+                    mode="inline"
+                    selectedKeys={selectedKey ? [selectedKey] : []}
+                    items={menuItems}
+                />
+            </Sider>
 
-                            <MenuSearchPalette />
+            <Layout>
+                <Header
+                    style={{
+                        background: "#fff",
+                        padding: "0 16px",
+                        lineHeight: "normal",
+                        height: 64,
+                    }}
+                >
+                    <Flex
+                        justify="space-between"
+                        align="center"
+                        style={{ height: "100%" }}
+                    >
+                        <MenuSearchPalette />
+                        <Dropdown menu={{ items: userMenuItems }}>
+                            <Space style={{ cursor: "pointer" }}>
+                                <span style={{ fontWeight: 600 }}>{userName}</span>
+                                <DownOutlined />
+                            </Space>
+                        </Dropdown>
+                    </Flex>
+                </Header>
 
-                            <ul className="navbar-nav mb-0 ms-auto">
-                                <NavDropdown
-                                    align="end"
-                                    title={userName}
-                                    className="fw-bold"
-                                    id="user-nav-dropdown"
-                                >
-                                    <NavDropdown.Item
-                                        as={Link}
-                                        href="/account/password"
-                                    >
-                                        <i
-                                            className="fas fa-key me-2"
-                                            aria-hidden="true"
-                                        ></i>
-                                        Ubah Kata Sandi
-                                    </NavDropdown.Item>
-                                    <NavDropdown.Divider />
-                                    <NavDropdown.Item onClick={logoutHandler}>
-                                        <i
-                                            className="fas fa-sign-out-alt me-2"
-                                            aria-hidden="true"
-                                        ></i>
-                                        Keluar
-                                    </NavDropdown.Item>
-                                </NavDropdown>
-                            </ul>
-                        </div>
-                    </nav>
-
-                    <div className="container-fluid">{children}</div>
-                </div>
-            </div>
-        </>
+                <Content
+                    style={{
+                        margin: 16,
+                        padding: 16,
+                        background: "#fff",
+                        borderRadius: 8,
+                    }}
+                >
+                    {flash?.success && (
+                        <Alert
+                            message={flash.success}
+                            type="success"
+                            showIcon
+                            closable
+                            style={{ marginBottom: 16 }}
+                        />
+                    )}
+                    {flash?.error && (
+                        <Alert
+                            message={flash.error}
+                            type="error"
+                            showIcon
+                            closable
+                            style={{ marginBottom: 16 }}
+                        />
+                    )}
+                    {children}
+                </Content>
+            </Layout>
+        </Layout>
     );
 }
