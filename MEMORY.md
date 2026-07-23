@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings  
-**Last Updated**: 2026-07-21 (POS/laporan remaining gaps)
+**Last Updated**: 2026-07-23 (Bootstrap → Ant Design migration plan + previous session)
 
 ---
 
@@ -129,4 +129,10 @@
 **Challenge/Decision**: Kasir perlu catat penjualan PPOB dari Telegram tanpa mengganggu cart POS.  
 **Solution**: Webhook `POST /telegram/webhook` + middleware secret token; `TelegramUpdateHandler` untuk /start, /help, /status, perintah `beli`; parser `total` (biaya keseluruhan) / `@` (per unit), default tolak; `CheckoutService::checkoutFromLines()` agar bot tidak baca cart; konfirmasi ≥ Rp 500rb; rate limit 5 beli/menit; idempotency `update_id` di cache. Dev: `php artisan telegram:poll`; prod: `php artisan telegram:set-webhook`.  
 **Key Learning**: Admin link manual via `users.telegram_id`; permission `transactions.create` wajib; shift harus open. Key files: `app/Services/Telegram/*`, `TelegramWebhookController`, `config/telegram.php`.
+
+### POS-019 UI migration plan: Bootstrap → Ant Design (2026-07-23) ✅ COMPLETE
+
+**Challenge/Decision**: UI saat ini Bootstrap 5 + React-Bootstrap + Font Awesome via CDN. Bagaimana rencana migrasi ke Ant Design tanpa merusak workflow kasir?  
+**Solution**: Rencana lengkap di `docs/migration-antd.md`. Pendekatan phased: layout shell & shared components dulu, baru halaman simple → medium → complex (POS). AntD 5.x + `@ant-design/icons`, Tailwind tetap dipertahankan untuk utility khusus, SweetAlert2 diganti dengan `Modal.confirm` + `notification`.  
+**Key Learning**: 67 file JSX terkena; POS `Transactions/Create.jsx` (1350 baris) adalah effort terbesar dan harus dipecah ke sub-komponen sebelum migrasi. React-Bootstrap hanya dipakai di 2 file (`Account.jsx`, `Products/Index.jsx`), jadi mayoritas migrasi adalah class Bootstrap → komponen AntD.
 

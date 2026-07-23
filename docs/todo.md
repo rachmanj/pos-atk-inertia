@@ -1,5 +1,5 @@
 **Purpose**: Track current work and immediate priorities  
-**Last Updated**: 2026-07-20
+**Last Updated**: 2026-07-23
 
 ---
 
@@ -230,7 +230,15 @@ const visible = NAV_MENUS.filter(m => {
 
 ## Up Next (This Week)
 
-_(none beyond the item above — see backlog for other future items)_
+### Migrasi UI Bootstrap → Ant Design
+
+**Status**: Rencana teknis selesai — menunggu keputusan prioritas & branch demo  
+**Plan**: `docs/migration-antd.md`  
+**Goal**: Ganti UI dari Bootstrap 5 + React-Bootstrap + Font Awesome ke Ant Design 5.x + `@ant-design/icons`, sambil mempertahankan Tailwind CSS untuk utility khusus (POS grid, login page).  
+**Scope**: 67 file JSX (`resources/js/Pages/Account/*`, `Components/`, `Shared/`, `Layouts/`, `Pages/Auth/Login.jsx`).  
+**Effort estimate**: 13-19 hari (1 developer senior).  
+**Risiko utama**: POS Kasir (`Transactions/Create.jsx`, 1350 baris) — perlu dipecah dulu ke sub-komponen.  
+**Rekomendasi start**: Fase 1 = layout shell (`Account.jsx`, `Sidebar.jsx`) + Dashboard demo untuk validasi Inertia + AntD compatibility.
 
 ## Blocked/Waiting
 
