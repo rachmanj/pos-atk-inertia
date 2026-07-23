@@ -1,5 +1,11 @@
 import { Alert, Form, Input, InputNumber, Modal } from "antd";
 import { formatRupiah } from "../../Utils/format";
+import useMobile from "../../Hooks/useMobile";
+import {
+    getModalWidth,
+    numericMobileInputProps,
+    responsiveFormLayout,
+} from "../../Utils/responsive";
 
 export default function PosPpobModal({
     product,
@@ -13,6 +19,8 @@ export default function PosPpobModal({
     onCancel,
     onSubmit,
 }) {
+    const isMobile = useMobile();
+
     if (!product) {
         return null;
     }
@@ -30,8 +38,9 @@ export default function PosPpobModal({
             cancelText="Batal"
             onOk={handleOk}
             destroyOnClose
+            width={getModalWidth(isMobile, 480)}
         >
-            <Form layout="vertical">
+            <Form layout="horizontal" {...responsiveFormLayout}>
                 <Form.Item label="No. Pelanggan / Meter / HP (Opsional)">
                     <Input
                         value={customerRef}
@@ -41,21 +50,25 @@ export default function PosPpobModal({
                 <Form.Item label="Harga Modal" required>
                     <InputNumber
                         min={1}
-                        className="w-100"
+                        className="w-full"
+                        style={{ width: "100%" }}
                         value={ppobCost === "" ? null : Number(ppobCost)}
                         onChange={(value) =>
                             onPpobCostChange(value != null ? String(value) : "")
                         }
+                        {...numericMobileInputProps(isMobile)}
                     />
                 </Form.Item>
                 <Form.Item label="Admin Fee" required>
                     <InputNumber
                         min={0}
-                        className="w-100"
+                        className="w-full"
+                        style={{ width: "100%" }}
                         value={adminFee === "" ? null : Number(adminFee)}
                         onChange={(value) =>
                             onAdminFeeChange(value != null ? String(value) : "")
                         }
+                        {...numericMobileInputProps(isMobile)}
                     />
                 </Form.Item>
                 <Alert

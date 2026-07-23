@@ -212,7 +212,7 @@ export default function Dashboard() {
 
                     <Row gutter={[16, 16]}>
                         {stats.map((stat) => (
-                            <Col key={stat.title} xs={24} sm={12} xl={6}>
+                            <Col key={stat.title} xs={12} sm={6} xl={6}>
                                 <StatCard {...stat} />
                             </Col>
                         ))}
@@ -220,7 +220,7 @@ export default function Dashboard() {
 
                     {ppobAccount && (
                         <Row gutter={[16, 16]}>
-                            <Col xs={24} sm={12} xl={6}>
+                            <Col xs={12} sm={6} xl={6}>
                                 <Card
                                     style={
                                         ppobAccount.is_low_balance
@@ -400,7 +400,7 @@ export default function Dashboard() {
                                             rowKey="id"
                                             pagination={false}
                                             size="small"
-                                            scroll={{ y: 260 }}
+                                            scroll={{ x: "max-content", y: 260 }}
                                             locale={{
                                                 emptyText: "Belum ada transaksi.",
                                             }}

@@ -276,7 +276,7 @@ export default function PpobReport() {
                     </form>
 
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Omzet PPOB"
@@ -285,7 +285,7 @@ export default function PpobReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Admin Fee"
@@ -294,7 +294,7 @@ export default function PpobReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Modal (Cost)"
@@ -303,7 +303,7 @@ export default function PpobReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Qty"
@@ -320,7 +320,7 @@ export default function PpobReport() {
                         columns={columns}
                         dataSource={ppobData.data}
                         pagination={false}
-                        scroll={{ x: 800 }}
+                        scroll={{ x: 'max-content' }}
                         locale={{
                             emptyText:
                                 "Belum ada data penjualan PPOB untuk filter ini.",

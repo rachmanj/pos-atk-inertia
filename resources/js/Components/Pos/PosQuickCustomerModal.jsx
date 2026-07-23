@@ -1,4 +1,6 @@
 import { Form, Input, Modal } from "antd";
+import useMobile from "../../Hooks/useMobile";
+import { getModalWidth, responsiveFormLayout } from "../../Utils/responsive";
 
 export default function PosQuickCustomerModal({
     open,
@@ -9,6 +11,8 @@ export default function PosQuickCustomerModal({
     onCancel,
     onSubmit,
 }) {
+    const isMobile = useMobile();
+
     return (
         <Modal
             title="Tambah Pelanggan Cepat"
@@ -18,8 +22,9 @@ export default function PosQuickCustomerModal({
             cancelText="Batal"
             onOk={() => onSubmit({ preventDefault: () => {} })}
             destroyOnClose
+            width={getModalWidth(isMobile, 480)}
         >
-            <Form layout="vertical">
+            <Form layout="horizontal" {...responsiveFormLayout}>
                 <Form.Item label="Nama" required>
                     <Input
                         value={name}
@@ -29,6 +34,8 @@ export default function PosQuickCustomerModal({
                 </Form.Item>
                 <Form.Item label="No. HP (opsional)">
                     <Input
+                        type={isMobile ? "tel" : "text"}
+                        inputMode={isMobile ? "tel" : undefined}
                         value={phone}
                         onChange={(e) => onPhoneChange(e.target.value)}
                     />

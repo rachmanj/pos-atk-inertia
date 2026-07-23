@@ -1,4 +1,6 @@
 import { Form, Modal, Select, Typography } from "antd";
+import useMobile from "../../Hooks/useMobile";
+import { getModalWidth, responsiveFormLayout } from "../../Utils/responsive";
 
 const { Text } = Typography;
 
@@ -10,6 +12,8 @@ export default function PosUnitModal({
     onCancel,
     onSubmit,
 }) {
+    const isMobile = useMobile();
+
     if (!product) {
         return null;
     }
@@ -25,9 +29,10 @@ export default function PosUnitModal({
             cancelText="Batal"
             onOk={() => onSubmit({ preventDefault: () => {} })}
             destroyOnClose
+            width={getModalWidth(isMobile, 480)}
         >
-            <Form layout="vertical">
-                <Text className="d-block mb-3">{product.title}</Text>
+            <Form layout="horizontal" {...responsiveFormLayout}>
+                <Text className="block mb-3">{product.title}</Text>
                 <Form.Item label="Satuan" required>
                     <Select
                         value={selectedUnitId || undefined}

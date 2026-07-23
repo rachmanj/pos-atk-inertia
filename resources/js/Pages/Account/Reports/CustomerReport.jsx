@@ -244,7 +244,7 @@ export default function CustomerReport() {
                     </form>
 
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Pelanggan"
@@ -252,7 +252,7 @@ export default function CustomerReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Transaksi"
@@ -260,7 +260,7 @@ export default function CustomerReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Omzet"
@@ -269,7 +269,7 @@ export default function CustomerReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Rata-rata per Pelanggan"
@@ -285,7 +285,7 @@ export default function CustomerReport() {
                         columns={columns}
                         dataSource={customers.data}
                         pagination={false}
-                        scroll={{ x: 800 }}
+                        scroll={{ x: 'max-content' }}
                         locale={{
                             emptyText:
                                 "Belum ada data pelanggan untuk filter ini.",

@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { Button, Col, Modal, notification, Row } from "antd";
-import { FileTextOutlined } from "@ant-design/icons";
+import { Button, Col, Drawer, Modal, notification, Row } from "antd";
+import { FileTextOutlined, ShoppingCartOutlined } from "@ant-design/icons";
 import LayoutAccount from "../../../Layouts/Account";
+import useMobile from "../../../Hooks/useMobile";
+import { formatRupiah } from "../../../Utils/format";
+import { getModalWidth } from "../../../Utils/responsive";
 import PosProductGrid from "../../../Components/Pos/PosProductGrid";
 import PosCartPanel from "../../../Components/Pos/PosCartPanel";
 import PosPaymentSummary from "../../../Components/Pos/PosPaymentSummary";
@@ -49,12 +52,14 @@ export default function TransactionCreate() {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const [showQuickCreateModal, setShowQuickCreateModal] = useState(false);
+    const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
     const [quickCustomerName, setQuickCustomerName] = useState("");
     const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
     const customerSearchTimer = useRef(null);
     const debounceTimers = useRef({});
     const discountTimers = useRef({});
 
+    const isMobile = useMobile();
     const [localCarts, setLocalCarts] = useState(carts);
 
     useEffect(() => {
@@ -687,6 +692,7 @@ export default function TransactionCreate() {
                 : "Pembayaran digital akan diproses melalui Midtrans.",
             okText: "Ya, Bayar!",
             cancelText: "Batal",
+            width: getModalWidth(isMobile),
             onOk: async () => {
                 try {
                     const response = await fetch("/account/transactions", {
@@ -769,7 +775,72 @@ export default function TransactionCreate() {
         discountType,
         cashValue,
         customerId,
+        isMobile,
     ]);
+
+    const cartPanelProps = {
+        activeCarts,
+        heldCarts,
+        cartQty,
+        localCartsCount: localCarts.length,
+        errors,
+        flash,
+        ppobAccount,
+        customerSearch,
+        customerResults,
+        customerLoading,
+        selectedCustomer,
+        showCustomerDropdown,
+        onCustomerSearch: handleCustomerSearch,
+        onSelectCustomer: selectCustomer,
+        onClearCustomer: clearCustomer,
+        onShowQuickCreate: () => setShowQuickCreateModal(true),
+        onCustomerFocus: () => {
+            if (customerResults.length > 0) {
+                setShowCustomerDropdown(true);
+            }
+        },
+        onUpdateQty: handleQtyChange,
+        onDelete: deleteCart,
+        onToggleHold: toggleCartHold,
+        onDiscountChange: handleDiscountChange,
+    };
+
+    const paymentSummaryProps = {
+        paymentMethod,
+        onPaymentMethodChange: (value) => {
+            setPaymentMethod(value);
+            if (value === "digital") {
+                setCash("");
+            }
+        },
+        discount,
+        onDiscountChange: setDiscount,
+        discountType,
+        onDiscountTypeToggle: () =>
+            setDiscountType(
+                discountType === "nominal" ? "percent" : "nominal",
+            ),
+        cash,
+        onCashChange: setCash,
+        cashOptions,
+        isCashLikePayment,
+        subtotal,
+        discountAmount,
+        grandTotal,
+        change,
+        activeCartsCount: activeCarts.length,
+        onSubmit: storeTransaction,
+    };
+
+    const checkoutPanel = (mobile = false) => (
+        <section
+            className={`pos-checkout-panel${mobile ? " pos-checkout-panel--mobile" : ""}`}
+        >
+            <PosCartPanel {...cartPanelProps} />
+            <PosPaymentSummary {...paymentSummaryProps} />
+        </section>
+    );
 
     return (
         <>
@@ -778,7 +849,9 @@ export default function TransactionCreate() {
             </Head>
 
             <LayoutAccount>
-                <div className="pos-cashier-page">
+                <div
+                    className={`pos-cashier-page${isMobile ? " pos-cashier-page--mobile" : ""}`}
+                >
                     <div className="pos-cashier-heading">
                         <div>
                             <h4>POS Kasir</h4>
@@ -810,71 +883,42 @@ export default function TransactionCreate() {
                             />
                         </Col>
 
-                        <Col xs={24} xl={8}>
-                            <section className="pos-checkout-panel">
-                                <PosCartPanel
-                                    activeCarts={activeCarts}
-                                    heldCarts={heldCarts}
-                                    cartQty={cartQty}
-                                    localCartsCount={localCarts.length}
-                                    errors={errors}
-                                    flash={flash}
-                                    ppobAccount={ppobAccount}
-                                    customerSearch={customerSearch}
-                                    customerResults={customerResults}
-                                    customerLoading={customerLoading}
-                                    selectedCustomer={selectedCustomer}
-                                    showCustomerDropdown={showCustomerDropdown}
-                                    onCustomerSearch={handleCustomerSearch}
-                                    onSelectCustomer={selectCustomer}
-                                    onClearCustomer={clearCustomer}
-                                    onShowQuickCreate={() =>
-                                        setShowQuickCreateModal(true)
-                                    }
-                                    onCustomerFocus={() => {
-                                        if (customerResults.length > 0) {
-                                            setShowCustomerDropdown(true);
-                                        }
-                                    }}
-                                    onUpdateQty={handleQtyChange}
-                                    onDelete={deleteCart}
-                                    onToggleHold={toggleCartHold}
-                                    onDiscountChange={handleDiscountChange}
-                                />
-
-                                <PosPaymentSummary
-                                    paymentMethod={paymentMethod}
-                                    onPaymentMethodChange={(value) => {
-                                        setPaymentMethod(value);
-                                        if (value === "digital") {
-                                            setCash("");
-                                        }
-                                    }}
-                                    discount={discount}
-                                    onDiscountChange={setDiscount}
-                                    discountType={discountType}
-                                    onDiscountTypeToggle={() =>
-                                        setDiscountType(
-                                            discountType === "nominal"
-                                                ? "percent"
-                                                : "nominal",
-                                        )
-                                    }
-                                    cash={cash}
-                                    onCashChange={setCash}
-                                    cashOptions={cashOptions}
-                                    isCashLikePayment={isCashLikePayment}
-                                    subtotal={subtotal}
-                                    discountAmount={discountAmount}
-                                    grandTotal={grandTotal}
-                                    change={change}
-                                    activeCartsCount={activeCarts.length}
-                                    onSubmit={storeTransaction}
-                                />
-                            </section>
-                        </Col>
+                        {!isMobile && (
+                            <Col xs={24} xl={8}>
+                                {checkoutPanel(false)}
+                            </Col>
+                        )}
                     </Row>
                 </div>
+
+                {isMobile && (
+                    <>
+                        <div className="pos-mobile-cart-bar">
+                            <Button
+                                type="primary"
+                                size="large"
+                                block
+                                icon={<ShoppingCartOutlined />}
+                                onClick={() => setCartDrawerOpen(true)}
+                            >
+                                Keranjang ({cartQty}) ·{" "}
+                                {formatRupiah(grandTotal)}
+                            </Button>
+                        </div>
+
+                        <Drawer
+                            title="Keranjang & Pembayaran"
+                            placement="bottom"
+                            open={cartDrawerOpen}
+                            onClose={() => setCartDrawerOpen(false)}
+                            height="92vh"
+                            className="pos-mobile-cart-drawer"
+                            destroyOnClose={false}
+                        >
+                            {checkoutPanel(true)}
+                        </Drawer>
+                    </>
+                )}
 
                 <PosPpobModal
                     product={ppobModalProduct}

@@ -17,6 +17,8 @@ import {
 } from "@ant-design/icons";
 import { formatRupiah } from "../../Utils/format";
 import { lineDiscountAmount, lineNet } from "./posUtils";
+import useMobile from "../../Hooks/useMobile";
+import { numericMobileInputProps } from "../../Utils/responsive";
 
 const { Text } = Typography;
 
@@ -27,6 +29,7 @@ function CartRow({
     onDelete,
     onToggleHold,
     onDiscountChange,
+    isMobile,
 }) {
     const itemDiscount = lineDiscountAmount(cart);
     const net = lineNet(cart);
@@ -88,6 +91,7 @@ function CartRow({
                                     )
                                 }
                                 style={{ width: 90 }}
+                                {...numericMobileInputProps(isMobile)}
                             />
                         </Space.Compact>
                     </div>
@@ -98,7 +102,6 @@ function CartRow({
                 {!held && (
                     <Space.Compact className="pos-qty-stepper">
                         <Button
-                            size="small"
                             onClick={() => onUpdateQty(cart.id, cart.qty - 1)}
                         >
                             −
@@ -114,9 +117,9 @@ function CartRow({
                                 }
                             }}
                             style={{ width: 52, textAlign: "center" }}
+                            {...numericMobileInputProps(isMobile)}
                         />
                         <Button
-                            size="small"
                             onClick={() => onUpdateQty(cart.id, cart.qty + 1)}
                         >
                             +
@@ -137,7 +140,6 @@ function CartRow({
                     {held ? (
                         <Button
                             type="default"
-                            size="small"
                             icon={<PlayCircleOutlined />}
                             onClick={() => onToggleHold(cart.id, false)}
                             title="Lanjutkan"
@@ -145,7 +147,6 @@ function CartRow({
                     ) : (
                         <Button
                             type="default"
-                            size="small"
                             icon={<PauseOutlined />}
                             onClick={() => onToggleHold(cart.id, true)}
                             title="Tahan"
@@ -154,7 +155,6 @@ function CartRow({
                     <Button
                         type="text"
                         danger
-                        size="small"
                         className="pos-cart-delete"
                         icon={<DeleteOutlined />}
                         onClick={() => onDelete(cart.id)}
@@ -188,6 +188,8 @@ export default function PosCartPanel({
     onToggleHold,
     onDiscountChange,
 }) {
+    const isMobile = useMobile();
+
     return (
         <>
             <div className="pos-checkout-header">
@@ -229,6 +231,7 @@ export default function PosCartPanel({
                             <CartRow
                                 key={cart.id}
                                 cart={cart}
+                                isMobile={isMobile}
                                 onUpdateQty={onUpdateQty}
                                 onDelete={onDelete}
                                 onToggleHold={onToggleHold}
@@ -250,6 +253,7 @@ export default function PosCartPanel({
                                 key={cart.id}
                                 cart={cart}
                                 held
+                                isMobile={isMobile}
                                 onUpdateQty={onUpdateQty}
                                 onDelete={onDelete}
                                 onToggleHold={onToggleHold}

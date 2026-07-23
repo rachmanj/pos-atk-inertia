@@ -10,6 +10,8 @@ import {
 } from "antd";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import { formatRupiah } from "../../Utils/format";
+import useMobile from "../../Hooks/useMobile";
+import { numericMobileInputProps } from "../../Utils/responsive";
 
 const { Text } = Typography;
 
@@ -34,6 +36,7 @@ export default function PosPaymentSummary({
     activeCartsCount,
     onSubmit,
 }) {
+    const isMobile = useMobile();
     const cashLabel =
         paymentMethod === "cash"
             ? "Uang Tunai"
@@ -68,7 +71,7 @@ export default function PosPaymentSummary({
             </div>
 
             <Row gutter={[8, 8]} className="mb-3">
-                <Col span={isCashLikePayment ? 10 : 24}>
+                <Col xs={24} md={isCashLikePayment ? 10 : 24}>
                     <label className={fieldLabelClassName}>Diskon</label>
                     <Space.Compact style={{ width: "100%" }}>
                         <InputNumber
@@ -77,6 +80,7 @@ export default function PosPaymentSummary({
                             onChange={(value) => onDiscountChange(value ?? 0)}
                             style={{ flex: 1 }}
                             className="w-full"
+                            {...numericMobileInputProps(isMobile)}
                         />
                         <Button
                             type={
@@ -96,7 +100,7 @@ export default function PosPaymentSummary({
                 </Col>
 
                 {isCashLikePayment && (
-                    <Col span={14}>
+                    <Col xs={24} md={14}>
                         <label className={fieldLabelClassName}>{cashLabel}</label>
                         <InputNumber
                             className="pos-cash-input w-full"
@@ -107,6 +111,7 @@ export default function PosPaymentSummary({
                             }
                             required
                             style={{ width: "100%" }}
+                            {...numericMobileInputProps(isMobile)}
                         />
 
                         {cashOptions.length > 0 && (

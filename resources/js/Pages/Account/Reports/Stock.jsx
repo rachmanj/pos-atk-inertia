@@ -409,7 +409,7 @@ export default function StockReport() {
                     </form>
 
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                        <Col xs={24} sm={12} md={8} lg={4}>
+                        <Col xs={12} sm={6} md={8} lg={4}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Produk"
@@ -420,7 +420,7 @@ export default function StockReport() {
                                 </Text>
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={8} lg={4}>
+                        <Col xs={12} sm={6} md={8} lg={4}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Unit Stok"
@@ -431,7 +431,7 @@ export default function StockReport() {
                                 </Text>
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={8} lg={4}>
+                        <Col xs={12} sm={6} md={8} lg={4}>
                             <Card size="small">
                                 <Statistic
                                     title="Nilai Modal"
@@ -449,7 +449,7 @@ export default function StockReport() {
                                 </Text>
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={8} lg={4}>
+                        <Col xs={12} sm={6} md={8} lg={4}>
                             <Link href="/account/reports/stock?stock_status=out">
                                 <Card size="small" hoverable>
                                     <Statistic
@@ -466,7 +466,7 @@ export default function StockReport() {
                                 </Card>
                             </Link>
                         </Col>
-                        <Col xs={24} sm={12} md={8} lg={4}>
+                        <Col xs={12} sm={6} md={8} lg={4}>
                             <Link
                                 href={`/account/reports/stock?stock_status=low&low_threshold=${filters.low_threshold}`}
                             >
@@ -492,7 +492,7 @@ export default function StockReport() {
                         columns={columns}
                         dataSource={products.data}
                         pagination={false}
-                        scroll={{ x: 1200 }}
+                        scroll={{ x: 'max-content' }}
                         locale={{
                             emptyText:
                                 "Belum ada data stok untuk filter ini.",

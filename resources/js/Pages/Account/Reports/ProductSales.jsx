@@ -282,7 +282,7 @@ export default function ProductSalesReport() {
                     </form>
 
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Omzet"
@@ -291,7 +291,7 @@ export default function ProductSalesReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Laba Kotor"
@@ -303,7 +303,7 @@ export default function ProductSalesReport() {
                                 </Text>
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total HPP"
@@ -312,7 +312,7 @@ export default function ProductSalesReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Qty Terjual"
@@ -327,7 +327,7 @@ export default function ProductSalesReport() {
                         columns={columns}
                         dataSource={productSales.data}
                         pagination={false}
-                        scroll={{ x: 900 }}
+                        scroll={{ x: 'max-content' }}
                         locale={{
                             emptyText:
                                 "Belum ada data penjualan produk untuk filter ini.",

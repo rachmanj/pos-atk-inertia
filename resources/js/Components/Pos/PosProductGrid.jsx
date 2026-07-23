@@ -1,5 +1,6 @@
 import { Button, Empty, Input, Tag } from "antd";
 import Pagination from "../../Shared/Pagination";
+import useMobile from "../../Hooks/useMobile";
 import {
     BoxPlotOutlined,
     PrinterOutlined,
@@ -23,6 +24,8 @@ export default function PosProductGrid({
     onCategoryClick,
     onAddToCart,
 }) {
+    const isMobile = useMobile();
+
     return (
         <section className="pos-sale-panel">
             <form className="pos-search-bar" onSubmit={onSearch}>
@@ -70,7 +73,17 @@ export default function PosProductGrid({
                 ))}
             </div>
 
-            <div className="pos-product-grid">
+            <div
+                className="pos-product-grid"
+                style={
+                    isMobile
+                        ? {
+                              gridTemplateColumns:
+                                  "repeat(2, minmax(0, 1fr))",
+                          }
+                        : undefined
+                }
+            >
                 {products.data.length > 0 ? (
                     products.data.map((product) => {
                         const isPpob = product.product_type === "ppob";

@@ -271,7 +271,7 @@ export default function ExpenseReport() {
                     </form>
 
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                        <Col xs={24} md={8}>
+                        <Col xs={12} sm={6} md={8}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Pengeluaran"
@@ -280,7 +280,7 @@ export default function ExpenseReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} md={8}>
+                        <Col xs={12} sm={6} md={8}>
                             <Card size="small">
                                 <Statistic
                                     title="Jumlah Transaksi"
@@ -288,7 +288,7 @@ export default function ExpenseReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} md={8}>
+                        <Col xs={12} sm={6} md={8}>
                             <Card size="small">
                                 <Statistic
                                     title="Rata-rata per Transaksi"
@@ -423,7 +423,7 @@ export default function ExpenseReport() {
                         columns={columns}
                         dataSource={expenses.data}
                         pagination={false}
-                        scroll={{ x: 800 }}
+                        scroll={{ x: 'max-content' }}
                         locale={{
                             emptyText:
                                 "Belum ada data pengeluaran untuk filter ini.",

@@ -325,7 +325,7 @@ export default function SalesReport() {
                     </form>
 
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Link
                                 href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&cashier_id=${cashierId || ""}`}
                             >
@@ -344,7 +344,7 @@ export default function SalesReport() {
                                 </Card>
                             </Link>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Penjualan Kotor"
@@ -357,7 +357,7 @@ export default function SalesReport() {
                                 </Text>
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Link
                                 href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&payment_method=cash&cashier_id=${cashierId || ""}`}
                             >
@@ -377,7 +377,7 @@ export default function SalesReport() {
                                 </Card>
                             </Link>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Link
                                 href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&payment_method=qris&cashier_id=${cashierId || ""}`}
                             >
@@ -495,7 +495,7 @@ export default function SalesReport() {
                         columns={columns}
                         dataSource={sales.data}
                         pagination={false}
-                        scroll={{ x: 1000 }}
+                        scroll={{ x: 'max-content' }}
                         locale={{
                             emptyText:
                                 "Belum ada data penjualan untuk filter ini.",

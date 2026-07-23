@@ -276,7 +276,7 @@ export default function ProfitReport() {
                     </form>
 
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Link
                                 href={`/account/reports/profit?start_date=${filters.start_date}&end_date=${filters.end_date}`}
                             >
@@ -302,7 +302,7 @@ export default function ProfitReport() {
                                 </Card>
                             </Link>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="HPP"
@@ -317,7 +317,7 @@ export default function ProfitReport() {
                                 </Text>
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Laba Kotor"
@@ -329,7 +329,7 @@ export default function ProfitReport() {
                                 </Text>
                             </Card>
                         </Col>
-                        <Col xs={24} sm={12} md={6}>
+                        <Col xs={12} sm={6} md={6}>
                             <Card size="small">
                                 <Statistic
                                     title="Laba Bersih"
@@ -355,7 +355,7 @@ export default function ProfitReport() {
                         columns={columns}
                         dataSource={profits.data}
                         pagination={false}
-                        scroll={{ x: 900 }}
+                        scroll={{ x: 'max-content' }}
                         locale={{
                             emptyText:
                                 "Belum ada data laba untuk filter ini.",
