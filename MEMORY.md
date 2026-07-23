@@ -136,3 +136,15 @@
 **Solution**: Rencana lengkap di `docs/migration-antd.md`. Pendekatan phased: layout shell & shared components dulu, baru halaman simple → medium → complex (POS). AntD 5.x + `@ant-design/icons`, Tailwind tetap dipertahankan untuk utility khusus, SweetAlert2 diganti dengan `Modal.confirm` + `notification`.  
 **Key Learning**: 67 file JSX terkena; POS `Transactions/Create.jsx` (1350 baris) adalah effort terbesar dan harus dipecah ke sub-komponen sebelum migrasi. React-Bootstrap hanya dipakai di 2 file (`Account.jsx`, `Products/Index.jsx`), jadi mayoritas migrasi adalah class Bootstrap → komponen AntD.
 
+### POS-020 After `git pull`: run `npm install` + restart Vite (2026-07-23) ✅ COMPLETE
+
+**Challenge/Decision**: Login page blank / Vite overlay: `Failed to resolve import "antd"`.  
+**Solution**: `package.json` gained `antd` + `@ant-design/icons` in the Ant Design migration but `node_modules` was stale. Run `npm install`, clear `node_modules/.vite` if needed, then restart `npm run dev`.  
+**Key Learning**: Symptom = Vite import-analysis error on `antd` from `resources/js/app.jsx`. `npm run build` can verify deps without dev server.
+
+### POS-021 Sidebar crash: `group is not defined` (2026-07-23) ✅ COMPLETE
+
+**Challenge/Decision**: All `/account/*` pages black screen; React error in `LayoutAccount`.  
+**Solution**: Bug in `resources/js/Components/Sidebar.jsx` — `Object.assign(group, item)` referenced `group` outside its block scope. Use `const group = groupMap.get(groupKey)` before assign/push.  
+**Key Learning**: Login worked (no layout); any authenticated page using `LayoutAccount` crashed. Also restored full `Dashboard/Index.jsx` (debug stub replaced real Ant Design dashboard).
+

@@ -9,6 +9,16 @@
 
     <title inertia>{{ config('app.name', 'POS Kasir') }}</title>
 
+    <script>
+        (function () {
+            var stored = localStorage.getItem("pos-theme");
+            document.documentElement.setAttribute(
+                "data-theme",
+                stored === "light" ? "light" : "dark"
+            );
+        })();
+    </script>
+
     @viteReactRefresh
     @vite('resources/js/app.jsx')
     @inertiaHead

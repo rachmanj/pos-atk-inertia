@@ -115,10 +115,12 @@ export function useSidebarMenuItems(permissions = {}) {
                 label: <Link href={menu.href}>{menu.label}</Link>,
             };
 
+            const group = groupMap.get(groupKey);
+
             if (groupKey === "__dashboard__") {
                 Object.assign(group, item);
             } else {
-                groupMap.get(groupKey).children.push(item);
+                group.children.push(item);
             }
         }
 
