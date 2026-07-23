@@ -31,5 +31,11 @@ createInertiaApp({
                 <Root App={App} props={props} />
             </ThemeProvider>,
         );
+
+        if (import.meta.env.PROD && "serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("/sw.js").catch(() => {});
+            });
+        }
     },
 });
