@@ -148,3 +148,11 @@
 **Solution**: Bug in `resources/js/Components/Sidebar.jsx` — `Object.assign(group, item)` referenced `group` outside its block scope. Use `const group = groupMap.get(groupKey)` before assign/push.  
 **Key Learning**: Login worked (no layout); any authenticated page using `LayoutAccount` crashed. Also restored full `Dashboard/Index.jsx` (debug stub replaced real Ant Design dashboard).
 
+### POS-022 POS Kasir kemungkinan tanpa CSS: class Bootstrap mati (2026-07-23) ⚠️ BELUM DIPERBAIKI
+
+**Challenge/Decision**: Saat riset rencana PWA/mobile (`docs/plan-pwa-mobile.md`), ditemukan `resources/js/Pages/Account/Transactions/Create.jsx` + `Components/Pos/PosProductGrid.jsx`, `PosCartPanel.jsx`, `PosPaymentSummary.jsx` masih memakai class Bootstrap mentah (`row g-3`, `col-12 col-xl-8`, `d-flex`, `form-label`, dst) dan class custom SB Admin 2 (`pos-cashier-page`, `pos-product-grid`, dll) yang definisinya hanya ada di `public/assets/css/styles.css`.  
+**Root cause**: Migrasi Ant Design (`docs/migration-antd.md`, commit "Selesaikan Phase 5 migrasi Ant Design") menghapus Bootstrap CDN + `styles.css` dari `app.blade.php`, tapi halaman POS Kasir belum ikut dipindah ke AntD `Row/Col` — rencana migrasi sendiri sudah menandai ini (`docs/migration-antd.md:308`) tapi belum dieksekusi.  
+**Impact**: Halaman POS Kasir (`/account/transactions/create`) — paling kritis untuk kasir — kemungkinan tampil tanpa layout grid/spacing sama sekali di production sekarang.  
+**Solution (belum dikerjakan)**: Migrasi 4 file di atas ke AntD `Row`/`Col`/`Flex` murni, hapus `public/assets/css/styles.css`. Rencana detail + estimasi effort ada di `docs/plan-pwa-mobile.md` §0 dan §6 (digabung dengan pekerjaan mobile-responsive POS supaya tidak dikerjakan dua kali).  
+**Key Learning**: Verifikasi visual (buka halaman di browser) setelah migrasi CSS besar, jangan cuma cek grep referensi file — file CSS bisa "mati" (tidak pernah di-load) tanpa error apapun di build/runtime.
+

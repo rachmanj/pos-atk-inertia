@@ -7,6 +7,15 @@
 
 ## Working On Now
 
+### PWA & Mobile-Friendly POS Kasir
+
+**Status**: Rencana teknis selesai — menunggu keputusan untuk mulai eksekusi  
+**Plan**: `docs/plan-pwa-mobile.md`  
+**Goal**: Sidebar → Drawer di mobile, manifest + service worker (Network First), grid produk POS 2 kolom + cart bottom sheet di HP, touch target 44px, tabel responsive.  
+**Blocker kritis ditemukan saat riset (§0 di plan)**: halaman POS Kasir (`Transactions/Create.jsx` + komponen `Pos/*`) kemungkinan tanpa CSS sekarang karena masih pakai class Bootstrap mati sisa migrasi AntD — lihat `MEMORY.md` POS-022. Harus di-fix bersamaan dengan pekerjaan mobile POS, bukan pekerjaan terpisah.
+
+---
+
 ### Integrasi Telegram Bot (PPOB)
 
 **Status**: Rencana teknis selesai — menunggu keputusan open questions  
