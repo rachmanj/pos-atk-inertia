@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Link } from "@inertiajs/react";
+import { Menu } from "antd";
 import {
     DashboardOutlined,
     SafetyOutlined,
@@ -132,4 +133,66 @@ export function useSidebarMenuItems(permissions = {}) {
             return true;
         });
     }, [permissions]);
+}
+
+export default function Sidebar({
+    collapsed = false,
+    storeName = "VASIA STORE",
+    storeLogo = null,
+    permissions = {},
+    selectedKey = "",
+    onMenuClick,
+}) {
+    const menuItems = useSidebarMenuItems(permissions);
+
+    return (
+        <>
+            <div
+                style={{
+                    height: 64,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: collapsed ? "center" : "flex-start",
+                    gap: 12,
+                    padding: collapsed ? "0 8px" : "0 16px",
+                    overflow: "hidden",
+                }}
+            >
+                {storeLogo ? (
+                    <img
+                        src={storeLogo}
+                        alt={storeName}
+                        style={{
+                            width: 32,
+                            height: 32,
+                            objectFit: "contain",
+                            flexShrink: 0,
+                        }}
+                    />
+                ) : (
+                    <ShopOutlined style={{ fontSize: 24, color: "#fff" }} />
+                )}
+                {!collapsed && (
+                    <strong
+                        style={{
+                            color: "#fff",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                        }}
+                    >
+                        {storeName}
+                    </strong>
+                )}
+            </div>
+
+            <Menu
+                theme="dark"
+                mode="inline"
+                selectedKeys={selectedKey ? [selectedKey] : []}
+                items={menuItems}
+                onClick={onMenuClick}
+            />
+        </>
+    );
 }

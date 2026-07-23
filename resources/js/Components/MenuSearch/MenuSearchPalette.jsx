@@ -2,14 +2,18 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { router, usePage } from "@inertiajs/react";
 import { SearchOutlined } from "@ant-design/icons";
 import { Dropdown, Input } from "antd";
+import useMobile from "../../Hooks/useMobile";
 import hasAnyPermission from "../../Utils/Permissions";
 import { NAV_MENUS } from "../../Utils/navMenu";
 
 export default function MenuSearchPalette({
     placeholder = "Search Menu here",
+    fullWidth = false,
 }) {
     const { props } = usePage();
     const permissions = props.auth?.permissions || {};
+    const isMobile = useMobile();
+    const isFullWidth = fullWidth || isMobile;
 
     const [query, setQuery] = useState("");
     const [highlightIndex, setHighlightIndex] = useState(0);
@@ -192,7 +196,16 @@ export default function MenuSearchPalette({
     );
 
     return (
-        <div className="menu-search-wrapper">
+        <div
+            className="menu-search-wrapper"
+            style={{
+                display: "flex",
+                alignItems: "center",
+                position: "relative",
+                width: isFullWidth ? "100%" : "auto",
+                flex: isFullWidth ? 1 : "none",
+            }}
+        >
             <Dropdown
                 open={dropdownOpen}
                 onOpenChange={setDropdownOpen}
@@ -207,7 +220,9 @@ export default function MenuSearchPalette({
                     allowClear
                     prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
                     suffix={
-                        <kbd className="menu-search-kbd">Ctrl+K</kbd>
+                        !isMobile ? (
+                            <kbd className="menu-search-kbd">Ctrl+K</kbd>
+                        ) : null
                     }
                     placeholder={placeholder}
                     value={query}
@@ -220,7 +235,7 @@ export default function MenuSearchPalette({
                     onKeyDown={handleKeyDown}
                     autoComplete="off"
                     spellCheck={false}
-                    style={{ width: 280 }}
+                    style={{ width: isFullWidth ? "100%" : 280 }}
                 />
             </Dropdown>
         </div>
