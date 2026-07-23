@@ -1,8 +1,10 @@
 import {
     Alert,
     Button,
+    Col,
     InputNumber,
     Radio,
+    Row,
     Space,
     Typography,
 } from "antd";
@@ -10,6 +12,9 @@ import { CheckCircleOutlined } from "@ant-design/icons";
 import { formatRupiah } from "../../Utils/format";
 
 const { Text } = Typography;
+
+const fieldLabelClassName =
+    "mb-1.5 block text-[0.82rem] font-extrabold text-[#7a6b67]";
 
 export default function PosPaymentSummary({
     paymentMethod,
@@ -39,9 +44,9 @@ export default function PosPaymentSummary({
     return (
         <form className="pos-payment-form" onSubmit={onSubmit}>
             <div className="mb-3">
-                <label className="form-label">Metode Pembayaran</label>
+                <label className={fieldLabelClassName}>Metode Pembayaran</label>
                 <Radio.Group
-                    className="pos-method-toggle w-100"
+                    className="pos-method-toggle w-full"
                     value={paymentMethod}
                     onChange={(e) => onPaymentMethodChange(e.target.value)}
                     optionType="button"
@@ -62,16 +67,16 @@ export default function PosPaymentSummary({
                 </Radio.Group>
             </div>
 
-            <div className="row g-2 mb-3">
-                <div className={isCashLikePayment ? "col-5" : "col-12"}>
-                    <label className="form-label">Diskon</label>
+            <Row gutter={[8, 8]} className="mb-3">
+                <Col span={isCashLikePayment ? 10 : 24}>
+                    <label className={fieldLabelClassName}>Diskon</label>
                     <Space.Compact style={{ width: "100%" }}>
                         <InputNumber
                             min={0}
                             value={discount}
                             onChange={(value) => onDiscountChange(value ?? 0)}
                             style={{ flex: 1 }}
-                            className="w-100"
+                            className="w-full"
                         />
                         <Button
                             type={
@@ -88,19 +93,20 @@ export default function PosPaymentSummary({
                             {discountType === "nominal" ? "Rp" : "%"}
                         </Button>
                     </Space.Compact>
-                </div>
+                </Col>
 
                 {isCashLikePayment && (
-                    <div className="col-7">
-                        <label className="form-label">{cashLabel}</label>
+                    <Col span={14}>
+                        <label className={fieldLabelClassName}>{cashLabel}</label>
                         <InputNumber
-                            className="pos-cash-input w-100"
+                            className="pos-cash-input w-full"
                             min={0}
                             value={cash === "" ? null : Number(cash)}
                             onChange={(value) =>
                                 onCashChange(value != null ? String(value) : "")
                             }
                             required
+                            style={{ width: "100%" }}
                         />
 
                         {cashOptions.length > 0 && (
@@ -120,15 +126,15 @@ export default function PosPaymentSummary({
                                 ))}
                             </div>
                         )}
-                    </div>
+                    </Col>
                 )}
-            </div>
+            </Row>
 
             {paymentMethod === "digital" && (
                 <Alert
                     type="info"
                     showIcon
-                    className="mb-3 small"
+                    className="mb-3 text-xs"
                     message="Pembayaran digital akan diproses melalui Midtrans. Kasir tidak perlu mengisi uang tunai."
                 />
             )}
@@ -140,9 +146,9 @@ export default function PosPaymentSummary({
                 </div>
                 <div>
                     <span>Diskon</span>
-                    <strong className="text-danger">
+                    <Text type="danger" strong>
                         -{formatRupiah(discountAmount)}
-                    </strong>
+                    </Text>
                 </div>
                 <div className="pos-summary-total">
                     <span>Total</span>
@@ -162,7 +168,7 @@ export default function PosPaymentSummary({
                 type="primary"
                 size="large"
                 htmlType="submit"
-                className="w-100 pos-pay-button"
+                className="pos-pay-button"
                 icon={<CheckCircleOutlined />}
                 disabled={activeCartsCount === 0}
                 block

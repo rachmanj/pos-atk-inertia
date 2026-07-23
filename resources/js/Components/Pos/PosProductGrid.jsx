@@ -117,7 +117,7 @@ export default function PosProductGrid({
                                     {isPpob && (
                                         <Tag
                                             color="cyan"
-                                            className="position-absolute top-0 end-0 m-1"
+                                            className="absolute top-0 right-0 m-1"
                                         >
                                             PPOB
                                         </Tag>
@@ -127,14 +127,14 @@ export default function PosProductGrid({
                                         serviceComponentLow(product) && (
                                             <Tag
                                                 color="warning"
-                                                className="position-absolute top-0 end-0 m-1"
+                                                className="absolute top-0 right-0 m-1"
                                             >
                                                 Bahan menipis
                                             </Tag>
                                         )}
                                     {isService && (
                                         <Tag
-                                            className="position-absolute top-0 start-0 m-1"
+                                            className="absolute top-0 left-0 m-1"
                                         >
                                             Layanan
                                         </Tag>

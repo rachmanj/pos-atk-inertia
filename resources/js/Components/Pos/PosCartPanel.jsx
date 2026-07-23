@@ -35,7 +35,7 @@ function CartRow({
         <div className={`pos-cart-row ${held ? "opacity-75" : ""}`}>
             <div className="pos-cart-main">
                 <strong>{cart.product?.title || "Produk"}</strong>
-                {held && <Tag className="ms-1">Ditahan</Tag>}
+                {held && <Tag className="ml-1">Ditahan</Tag>}
                 <span>
                     {cart.ppob_cost != null ? (
                         <>
@@ -50,13 +50,13 @@ function CartRow({
                     )}
                 </span>
                 {cart.customer_ref && (
-                    <Text type="secondary" className="d-block">
+                    <Text type="secondary" className="block">
                         Ref: {cart.customer_ref}
                     </Text>
                 )}
                 {!held && (
-                    <div className="d-flex align-items-center gap-1 mt-1">
-                        <Text type="secondary" className="small">
+                    <div className="mt-1 flex items-center gap-1">
+                        <Text type="secondary" className="text-xs">
                             Diskon
                         </Text>
                         <Space.Compact size="small" style={{ maxWidth: 160 }}>
@@ -124,10 +124,10 @@ function CartRow({
                     </Space.Compact>
                 )}
 
-                <div className="text-end">
+                <div className="text-right">
                     <strong>{formatRupiah(net)}</strong>
                     {itemDiscount > 0 && (
-                        <Text type="danger" className="d-block small">
+                        <Text type="danger" className="block text-xs">
                             -{formatRupiah(itemDiscount)}
                         </Text>
                     )}
@@ -200,7 +200,7 @@ export default function PosCartPanel({
 
             {(errors?.error || flash?.error) && (
                 <div className="mx-3 mt-3 mb-0">
-                    <Tag color="error" className="w-100 p-2">
+                    <Tag color="error" className="!flex w-full p-2">
                         {errors?.error || flash?.error}
                     </Tag>
                 </div>
@@ -212,7 +212,7 @@ export default function PosCartPanel({
                         color={
                             ppobAccount.is_low_balance ? "error" : "default"
                         }
-                        className="w-100 p-2"
+                        className="!flex w-full p-2"
                     >
                         Saldo PPOB ({ppobAccount.name}):{" "}
                         <strong>
@@ -239,7 +239,7 @@ export default function PosCartPanel({
                             <div className="px-3 pt-2">
                                 <Text
                                     type="secondary"
-                                    className="fw-semibold small"
+                                    className="text-xs font-semibold"
                                 >
                                     Item ditahan ({heldCarts.length})
                                 </Text>
@@ -267,7 +267,9 @@ export default function PosCartPanel({
             </div>
 
             <div className="px-3 pb-2">
-                <label className="form-label">Pelanggan</label>
+                <label className="mb-1.5 block text-[0.82rem] font-extrabold text-[#7a6b67]">
+                    Pelanggan
+                </label>
                 {selectedCustomer ? (
                     <Space.Compact style={{ width: "100%" }}>
                         <Input value={selectedCustomer.name} readOnly />
@@ -288,7 +290,7 @@ export default function PosCartPanel({
                                     <div>
                                         <strong>{c.name}</strong>
                                         {c.no_telp && (
-                                            <div className="text-muted small">
+                                            <div className="text-xs text-gray-500">
                                                 {c.no_telp}
                                             </div>
                                         )}
@@ -311,7 +313,7 @@ export default function PosCartPanel({
                                         <Button
                                             type="link"
                                             size="small"
-                                            className="p-0"
+                                            className="!p-0"
                                             onClick={onShowQuickCreate}
                                         >
                                             Tambah baru?
@@ -333,7 +335,7 @@ export default function PosCartPanel({
                         <Button
                             type="link"
                             size="small"
-                            className="p-0 mt-1"
+                            className="!p-0 mt-1"
                             onClick={onClearCustomer}
                         >
                             Pilih Umum (tanpa pelanggan)

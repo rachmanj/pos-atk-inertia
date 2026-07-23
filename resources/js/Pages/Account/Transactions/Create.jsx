@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { Button, Modal, notification } from "antd";
+import { Button, Col, Modal, notification, Row } from "antd";
 import { FileTextOutlined } from "@ant-design/icons";
 import LayoutAccount from "../../../Layouts/Account";
 import PosProductGrid from "../../../Components/Pos/PosProductGrid";
@@ -792,8 +792,11 @@ export default function TransactionCreate() {
                         </Link>
                     </div>
 
-                    <div className="row g-3">
-                        <div className="col-12 col-xl-8">
+                    <Row
+                        gutter={[12, 12]}
+                        className="min-h-[calc(100vh-130px)] items-stretch max-xl:min-h-0"
+                    >
+                        <Col xs={24} xl={16}>
                             <PosProductGrid
                                 searchInputRef={searchInputRef}
                                 products={products}
@@ -805,9 +808,9 @@ export default function TransactionCreate() {
                                 onCategoryClick={handleCategoryClick}
                                 onAddToCart={addToCart}
                             />
-                        </div>
+                        </Col>
 
-                        <div className="col-12 col-xl-4">
+                        <Col xs={24} xl={8}>
                             <section className="pos-checkout-panel">
                                 <PosCartPanel
                                     activeCarts={activeCarts}
@@ -869,8 +872,8 @@ export default function TransactionCreate() {
                                     onSubmit={storeTransaction}
                                 />
                             </section>
-                        </div>
-                    </div>
+                        </Col>
+                    </Row>
                 </div>
 
                 <PosPpobModal
