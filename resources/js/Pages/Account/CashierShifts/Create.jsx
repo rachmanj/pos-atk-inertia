@@ -1,18 +1,30 @@
 import React, { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
+import {
+    Alert,
+    Button,
+    Card,
+    Form,
+    Input,
+    InputNumber,
+    Typography,
+} from "antd";
+import { ArrowLeftOutlined, PlayCircleOutlined } from "@ant-design/icons";
+
+const { Title, Paragraph } = Typography;
 
 export default function CashierShiftCreate() {
     const { errors = {}, flash = {}, ppobAccount = null } = usePage().props;
 
-    const [cashInHand, setCashInHand] = useState("");
+    const [cashInHand, setCashInHand] = useState(null);
     const [note, setNote] = useState("");
 
     const openShift = (e) => {
         e.preventDefault();
 
         router.post("/account/cashier-shifts", {
-            cash_in_hand: cashInHand,
+            cash_in_hand: cashInHand ?? "",
             note,
         });
     };
@@ -24,103 +36,108 @@ export default function CashierShiftCreate() {
             </Head>
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 col-lg-8 col-xl-6 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-door-open me-2"></i>
-                                    BUKA SHIFT
-                                </h5>
+                <Card
+                    className="border-0 shadow-sm rounded-3 mt-4"
+                    style={{ maxWidth: 720 }}
+                    title={
+                        <Title level={5} className="mb-0">
+                            BUKA SHIFT
+                        </Title>
+                    }
+                    extra={
+                        <Link href="/account/cashier-shifts">
+                            <Button icon={<ArrowLeftOutlined />}>
+                                KEMBALI
+                            </Button>
+                        </Link>
+                    }
+                >
+                    {flash.error && (
+                        <Alert
+                            type="error"
+                            message={flash.error}
+                            showIcon
+                            className="mb-4"
+                        />
+                    )}
 
-                                <Link
-                                    href="/account/cashier-shifts"
-                                    className="btn btn-secondary shadow-sm rounded-sm"
-                                >
-                                    <i className="fas fa-arrow-left me-2"></i>
-                                    KEMBALI
-                                </Link>
-                            </div>
+                    <form onSubmit={openShift}>
+                        <Form.Item
+                            label="Kas Awal"
+                            validateStatus={
+                                errors.cash_in_hand ? "error" : ""
+                            }
+                            help={errors.cash_in_hand}
+                            required
+                        >
+                            <InputNumber
+                                min={0}
+                                className="w-100"
+                                placeholder="0"
+                                value={cashInHand}
+                                onChange={setCashInHand}
+                            />
+                            <Paragraph type="secondary" className="mt-1 mb-0">
+                                Masukkan saldo awal kas di laci sebelum shift
+                                dimulai.
+                            </Paragraph>
+                        </Form.Item>
 
-                            <div className="card-body">
-                                {flash.error && (
-                                    <div className="alert alert-danger shadow-sm">
-                                        {flash.error}
-                                    </div>
-                                )}
+                        {ppobAccount && (
+                            <Form.Item
+                                label={`Saldo PPOB (${ppobAccount.name})`}
+                            >
+                                <Alert
+                                    type="info"
+                                    showIcon
+                                    message={
+                                        <>
+                                            Saldo sistem saat ini:{" "}
+                                            <strong>
+                                                Rp{" "}
+                                                {Number(
+                                                    ppobAccount.current_balance ||
+                                                        0,
+                                                ).toLocaleString("id-ID")}
+                                            </strong>
+                                            . Akun ini dipakai bersama, bisa
+                                            dipakai kasir lain secara bersamaan,
+                                            jadi saldo tidak perlu dihitung
+                                            ulang tiap buka/tutup shift.
+                                            Verifikasi saldo fisik di app
+                                            provider dilakukan di menu{" "}
+                                            <Link href="/account/ppob-balance-logs">
+                                                Riwayat Saldo PPOB
+                                            </Link>
+                                            .
+                                        </>
+                                    }
+                                />
+                            </Form.Item>
+                        )}
 
-                                <form onSubmit={openShift}>
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Kas Awal
-                                        </label>
+                        <Form.Item
+                            label="Catatan Pembukaan"
+                            validateStatus={errors.note ? "error" : ""}
+                            help={errors.note}
+                        >
+                            <Input.TextArea
+                                rows={4}
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                placeholder="Contoh: laci kas sudah dicek, saldo awal sesuai."
+                            />
+                        </Form.Item>
 
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            className={`form-control ${errors.cash_in_hand ? "is-invalid" : ""}`}
-                                            value={cashInHand}
-                                            onChange={(e) =>
-                                                setCashInHand(e.target.value)
-                                            }
-                                            placeholder="0"
-                                        />
-
-                                        <small className="d-block mt-1">
-                                            Masukkan saldo awal kas di laci
-                                            sebelum shift dimulai.
-                                        </small>
-
-                                        {errors.cash_in_hand && (
-                                            <div className="invalid-feedback">
-                                                {errors.cash_in_hand}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {ppobAccount && (
-                                        <div className="mb-4">
-                                            <label className="fw-bold mb-2">Saldo PPOB ({ppobAccount.name})</label>
-                                            <div className="alert alert-info shadow-sm mb-0">
-                                                Saldo sistem saat ini: <strong>Rp {Number(ppobAccount.current_balance || 0).toLocaleString("id-ID")}</strong>.
-                                                Akun ini dipakai bersama, bisa dipakai kasir lain secara bersamaan, jadi saldo tidak perlu dihitung ulang tiap buka/tutup shift.
-                                                Verifikasi saldo fisik di app provider dilakukan di menu{" "}
-                                                <Link href="/account/ppob-balance-logs">Riwayat Saldo PPOB</Link>.
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">Catatan Pembukaan</label>
-                                        <textarea
-                                            rows="4"
-                                            className={`form-control ${errors.note ? "is-invalid" : ""}`}
-                                            value={note}
-                                            onChange={(e) =>
-                                                setNote(e.target.value)
-                                            }
-                                            placeholder="Contoh: laci kas sudah dicek, saldo awal sesuai."
-                                        />
-
-                                        {errors.note && (
-                                            <div className="invalid-feedback">
-                                                {errors.note}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        className="btn btn-success shadow-sm rounded-sm"
-                                    >
-                                        <i className="fas fa-play-circle me-2"></i>
-                                        MULAI SHIFT
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<PlayCircleOutlined />}
+                        >
+                            MULAI SHIFT
+                        </Button>
+                    </form>
+                </Card>
             </LayoutAccount>
         </>
     );

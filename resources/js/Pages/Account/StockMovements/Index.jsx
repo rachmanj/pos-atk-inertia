@@ -3,6 +3,27 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, Link, router } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    Input,
+    Row,
+    Select,
+    Space,
+    Table,
+    Tag,
+    Typography,
+} from "antd";
+import {
+    FilterOutlined,
+    AppstoreOutlined,
+    PlusOutlined,
+    ReloadOutlined,
+} from "@ant-design/icons";
+
+const { Title, Text } = Typography;
 
 const typeOptions = [
     { value: "", label: "Semua Tipe" },
@@ -11,10 +32,10 @@ const typeOptions = [
     { value: "adjustment", label: "Koreksi" },
 ];
 
-const typeClasses = {
-    in: "bg-success",
-    out: "bg-danger",
-    adjustment: "bg-primary",
+const typeColors = {
+    in: "success",
+    out: "error",
+    adjustment: "processing",
 };
 
 const typeLabels = {
@@ -28,22 +49,7 @@ const getStockDelta = (movement) =>
 
 const formatStockDelta = (movement) => {
     const delta = getStockDelta(movement);
-
     return delta > 0 ? `+${delta}` : String(delta);
-};
-
-const deltaClass = (movement) => {
-    const delta = getStockDelta(movement);
-
-    if (delta > 0) {
-        return "text-success";
-    }
-
-    if (delta < 0) {
-        return "text-danger";
-    }
-
-    return "text-muted";
 };
 
 export default function StockMovementIndex() {
@@ -52,23 +58,110 @@ export default function StockMovementIndex() {
     const permissions = auth.permissions || {};
 
     const [search, setSearch] = useState(filters.q || "");
-    const [type, setType] = useState(filters.type || "");
+    const [type, setType] = useState(filters.type || undefined);
 
     const handleFilter = (e) => {
         e.preventDefault();
 
         router.get("/account/stock-movements", {
             q: search,
-            type: type,
+            type: type || "",
         });
     };
 
     const handleReset = () => {
         setSearch("");
-        setType("");
-
+        setType(undefined);
         router.get("/account/stock-movements");
     };
+
+    const columns = [
+        {
+            title: "No.",
+            width: 60,
+            align: "center",
+            render: (_, __, index) =>
+                index +
+                1 +
+                (stockMovements.current_page - 1) *
+                    stockMovements.per_page,
+        },
+        {
+            title: "Tanggal",
+            dataIndex: "created_at",
+            render: (value) =>
+                new Date(value).toLocaleString("id-ID"),
+        },
+        {
+            title: "Produk",
+            render: (_, record) => (
+                <>
+                    <div className="fw-bold">
+                        {record.product?.title || "-"}
+                    </div>
+                    <Text type="secondary" className="small">
+                        {record.product?.barcode || "-"}
+                    </Text>
+                </>
+            ),
+        },
+        {
+            title: "Tipe",
+            align: "center",
+            dataIndex: "type",
+            render: (value) => (
+                <Tag color={typeColors[value] || "default"}>
+                    {typeLabels[value] || value}
+                </Tag>
+            ),
+        },
+        {
+            title: "Perubahan",
+            align: "center",
+            render: (_, record) => {
+                const delta = getStockDelta(record);
+                return (
+                    <Text
+                        strong
+                        type={
+                            delta > 0
+                                ? "success"
+                                : delta < 0
+                                  ? "danger"
+                                  : "secondary"
+                        }
+                    >
+                        {formatStockDelta(record)}
+                    </Text>
+                );
+            },
+        },
+        {
+            title: "Sebelum",
+            align: "center",
+            dataIndex: "stock_before",
+        },
+        {
+            title: "Sesudah",
+            align: "center",
+            dataIndex: "stock_after",
+            render: (value) => <strong>{value}</strong>,
+        },
+        {
+            title: "Sumber",
+            dataIndex: "source_label",
+            render: (value) => <Tag>{value}</Tag>,
+        },
+        {
+            title: "Pengguna",
+            render: (_, record) => record.user?.name || "-",
+        },
+        {
+            title: "Catatan",
+            dataIndex: "note",
+            render: (value) => value || "-",
+        },
+    ];
 
     return (
         <>
@@ -77,247 +170,110 @@ export default function StockMovementIndex() {
             </Head>
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-layer-group me-2"></i>
-                                    MUTASI STOK
-                                </h5>
+                <Card
+                    className="border-0 shadow-sm rounded-3 mt-4"
+                    title={
+                        <Title level={5} className="mb-0">
+                            <AppstoreOutlined className="me-2" />
+                            MUTASI STOK
+                        </Title>
+                    }
+                    extra={
+                        hasAnyPermission(
+                            ["stock_movements.create"],
+                            permissions,
+                        ) && (
+                            <Link href="/account/stock-movements/create">
+                                <Button
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                >
+                                    KOREKSI STOK
+                                </Button>
+                            </Link>
+                        )
+                    }
+                >
+                    {flash.success && (
+                        <Alert
+                            type="success"
+                            message={flash.success}
+                            showIcon
+                            className="mb-4"
+                        />
+                    )}
+                    {flash.error && (
+                        <Alert
+                            type="error"
+                            message={flash.error}
+                            showIcon
+                            className="mb-4"
+                        />
+                    )}
 
-                                <div>
-                                    {hasAnyPermission(
-                                        ["stock_movements.create"],
-                                        permissions,
-                                    ) && (
-                                        <Link
-                                            href="/account/stock-movements/create"
-                                            className="btn btn-success shadow-sm rounded-sm"
-                                        >
-                                            <i className="fas fa-plus-circle me-2"></i>
-                                            KOREKSI STOK
-                                        </Link>
+                    <form onSubmit={handleFilter} className="mb-4">
+                        <Row gutter={[12, 12]}>
+                            <Col xs={24} md={12}>
+                                <Input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari produk, barcode, pengguna, atau catatan..."
+                                />
+                            </Col>
+                            <Col xs={24} md={6}>
+                                <Select
+                                    allowClear
+                                    placeholder="Semua Tipe"
+                                    className="w-100"
+                                    value={type}
+                                    onChange={setType}
+                                    options={typeOptions.filter(
+                                        (item) => item.value !== "",
                                     )}
-                                </div>
-                            </div>
+                                />
+                            </Col>
+                            <Col xs={24} md={6}>
+                                <Space>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        icon={<FilterOutlined />}
+                                    >
+                                        TERAPKAN
+                                    </Button>
+                                    <Button
+                                        icon={<ReloadOutlined />}
+                                        onClick={handleReset}
+                                    >
+                                        ATUR ULANG
+                                    </Button>
+                                </Space>
+                            </Col>
+                        </Row>
+                    </form>
 
-                            <div className="card-body">
-                                {flash.success && (
-                                    <div className="alert alert-success shadow-sm">
-                                        {flash.success}
-                                    </div>
-                                )}
+                    <Table
+                        bordered
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={stockMovements.data}
+                        pagination={false}
+                        locale={{
+                            emptyText: "Belum ada histori mutasi stok.",
+                        }}
+                        scroll={{ x: 1000 }}
+                    />
 
-                                {flash.error && (
-                                    <div className="alert alert-danger shadow-sm">
-                                        {flash.error}
-                                    </div>
-                                )}
-
-                                <form onSubmit={handleFilter} className="mb-4">
-                                    <div className="row g-3">
-                                        <div className="col-md-6">
-                                            <input
-                                                type="text"
-                                                className="form-control shadow-sm"
-                                                value={search}
-                                                onChange={(e) =>
-                                                    setSearch(e.target.value)
-                                                }
-                                                placeholder="Cari produk, barcode, pengguna, atau catatan..."
-                                            />
-                                        </div>
-
-                                        <div className="col-md-3">
-                                            <select
-                                                className="form-select shadow-sm"
-                                                value={type}
-                                                onChange={(e) =>
-                                                    setType(e.target.value)
-                                                }
-                                            >
-                                                {typeOptions.map((item) => (
-                                                    <option
-                                                        key={item.value}
-                                                        value={item.value}
-                                                    >
-                                                        {item.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="col-md-3 d-flex gap-2">
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary shadow-sm w-100"
-                                            >
-                                                <i className="fas fa-filter me-2"></i>
-                                                TERAPKAN
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={handleReset}
-                                                className="btn btn-secondary shadow-sm w-100"
-                                            >
-                                                <i className="fas fa-sync me-2"></i>
-                                                ATUR ULANG
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-
-                                <div className="table-responsive">
-                                    <table className="table table-bordered align-middle mb-0">
-                                        <thead className="table-dark">
-                                            <tr>
-                                                <th style={{ width: "5%" }}>
-                                                    No.
-                                                </th>
-                                                <th>Tanggal</th>
-                                                <th>Produk</th>
-                                                <th className="text-center">
-                                                    Tipe
-                                                </th>
-                                                <th className="text-center">
-                                                    Perubahan
-                                                </th>
-                                                <th className="text-center">
-                                                    Sebelum
-                                                </th>
-                                                <th className="text-center">
-                                                    Sesudah
-                                                </th>
-                                                <th>Sumber</th>
-                                                <th>Pengguna</th>
-                                                <th>Catatan</th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {stockMovements.data.length > 0 ? (
-                                                stockMovements.data.map(
-                                                    (movement, index) => (
-                                                        <tr key={movement.id}>
-                                                            <td className="fw-bold text-center">
-                                                                {index +
-                                                                    1 +
-                                                                    (stockMovements.current_page -
-                                                                        1) *
-                                                                        stockMovements.per_page}
-                                                            </td>
-
-                                                            <td>
-                                                                {new Date(
-                                                                    movement.created_at,
-                                                                ).toLocaleString(
-                                                                    "id-ID",
-                                                                )}
-                                                            </td>
-
-                                                            <td>
-                                                                <div className="fw-bold">
-                                                                    {movement
-                                                                        .product
-                                                                        ?.title ||
-                                                                        "-"}
-                                                                </div>
-                                                                <small>
-                                                                    {movement
-                                                                        .product
-                                                                        ?.barcode ||
-                                                                        "-"}
-                                                                </small>
-                                                            </td>
-
-                                                            <td className="text-center">
-                                                                <span
-                                                                    className={`badge shadow-sm ${
-                                                                        typeClasses[
-                                                                            movement
-                                                                                .type
-                                                                        ] ||
-                                                                        "bg-secondary"
-                                                                    }`}
-                                                                >
-                                                                    {typeLabels[
-                                                                        movement
-                                                                            .type
-                                                                    ] ||
-                                                                        movement.type}
-                                                                </span>
-                                                            </td>
-
-                                                            <td
-                                                                className={`text-center fw-bold ${deltaClass(
-                                                                    movement,
-                                                                )}`}
-                                                            >
-                                                                {formatStockDelta(
-                                                                    movement,
-                                                                )}
-                                                            </td>
-
-                                                            <td className="text-center">
-                                                                {
-                                                                    movement.stock_before
-                                                                }
-                                                            </td>
-
-                                                            <td className="text-center fw-bold">
-                                                                {
-                                                                    movement.stock_after
-                                                                }
-                                                            </td>
-
-                                                            <td>
-                                                                <span className="badge bg-light border">
-                                                                    {
-                                                                        movement.source_label
-                                                                    }
-                                                                </span>
-                                                            </td>
-
-                                                            <td>
-                                                                {movement.user
-                                                                    ?.name ||
-                                                                    "-"}
-                                                            </td>
-
-                                                            <td>
-                                                                {movement.note ||
-                                                                    "-"}
-                                                            </td>
-                                                        </tr>
-                                                    ),
-                                                )
-                                            ) : (
-                                                <tr>
-                                                    <td
-                                                        colSpan="10"
-                                                        className="text-center py-4"
-                                                    >
-                                                        Belum ada histori mutasi
-                                                        stok.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="mt-4">
-                                    <Pagination
-                                        links={stockMovements.links}
-                                        align="end"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <Pagination
+                        links={stockMovements.links}
+                        align="end"
+                        meta={{
+                            current_page: stockMovements.current_page,
+                            per_page: stockMovements.per_page,
+                            total: stockMovements.total,
+                        }}
+                    />
+                </Card>
             </LayoutAccount>
         </>
     );

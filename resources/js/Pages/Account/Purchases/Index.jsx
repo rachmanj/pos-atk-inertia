@@ -4,6 +4,29 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Input,
+    Row,
+    Select,
+    Space,
+    Table,
+    Typography,
+} from "antd";
+import {
+    EyeOutlined,
+    FilterOutlined,
+    PlusOutlined,
+    ReloadOutlined,
+    ShoppingOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+
+const { Title } = Typography;
 
 export default function PurchaseIndex() {
     const {
@@ -17,7 +40,9 @@ export default function PurchaseIndex() {
     const permissions = auth.permissions || {};
 
     const [search, setSearch] = useState(filters.q || "");
-    const [supplierId, setSupplierId] = useState(filters.supplier_id || "");
+    const [supplierId, setSupplierId] = useState(
+        filters.supplier_id || undefined,
+    );
     const [startDate, setStartDate] = useState(filters.start_date || "");
     const [endDate, setEndDate] = useState(filters.end_date || "");
 
@@ -26,7 +51,7 @@ export default function PurchaseIndex() {
 
         router.get("/account/purchases", {
             q: search,
-            supplier_id: supplierId,
+            supplier_id: supplierId || "",
             start_date: startDate,
             end_date: endDate,
         });
@@ -35,17 +60,79 @@ export default function PurchaseIndex() {
     const handleReset = () => {
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
         const formatDate = (date) =>
             `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
         setSearch("");
-        setSupplierId("");
+        setSupplierId(undefined);
         setStartDate(formatDate(monthStart));
         setEndDate(formatDate(now));
-
         router.get("/account/purchases");
     };
+
+    const columns = [
+        {
+            title: "No.",
+            width: 60,
+            align: "center",
+            render: (_, __, index) =>
+                index +
+                1 +
+                (purchases.current_page - 1) * purchases.per_page,
+        },
+        {
+            title: "Invoice",
+            dataIndex: "invoice",
+            render: (value) => <strong className="text-primary">{value}</strong>,
+        },
+        {
+            title: "Tanggal",
+            dataIndex: "purchase_date",
+            render: (value) =>
+                new Date(value).toLocaleDateString("id-ID"),
+        },
+        {
+            title: "Supplier",
+            render: (_, record) => record.supplier?.name || "-",
+        },
+        {
+            title: "Pembuat",
+            render: (_, record) => record.user?.name || "-",
+        },
+        {
+            title: "Item",
+            align: "center",
+            dataIndex: "total_items",
+            render: (value) => <strong>{value}</strong>,
+        },
+        {
+            title: "Qty",
+            align: "center",
+            dataIndex: "total_qty",
+            render: (value) => <strong>{value}</strong>,
+        },
+        {
+            title: "Total",
+            align: "right",
+            dataIndex: "total_amount",
+            render: (value) => (
+                <strong className="text-success">{formatRupiah(value)}</strong>
+            ),
+        },
+        {
+            title: "Aksi",
+            width: 100,
+            align: "center",
+            render: (_, record) =>
+                hasAnyPermission(["purchases.show"], permissions) ? (
+                    <Link href={`/account/purchases/${record.invoice}`}>
+                        <Button size="small" icon={<EyeOutlined />}>
+                            Detail
+                        </Button>
+                    </Link>
+                ) : null,
+        },
+    ];
 
     return (
         <>
@@ -54,254 +141,130 @@ export default function PurchaseIndex() {
             </Head>
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-shopping-bag me-2"></i>
-                                    PEMBELIAN
-                                </h5>
+                <Card
+                    className="border-0 shadow-sm rounded-3 mt-4"
+                    title={
+                        <Title level={5} className="mb-0">
+                            <ShoppingOutlined className="me-2" />
+                            PEMBELIAN
+                        </Title>
+                    }
+                    extra={
+                        hasAnyPermission(["purchases.create"], permissions) && (
+                            <Link href="/account/purchases/create">
+                                <Button
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                >
+                                    TAMBAH PEMBELIAN
+                                </Button>
+                            </Link>
+                        )
+                    }
+                >
+                    {flash.success && (
+                        <Alert
+                            type="success"
+                            message={flash.success}
+                            showIcon
+                            className="mb-4"
+                        />
+                    )}
+                    {flash.error && (
+                        <Alert
+                            type="error"
+                            message={flash.error}
+                            showIcon
+                            className="mb-4"
+                        />
+                    )}
 
-                                {hasAnyPermission(
-                                    ["purchases.create"],
-                                    permissions,
-                                ) && (
-                                    <Link
-                                        href="/account/purchases/create"
-                                        className="btn btn-success shadow-sm rounded-sm"
+                    <form onSubmit={handleFilter} className="mb-4">
+                        <Row gutter={[12, 12]}>
+                            <Col xs={24} lg={8}>
+                                <Input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari invoice, supplier, atau pembuat..."
+                                />
+                            </Col>
+                            <Col xs={24} sm={8} lg={4}>
+                                <Select
+                                    allowClear
+                                    placeholder="Semua Supplier"
+                                    className="w-100"
+                                    value={supplierId}
+                                    onChange={setSupplierId}
+                                    options={suppliers.map((supplier) => ({
+                                        value: String(supplier.id),
+                                        label: supplier.name,
+                                    }))}
+                                />
+                            </Col>
+                            <Col xs={24} sm={8} lg={4}>
+                                <DatePicker
+                                    className="w-100"
+                                    placeholder="Dari tanggal"
+                                    format="YYYY-MM-DD"
+                                    value={startDate ? dayjs(startDate) : null}
+                                    onChange={(_, dateString) =>
+                                        setStartDate(dateString)
+                                    }
+                                />
+                            </Col>
+                            <Col xs={24} sm={8} lg={4}>
+                                <DatePicker
+                                    className="w-100"
+                                    placeholder="Sampai tanggal"
+                                    format="YYYY-MM-DD"
+                                    value={endDate ? dayjs(endDate) : null}
+                                    onChange={(_, dateString) =>
+                                        setEndDate(dateString)
+                                    }
+                                />
+                            </Col>
+                            <Col xs={24} lg={4}>
+                                <Space>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        icon={<FilterOutlined />}
                                     >
-                                        <i className="fas fa-plus-circle me-2"></i>
-                                        TAMBAH PEMBELIAN
-                                    </Link>
-                                )}
-                            </div>
+                                        Filter
+                                    </Button>
+                                    <Button
+                                        icon={<ReloadOutlined />}
+                                        onClick={handleReset}
+                                    >
+                                        Reset
+                                    </Button>
+                                </Space>
+                            </Col>
+                        </Row>
+                    </form>
 
-                            <div className="card-body">
-                                {flash.success && (
-                                    <div className="alert alert-success shadow-sm">
-                                        {flash.success}
-                                    </div>
-                                )}
+                    <Table
+                        bordered
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={purchases.data}
+                        pagination={false}
+                        locale={{
+                            emptyText: "Belum ada data pembelian.",
+                        }}
+                        scroll={{ x: 900 }}
+                    />
 
-                                {flash.error && (
-                                    <div className="alert alert-danger shadow-sm">
-                                        {flash.error}
-                                    </div>
-                                )}
-
-                                <form onSubmit={handleFilter} className="mb-4">
-                                    <div className="row g-3">
-                                        <div className="col-lg-4">
-                                            <input
-                                                type="text"
-                                                className="form-control border-0 shadow-sm"
-                                                value={search}
-                                                onChange={(e) =>
-                                                    setSearch(e.target.value)
-                                                }
-                                                placeholder="Cari invoice, supplier, atau pembuat..."
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <select
-                                                className="form-select border-0 shadow-sm"
-                                                value={supplierId}
-                                                onChange={(e) =>
-                                                    setSupplierId(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            >
-                                                <option value="">
-                                                    Semua Supplier
-                                                </option>
-
-                                                {suppliers.map((supplier) => (
-                                                    <option
-                                                        key={supplier.id}
-                                                        value={supplier.id}
-                                                    >
-                                                        {supplier.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={startDate}
-                                                onChange={(e) =>
-                                                    setStartDate(e.target.value)
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={endDate}
-                                                onChange={(e) =>
-                                                    setEndDate(e.target.value)
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2 d-flex gap-2">
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary shadow-sm w-100"
-                                            >
-                                                <i className="fas fa-filter me-2"></i>
-                                                Filter
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className="btn btn-secondary shadow-sm w-100"
-                                                onClick={handleReset}
-                                            >
-                                                <i className="fas fa-sync-alt me-2"></i>
-                                                Reset
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-
-                                <div className="table-responsive">
-                                    <table className="table table-bordered align-middle mb-0">
-                                        <thead className="table-dark">
-                                            <tr>
-                                                <th style={{ width: "5%" }}>
-                                                    No.
-                                                </th>
-                                                <th>Invoice</th>
-                                                <th>Tanggal</th>
-                                                <th>Supplier</th>
-                                                <th>Pembuat</th>
-                                                <th className="text-center">
-                                                    Item
-                                                </th>
-                                                <th className="text-center">
-                                                    Qty
-                                                </th>
-                                                <th className="text-end">
-                                                    Total
-                                                </th>
-                                                <th
-                                                    className="text-center"
-                                                    style={{ width: "14%" }}
-                                                >
-                                                    Aksi
-                                                </th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {purchases.data.length > 0 ? (
-                                                purchases.data.map(
-                                                    (purchase, index) => (
-                                                        <tr key={purchase.id}>
-                                                            <td className="fw-bold text-center">
-                                                                {++index +
-                                                                    (purchases.current_page -
-                                                                        1) *
-                                                                        purchases.per_page}
-                                                            </td>
-
-                                                            <td className="fw-bold text-primary">
-                                                                {
-                                                                    purchase.invoice
-                                                                }
-                                                            </td>
-
-                                                            <td>
-                                                                {new Date(
-                                                                    purchase.purchase_date,
-                                                                ).toLocaleDateString(
-                                                                    "id-ID",
-                                                                )}
-                                                            </td>
-
-                                                            <td>
-                                                                {purchase
-                                                                    .supplier
-                                                                    ?.name ||
-                                                                    "-"}
-                                                            </td>
-
-                                                            <td>
-                                                                {purchase.user
-                                                                    ?.name ||
-                                                                    "-"}
-                                                            </td>
-
-                                                            <td className="text-center fw-bold">
-                                                                {
-                                                                    purchase.total_items
-                                                                }
-                                                            </td>
-
-                                                            <td className="text-center fw-bold">
-                                                                {
-                                                                    purchase.total_qty
-                                                                }
-                                                            </td>
-
-                                                            <td className="text-end fw-bold text-success">
-                                                                {formatRupiah(
-                                                                    purchase.total_amount,
-                                                                )}
-                                                            </td>
-
-                                                            <td className="text-center">
-                                                                {hasAnyPermission(
-                                                                    [
-                                                                        "purchases.show",
-                                                                    ],
-                                                                    permissions,
-                                                                ) && (
-                                                                    <Link
-                                                                        href={`/account/purchases/${purchase.invoice}`}
-                                                                        className="btn btn-secondary btn-sm shadow-sm"
-                                                                    >
-                                                                        <i className="fas fa-eye me-1"></i>
-                                                                        Detail
-                                                                    </Link>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ),
-                                                )
-                                            ) : (
-                                                <tr>
-                                                    <td
-                                                        colSpan="9"
-                                                        className="text-center py-4"
-                                                    >
-                                                        Belum ada data
-                                                        pembelian.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="mt-4">
-                                    <Pagination
-                                        links={purchases.links}
-                                        align="end"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <Pagination
+                        links={purchases.links}
+                        align="end"
+                        meta={{
+                            current_page: purchases.current_page,
+                            per_page: purchases.per_page,
+                            total: purchases.total,
+                        }}
+                    />
+                </Card>
             </LayoutAccount>
         </>
     );

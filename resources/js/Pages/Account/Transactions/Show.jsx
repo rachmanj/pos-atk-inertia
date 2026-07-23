@@ -1,14 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
+import {
+    Button,
+    Input,
+    Modal,
+    Radio,
+    Space,
+    Tag,
+    Typography,
+    notification,
+} from "antd";
+import {
+    ArrowLeftOutlined,
+    StopOutlined,
+    PrinterOutlined,
+    ShopOutlined,
+    ShoppingCartOutlined,
+    UndoOutlined,
+} from "@ant-design/icons";
 import { formatRupiah } from "../../../Utils/format";
 import hasAnyPermission from "../../../Utils/Permissions";
-import Swal from "sweetalert2";
+
+const { Text } = Typography;
 
 const RECEIPT_PAPER_SIZES = ["58", "80"];
 
 const normalizeReceiptPaperSize = (value) => {
     const paperSize = String(value || "58");
-
     return RECEIPT_PAPER_SIZES.includes(paperSize) ? paperSize : "58";
 };
 
@@ -31,6 +49,7 @@ export default function TransactionShow() {
     const [receiptPaperSize, setReceiptPaperSize] = useState(() =>
         normalizeReceiptPaperSize(store?.receipt_paper_size),
     );
+    const voidReasonRef = useRef("");
     const receiptPrintWidth = getReceiptPrintWidth(receiptPaperSize);
 
     const details = transaction.details || [];
@@ -41,10 +60,7 @@ export default function TransactionShow() {
     );
 
     const formatDateTime = (value) => {
-        if (!value) {
-            return "-";
-        }
-
+        if (!value) return "-";
         return new Intl.DateTimeFormat("id-ID", {
             dateStyle: "medium",
             timeStyle: "short",
@@ -54,6 +70,8 @@ export default function TransactionShow() {
     const paymentMethodLabel = {
         cash: "Tunai",
         digital: "Digital",
+        qris: "QRIS",
+        transfer: "Transfer",
     };
 
     const statusLabel = {
@@ -126,55 +144,62 @@ export default function TransactionShow() {
             window.history.back();
             return;
         }
-
         router.visit("/account/transactions");
     };
 
     const handleVoid = () => {
-        Swal.fire({
+        voidReasonRef.current = "";
+        Modal.confirm({
             title: "Void transaksi?",
-            text: "Transaksi akan dibatalkan, stok produk dikembalikan, dan profit transaksi dinolkan.",
-            icon: "warning",
-            input: "textarea",
-            inputLabel: "Alasan pembatalan (wajib)",
-            inputPlaceholder: "Tulis alasan void transaksi...",
-            inputAttributes: { required: "true" },
-            showCancelButton: true,
-            confirmButtonText: "Ya, void transaksi",
-            cancelButtonText: "Batal",
-            confirmButtonColor: "#dc3545",
-            cancelButtonColor: "#6c757d",
-            inputValidator: (value) => {
-                if (!value || !value.trim()) {
-                    return "Alasan void wajib diisi!";
+            content: (
+                <div>
+                    <p>
+                        Transaksi akan dibatalkan, stok produk dikembalikan,
+                        dan profit transaksi dinolkan.
+                    </p>
+                    <label className="d-block mb-1 fw-semibold">
+                        Alasan pembatalan (wajib)
+                    </label>
+                    <Input.TextArea
+                        rows={3}
+                        placeholder="Tulis alasan void transaksi..."
+                        onChange={(e) => {
+                            voidReasonRef.current = e.target.value;
+                        }}
+                    />
+                </div>
+            ),
+            okText: "Ya, void transaksi",
+            cancelText: "Batal",
+            okButtonProps: { danger: true },
+            onOk: () => {
+                const reason = voidReasonRef.current.trim();
+                if (!reason) {
+                    notification.error({
+                        message: "Alasan void wajib diisi!",
+                    });
+                    return Promise.reject();
                 }
-                return null;
+                router.put(
+                    `/account/transactions/${transaction.invoice}/void`,
+                    { void_reason: reason },
+                );
             },
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.put(`/account/transactions/${transaction.invoice}/void`, {
-                    void_reason: result.value.trim(),
-                });
-            }
         });
     };
 
     useEffect(() => {
         if (flash.success) {
-            Swal.fire({
-                icon: "success",
-                title: "Berhasil",
-                text: flash.success,
-                timer: 2000,
-                showConfirmButton: false,
+            notification.success({
+                message: "Berhasil",
+                description: flash.success,
+                duration: 2,
             });
         }
-
         if (flash.error) {
-            Swal.fire({
-                icon: "error",
-                title: "Gagal",
-                text: flash.error,
+            notification.error({
+                message: "Gagal",
+                description: flash.error,
             });
         }
     }, [flash]);
@@ -185,7 +210,6 @@ export default function TransactionShow() {
         };
 
         window.addEventListener("afterprint", removePrintClass);
-
         return () => {
             window.removeEventListener("afterprint", removePrintClass);
             document.body.classList.remove("printing-receipt");
@@ -202,15 +226,14 @@ export default function TransactionShow() {
                 <div className="transaction-show-shell">
                     <div className="transaction-show-header no-print">
                         <div className="transaction-show-heading">
-                            <button
-                                type="button"
+                            <Button
+                                type="text"
                                 className="transaction-back-button"
+                                icon={<ArrowLeftOutlined />}
                                 onClick={handleBack}
                                 title="Kembali"
                                 aria-label="Kembali"
-                            >
-                                <i className="fas fa-arrow-left"></i>
-                            </button>
+                            />
 
                             <div className="transaction-show-title">
                                 <span>Detail Transaksi</span>
@@ -221,7 +244,7 @@ export default function TransactionShow() {
                             </div>
                         </div>
 
-                        <span
+                        <Tag
                             className={`transaction-status-chip ${
                                 statusClass[transaction.status] || "is-warning"
                             }`}
@@ -229,7 +252,7 @@ export default function TransactionShow() {
                             {statusLabel[transaction.status] ||
                                 transaction.status ||
                                 "-"}
-                        </span>
+                        </Tag>
                     </div>
 
                     <div className="transaction-show-workspace">
@@ -240,74 +263,84 @@ export default function TransactionShow() {
                                     <strong>{transaction.invoice}</strong>
                                 </div>
 
-                                <div className="transaction-action-list">
-                                    <Link
-                                        href="/account/transactions/create"
-                                        className="btn btn-success"
-                                    >
-                                        <i className="fas fa-cash-register"></i>
-                                        POS Kasir
+                                <Space
+                                    direction="vertical"
+                                    className="transaction-action-list w-100"
+                                    size="middle"
+                                >
+                                    <Link href="/account/transactions/create">
+                                        <Button
+                                            type="primary"
+                                            block
+                                            icon={<ShoppingCartOutlined />}
+                                        >
+                                            POS Kasir
+                                        </Button>
                                     </Link>
 
                                     <div className="receipt-paper-size-control">
                                         <span>Ukuran Struk</span>
-                                        <div
+                                        <Radio.Group
                                             className="receipt-paper-size-options"
-                                            role="group"
-                                            aria-label="Ukuran struk"
+                                            value={receiptPaperSize}
+                                            onChange={(e) =>
+                                                setReceiptPaperSize(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            optionType="button"
+                                            buttonStyle="solid"
                                         >
                                             {RECEIPT_PAPER_SIZES.map((size) => (
-                                                <button
+                                                <Radio.Button
                                                     key={size}
-                                                    type="button"
+                                                    value={size}
                                                     className={`receipt-paper-size-option ${
                                                         receiptPaperSize ===
                                                         size
                                                             ? "is-active"
                                                             : ""
                                                     }`}
-                                                    onClick={() =>
-                                                        setReceiptPaperSize(
-                                                            size,
-                                                        )
-                                                    }
                                                 >
                                                     {size}mm
-                                                </button>
+                                                </Radio.Button>
                                             ))}
-                                        </div>
+                                        </Radio.Group>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-secondary"
+                                    <Button
+                                        block
+                                        icon={<PrinterOutlined />}
                                         onClick={handlePrint}
                                     >
-                                        <i className="fas fa-print"></i>
                                         Cetak Struk
-                                    </button>
+                                    </Button>
 
                                     {canVoidTransaction && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-danger"
+                                        <Button
+                                            danger
+                                            block
+                                            icon={<StopOutlined />}
                                             onClick={handleVoid}
                                         >
-                                            <i className="fas fa-ban"></i>
                                             Void Transaksi
-                                        </button>
+                                        </Button>
                                     )}
 
                                     {canCreateReturn && (
                                         <Link
                                             href={`/account/returns/create/${transaction.invoice}`}
-                                            className="btn btn-warning text-dark"
                                         >
-                                            <i className="fas fa-undo"></i>
-                                            Ajukan Retur
+                                            <Button
+                                                block
+                                                icon={<UndoOutlined />}
+                                                className="btn-warning text-dark"
+                                            >
+                                                Ajukan Retur
+                                            </Button>
                                         </Link>
                                     )}
-                                </div>
+                                </Space>
                             </div>
 
                             <div className="transaction-summary-card">
@@ -317,7 +350,6 @@ export default function TransactionShow() {
                                         {formatRupiah(transaction.grand_total)}
                                     </strong>
                                 </div>
-
                                 <div className="transaction-summary-row">
                                     <span>Metode</span>
                                     <strong>
@@ -328,7 +360,6 @@ export default function TransactionShow() {
                                             "-"}
                                     </strong>
                                 </div>
-
                                 <div className="transaction-summary-row">
                                     <span>Pelanggan</span>
                                     <strong>
@@ -366,7 +397,7 @@ export default function TransactionShow() {
                                                         className="receipt-logo"
                                                     />
                                                 ) : (
-                                                    <i className="fas fa-store receipt-logo-placeholder"></i>
+                                                    <ShopOutlined className="receipt-logo-placeholder" />
                                                 )}
                                             </div>
 
@@ -397,7 +428,7 @@ export default function TransactionShow() {
                                             </span>
                                         </div>
 
-                                        <div className="receipt-divider"></div>
+                                        <div className="receipt-divider" />
 
                                         <div className="receipt-meta">
                                             <div className="receipt-meta-row">
@@ -406,7 +437,6 @@ export default function TransactionShow() {
                                                     {transaction.invoice}
                                                 </span>
                                             </div>
-
                                             <div className="receipt-meta-row">
                                                 <span>Tanggal</span>
                                                 <span>
@@ -415,7 +445,6 @@ export default function TransactionShow() {
                                                     )}
                                                 </span>
                                             </div>
-
                                             <div className="receipt-meta-row">
                                                 <span>Kasir</span>
                                                 <span>
@@ -423,7 +452,6 @@ export default function TransactionShow() {
                                                         ?.name || "-"}
                                                 </span>
                                             </div>
-
                                             <div className="receipt-meta-row">
                                                 <span>Pelanggan</span>
                                                 <span>
@@ -431,7 +459,6 @@ export default function TransactionShow() {
                                                         ?.name || "Umum"}
                                                 </span>
                                             </div>
-
                                             <div className="receipt-meta-row">
                                                 <span>Metode</span>
                                                 <span>
@@ -445,7 +472,7 @@ export default function TransactionShow() {
                                             </div>
                                         </div>
 
-                                        <div className="receipt-divider"></div>
+                                        <div className="receipt-divider" />
 
                                         <div className="receipt-section-title">
                                             Item Belanja
@@ -462,7 +489,6 @@ export default function TransactionShow() {
                                                             {detail.product
                                                                 ?.title || "-"}
                                                         </div>
-
                                                         <div className="receipt-item__meta">
                                                             {detail.qty} x{" "}
                                                             {formatRupiah(
@@ -470,7 +496,6 @@ export default function TransactionShow() {
                                                             )}
                                                         </div>
                                                     </div>
-
                                                     <div className="receipt-item__subtotal">
                                                         {formatRupiah(
                                                             detail.subtotal,
@@ -480,7 +505,7 @@ export default function TransactionShow() {
                                             ))}
                                         </div>
 
-                                        <div className="receipt-divider"></div>
+                                        <div className="receipt-divider" />
 
                                         <div className="receipt-summary">
                                             <div className="receipt-summary-row">
@@ -489,7 +514,6 @@ export default function TransactionShow() {
                                                     {formatRupiah(subtotal)}
                                                 </span>
                                             </div>
-
                                             <div className="receipt-summary-row">
                                                 <span>Diskon</span>
                                                 <span>
@@ -499,7 +523,6 @@ export default function TransactionShow() {
                                                     )}
                                                 </span>
                                             </div>
-
                                             <div className="receipt-summary-row receipt-summary-row--total">
                                                 <span>Total</span>
                                                 <span>
@@ -508,7 +531,6 @@ export default function TransactionShow() {
                                                     )}
                                                 </span>
                                             </div>
-
                                             <div className="receipt-summary-row">
                                                 <span>Tunai</span>
                                                 <span>
@@ -517,7 +539,6 @@ export default function TransactionShow() {
                                                     )}
                                                 </span>
                                             </div>
-
                                             <div className="receipt-summary-row">
                                                 <span>Kembali</span>
                                                 <span>
@@ -530,27 +551,24 @@ export default function TransactionShow() {
 
                                         {transaction.note && (
                                             <>
-                                                <div className="receipt-divider"></div>
-
+                                                <div className="receipt-divider" />
                                                 <div className="receipt-note">
                                                     {transaction.note}
                                                 </div>
                                             </>
                                         )}
 
-                                        <div className="receipt-divider"></div>
+                                        <div className="receipt-divider" />
 
                                         <div className="receipt-footer">
                                             <div className="receipt-footer__headline">
                                                 Terima kasih
                                             </div>
-
                                             <div className="receipt-footer__text">
                                                 Barang yang sudah dibeli tidak
                                                 dapat ditukar kecuali ada
                                                 perjanjian sebelumnya.
                                             </div>
-
                                             <span className="receipt-footer__code">
                                                 {transaction.invoice}
                                             </span>

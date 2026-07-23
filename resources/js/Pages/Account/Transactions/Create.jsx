@@ -1,8 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Button, Modal, notification } from "antd";
+import { FileTextOutlined } from "@ant-design/icons";
 import LayoutAccount from "../../../Layouts/Account";
-import Swal from "sweetalert2";
-import { formatRupiah } from "../../../Utils/format";
+import PosProductGrid from "../../../Components/Pos/PosProductGrid";
+import PosCartPanel from "../../../Components/Pos/PosCartPanel";
+import PosPaymentSummary from "../../../Components/Pos/PosPaymentSummary";
+import PosPpobModal from "../../../Components/Pos/PosPpobModal";
+import PosUnitModal from "../../../Components/Pos/PosUnitModal";
+import PosQuickCustomerModal from "../../../Components/Pos/PosQuickCustomerModal";
+import { lineNet } from "../../../Components/Pos/posUtils";
 
 export default function TransactionCreate() {
     const {
@@ -16,6 +23,7 @@ export default function TransactionCreate() {
     } = usePage().props;
 
     const params = new URLSearchParams(window.location.search);
+    const searchInputRef = useRef(null);
 
     const [categoryId, setCategoryId] = useState(
         params.get("category_id") || "",
@@ -31,9 +39,10 @@ export default function TransactionCreate() {
     const [selectedUnitId, setSelectedUnitId] = useState("");
     const [customerRef, setCustomerRef] = useState("");
     const [ppobCost, setPpobCost] = useState("");
-    const [adminFee, setAdminFee] = useState(String(ppobSettings.ppob_admin_fee || 2000));
+    const [adminFee, setAdminFee] = useState(
+        String(ppobSettings.ppob_admin_fee || 2000),
+    );
 
-    // Customer typeahead
     const [customerSearch, setCustomerSearch] = useState("");
     const [customerResults, setCustomerResults] = useState([]);
     const [customerLoading, setCustomerLoading] = useState(false);
@@ -43,7 +52,6 @@ export default function TransactionCreate() {
     const [quickCustomerName, setQuickCustomerName] = useState("");
     const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
     const customerSearchTimer = useRef(null);
-    const customerDropdownRef = useRef(null);
     const debounceTimers = useRef({});
     const discountTimers = useRef({});
 
@@ -53,37 +61,22 @@ export default function TransactionCreate() {
         setLocalCarts(carts);
     }, [carts]);
 
-    const lineDiscountAmount = (cart) => {
-        const gross = Number(cart.price || 0) * Number(cart.qty || 0);
-        const value = Number(cart.discount || 0);
-        if (value <= 0 || gross <= 0) return 0;
-        const amount = (cart.discount_type || "nominal") === "percent"
-            ? Math.round((gross * value) / 100)
-            : value;
-        return Math.min(amount, gross);
-    };
-
-    const lineNet = (cart) =>
-        Number(cart.price || 0) * Number(cart.qty || 0) - lineDiscountAmount(cart);
-
     const inertiaCartOptions = (snapshot, extra = {}) => ({
         preserveState: true,
         preserveScroll: true,
         only: ["carts"],
         onError: () => {
             setLocalCarts(snapshot);
-            Swal.fire({
-                icon: "error",
-                title: "Gagal",
-                text: "Perubahan keranjang gagal. Data dikembalikan.",
-                timer: 2000,
-                showConfirmButton: false,
+            notification.error({
+                message: "Gagal",
+                description:
+                    "Perubahan keranjang gagal. Data dikembalikan.",
+                duration: 2,
             });
         },
         ...extra,
     });
 
-    // Auto-add barcode scan: if search yields exactly 1 product with exact barcode match
     useEffect(() => {
         const q = params.get("q");
         if (!q || products.data.length !== 1) return;
@@ -91,7 +84,6 @@ export default function TransactionCreate() {
         const product = products.data[0];
         if (product.barcode !== q) return;
 
-        // Auto-add to cart then clear search
         addToCart(product);
         router.get(
             "/account/transactions/create",
@@ -100,18 +92,9 @@ export default function TransactionCreate() {
         );
     }, [products.data]);
 
-    // Close customer dropdown on outside click
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target)) {
-                setShowCustomerDropdown(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const isCashLikePayment = ["cash", "qris", "transfer"].includes(paymentMethod);
+    const isCashLikePayment = ["cash", "qris", "transfer"].includes(
+        paymentMethod,
+    );
 
     const activeCarts = useMemo(
         () => localCarts.filter((cart) => !cart.is_held),
@@ -129,9 +112,10 @@ export default function TransactionCreate() {
     );
 
     const discountValue = Number(discount || 0);
-    const discountAmount = discountType === "percent"
-        ? Math.round(subtotal * discountValue / 100)
-        : discountValue;
+    const discountAmount =
+        discountType === "percent"
+            ? Math.round((subtotal * discountValue) / 100)
+            : discountValue;
     const grandTotal = Math.max(subtotal - discountAmount, 0);
     const cashValue = Number(cash || 0);
     const change =
@@ -180,22 +164,17 @@ export default function TransactionCreate() {
         router.get(
             `/account/transactions/create${query.toString() ? `?${query.toString()}` : ""}`,
             {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-            },
+            { preserveState: true, preserveScroll: true },
         );
     };
 
     const handleSearch = (e) => {
         e.preventDefault();
-
         visitProductList(categoryId, searchQuery);
     };
 
     const handleCategoryClick = (id) => {
         setCategoryId(id);
-
         visitProductList(id, searchQuery);
     };
 
@@ -250,6 +229,7 @@ export default function TransactionCreate() {
         setCustomerId("");
         setCustomerSearch("");
         setCustomerResults([]);
+        setShowCustomerDropdown(false);
     };
 
     const submitQuickCreateCustomer = async (e) => {
@@ -275,7 +255,6 @@ export default function TransactionCreate() {
             });
 
             if (response.ok && response.redirected) {
-                // Inertia redirect; extract customer from session or re-fetch
                 const searchResponse = await fetch(
                     `/account/customers/search?q=${encodeURIComponent(quickCustomerName.trim())}`,
                     {
@@ -297,35 +276,18 @@ export default function TransactionCreate() {
                 setQuickCustomerPhone("");
             } else {
                 const data = await response.json().catch(() => ({}));
-                Swal.fire("Error!", data.message || "Gagal menambah pelanggan.", "error");
+                notification.error({
+                    message: "Error",
+                    description:
+                        data.message || "Gagal menambah pelanggan.",
+                });
             }
         } catch {
-            Swal.fire("Error!", "Gagal menambah pelanggan.", "error");
+            notification.error({
+                message: "Error",
+                description: "Gagal menambah pelanggan.",
+            });
         }
-    };
-
-    const serviceComponentBlocked = (product) => {
-        const recipe = product.components || [];
-
-        if (recipe.length === 0) {
-            return true;
-        }
-
-        return recipe.some((row) => {
-            const component = row.component_product || row.componentProduct;
-
-            return !component || Number(component.stock || 0) < Number(row.qty_per_unit || 0);
-        });
-    };
-
-    const serviceComponentLow = (product) => {
-        const recipe = product.components || [];
-
-        return recipe.some((row) => {
-            const component = row.component_product || row.componentProduct;
-
-            return component && Number(component.stock || 0) <= 10;
-        });
     };
 
     const addToCart = (product) => {
@@ -340,7 +302,14 @@ export default function TransactionCreate() {
         const units = product.product_units || [];
         if (units.length > 1) {
             setUnitModalProduct(product);
-            setSelectedUnitId(String(product.default_sell_unit?.unit_id || units.find((u) => u.is_default_sell)?.unit_id || units[0]?.unit_id || ""));
+            setSelectedUnitId(
+                String(
+                    product.default_sell_unit?.unit_id ||
+                        units.find((u) => u.is_default_sell)?.unit_id ||
+                        units[0]?.unit_id ||
+                        "",
+                ),
+            );
             return;
         }
 
@@ -386,10 +355,7 @@ export default function TransactionCreate() {
 
         router.post(
             "/account/carts",
-            {
-                product_id: product.id,
-                unit_id: unitId,
-            },
+            { product_id: product.id, unit_id: unitId },
             inertiaCartOptions(snapshot),
         );
     };
@@ -440,7 +406,9 @@ export default function TransactionCreate() {
         const selectedUnit = units.find(
             (unit) => String(unit.unit_id) === String(selectedUnitId),
         );
-        const price = Number(selectedUnit?.sell_price ?? unitModalProduct.sell_price ?? 0);
+        const price = Number(
+            selectedUnit?.sell_price ?? unitModalProduct.sell_price ?? 0,
+        );
         const existing = localCarts.find(
             (cart) =>
                 !cart.is_held &&
@@ -558,12 +526,12 @@ export default function TransactionCreate() {
         );
     };
 
-    const updateCartDiscount = (cartId, discount, discountType) => {
+    const updateCartDiscount = (cartId, discountVal, type) => {
         if (String(cartId).startsWith("temp-")) {
             setLocalCarts((prev) =>
                 prev.map((cart) =>
                     cart.id === cartId
-                        ? { ...cart, discount, discount_type: discountType }
+                        ? { ...cart, discount: discountVal, discount_type: type }
                         : cart,
                 ),
             );
@@ -576,7 +544,7 @@ export default function TransactionCreate() {
         setLocalCarts((prev) =>
             prev.map((cart) =>
                 cart.id === cartId
-                    ? { ...cart, discount, discount_type: discountType }
+                    ? { ...cart, discount: discountVal, discount_type: type }
                     : cart,
             ),
         );
@@ -585,21 +553,24 @@ export default function TransactionCreate() {
             `/account/carts/${cartId}`,
             {
                 qty: current?.qty || 1,
-                discount,
-                discount_type: discountType,
+                discount: discountVal,
+                discount_type: type,
             },
             inertiaCartOptions(snapshot),
         );
     };
 
-    const handleDiscountChange = (cartId, rawValue, discountType) => {
-        const value = parseInt(rawValue, 10);
-        const discount = isNaN(value) || value < 0 ? 0 : value;
+    const handleDiscountChange = (cartId, rawValue, type) => {
+        const value =
+            typeof rawValue === "number"
+                ? rawValue
+                : parseInt(rawValue, 10);
+        const discountVal = isNaN(value) || value < 0 ? 0 : value;
 
         setLocalCarts((prev) =>
             prev.map((cart) =>
                 cart.id === cartId
-                    ? { ...cart, discount, discount_type: discountType }
+                    ? { ...cart, discount: discountVal, discount_type: type }
                     : cart,
             ),
         );
@@ -609,146 +580,13 @@ export default function TransactionCreate() {
         }
 
         discountTimers.current[cartId] = setTimeout(() => {
-            updateCartDiscount(cartId, discount, discountType);
+            updateCartDiscount(cartId, discountVal, type);
         }, 500);
     };
 
-    const renderCartRow = (cart, { held = false } = {}) => {
-        const itemDiscount = lineDiscountAmount(cart);
-        const net = lineNet(cart);
-
-        return (
-            <div
-                className={`pos-cart-row ${held ? "opacity-75" : ""}`}
-                key={cart.id}
-            >
-                <div className="pos-cart-main">
-                    <strong>{cart.product?.title || "Produk"}</strong>
-                    {held && (
-                        <span className="badge bg-secondary ms-1">Ditahan</span>
-                    )}
-                    <span>
-                        {cart.ppob_cost != null ? (
-                            <>Modal {formatRupiah(cart.ppob_cost)} + Fee {formatRupiah(cart.admin_fee)}</>
-                        ) : (
-                            <>
-                                {cart.unit?.abbreviation || cart.product?.unit} · {formatRupiah(cart.price)}
-                            </>
-                        )}
-                    </span>
-                    {cart.customer_ref && (
-                        <small className="text-muted d-block">Ref: {cart.customer_ref}</small>
-                    )}
-                    {!held && (
-                        <div className="d-flex align-items-center gap-1 mt-1">
-                            <small className="text-muted">Diskon</small>
-                            <div className="input-group input-group-sm" style={{ maxWidth: 140 }}>
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-secondary"
-                                    onClick={() =>
-                                        handleDiscountChange(
-                                            cart.id,
-                                            cart.discount || 0,
-                                            (cart.discount_type || "nominal") === "nominal"
-                                                ? "percent"
-                                                : "nominal",
-                                        )
-                                    }
-                                    title="Toggle Rp / %"
-                                >
-                                    {(cart.discount_type || "nominal") === "percent" ? "%" : "Rp"}
-                                </button>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    min="0"
-                                    value={cart.discount || 0}
-                                    onChange={(e) =>
-                                        handleDiscountChange(
-                                            cart.id,
-                                            e.target.value,
-                                            cart.discount_type || "nominal",
-                                        )
-                                    }
-                                />
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="pos-cart-actions">
-                    {!held && (
-                        <div className="pos-qty-stepper">
-                            <button
-                                type="button"
-                                onClick={() => updateCart(cart.id, cart.qty - 1)}
-                            >
-                                <i className="fas fa-minus"></i>
-                            </button>
-
-                            <input
-                                type="number"
-                                className="pos-qty-input"
-                                value={cart.qty}
-                                min="1"
-                                onChange={(e) => handleQtyChange(cart.id, e.target.value)}
-                            />
-
-                            <button
-                                type="button"
-                                onClick={() => updateCart(cart.id, cart.qty + 1)}
-                            >
-                                <i className="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    )}
-
-                    <div className="text-end">
-                        <strong>{formatRupiah(net)}</strong>
-                        {itemDiscount > 0 && (
-                            <small className="text-danger d-block">
-                                -{formatRupiah(itemDiscount)}
-                            </small>
-                        )}
-                    </div>
-
-                    <div className="d-flex gap-1">
-                        {held ? (
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-outline-primary"
-                                onClick={() => toggleCartHold(cart.id, false)}
-                                title="Lanjutkan"
-                            >
-                                <i className="fas fa-play"></i>
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-outline-warning"
-                                onClick={() => toggleCartHold(cart.id, true)}
-                                title="Tahan"
-                            >
-                                <i className="fas fa-pause"></i>
-                            </button>
-                        )}
-
-                        <button
-                            type="button"
-                            className="pos-cart-delete"
-                            onClick={() => deleteCart(cart.id)}
-                        >
-                            <i className="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    const handleQtyChange = (cartId, rawValue) => {
-        const newQty = parseInt(rawValue, 10);
+    const handleQtyChange = (cartId, rawValue, debounced = false) => {
+        const newQty =
+            typeof rawValue === "number" ? rawValue : parseInt(rawValue, 10);
 
         if (debounceTimers.current[cartId]) {
             clearTimeout(debounceTimers.current[cartId]);
@@ -762,67 +600,42 @@ export default function TransactionCreate() {
             ),
         );
 
-        debounceTimers.current[cartId] = setTimeout(() => {
+        if (debounced) {
+            debounceTimers.current[cartId] = setTimeout(() => {
+                updateCart(cartId, newQty);
+            }, 500);
+        } else {
             updateCart(cartId, newQty);
-        }, 500);
+        }
     };
-
-    // Keyboard shortcuts: F2 = bayar, F3 = fokus search, Esc = tutup modal
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === "F2" || e.key === "f2") {
-                e.preventDefault();
-                storeTransaction(e);
-            } else if (e.key === "F3" || e.key === "f3") {
-                e.preventDefault();
-                document.querySelector(".pos-search-bar input")?.focus();
-            } else if (e.key === "Escape") {
-                if (ppobModalProduct) {
-                    setPpobModalProduct(null);
-                } else if (unitModalProduct) {
-                    setUnitModalProduct(null);
-                }
-            }
-        };
-
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [ppobModalProduct, unitModalProduct, carts, paymentMethod, discountValue, discountType, cashValue, customerId]);
 
     const openMidtransPopup = (snapToken, invoice) => {
         if (!window.snap) {
-            Swal.fire(
-                "Error!",
-                "Snap JS Midtrans belum siap. Pastikan script Snap sudah ditambahkan di app.blade.php.",
-                "error",
-            );
+            notification.error({
+                message: "Error",
+                description:
+                    "Snap JS Midtrans belum siap. Pastikan script Snap sudah ditambahkan di app.blade.php.",
+            });
             return;
         }
 
         window.snap.pay(snapToken, {
-            onSuccess: function () {
-                router.get(`/account/transactions/${invoice}`);
-            },
-            onPending: function () {
-                router.get(`/account/transactions/${invoice}`);
-            },
-            onError: function () {
-                Swal.fire(
-                    "Error!",
-                    "Pembayaran digital gagal diproses.",
-                    "error",
-                );
-            },
-            onClose: function () {
-                Swal.fire({
-                    title: "Pembayaran Belum Selesai",
-                    text: "Transaksi sudah dibuat dengan status pending.",
-                    icon: "info",
-                    timer: 1800,
-                    showConfirmButton: false,
-                }).then(() => {
-                    router.get(`/account/transactions/${invoice}`);
+            onSuccess: () => router.get(`/account/transactions/${invoice}`),
+            onPending: () => router.get(`/account/transactions/${invoice}`),
+            onError: () => {
+                notification.error({
+                    message: "Error",
+                    description: "Pembayaran digital gagal diproses.",
                 });
+            },
+            onClose: () => {
+                notification.info({
+                    message: "Pembayaran Belum Selesai",
+                    description:
+                        "Transaksi sudah dibuat dengan status pending.",
+                    duration: 1.8,
+                });
+                router.get(`/account/transactions/${invoice}`);
             },
         });
     };
@@ -831,112 +644,132 @@ export default function TransactionCreate() {
         e.preventDefault();
 
         if (activeCarts.length === 0) {
-            Swal.fire({
-                title: "Error!",
-                text: "Keranjang masih kosong!",
-                icon: "error",
-                timer: 1500,
-                showConfirmButton: false,
+            notification.error({
+                message: "Error",
+                description: "Keranjang masih kosong!",
+                duration: 1.5,
             });
             return;
         }
 
         if (activeCarts.some((cart) => String(cart.id).startsWith("temp-"))) {
-            Swal.fire({
-                title: "Sebentar...",
-                text: "Masih menyimpan item ke keranjang. Coba lagi sebentar.",
-                icon: "info",
-                timer: 1500,
-                showConfirmButton: false,
+            notification.info({
+                message: "Sebentar...",
+                description:
+                    "Masih menyimpan item ke keranjang. Coba lagi sebentar.",
+                duration: 1.5,
             });
             return;
         }
 
         if (discountAmount > subtotal) {
-            Swal.fire({
-                title: "Error!",
-                text: "Diskon tidak boleh melebihi subtotal.",
-                icon: "error",
-                timer: 1500,
-                showConfirmButton: false,
+            notification.error({
+                message: "Error",
+                description: "Diskon tidak boleh melebihi subtotal.",
+                duration: 1.5,
             });
             return;
         }
 
         if (isCashLikePayment && cashValue < grandTotal) {
-            Swal.fire({
-                title: "Error!",
-                text: "Uang pembayaran kurang!",
-                icon: "error",
-                timer: 1500,
-                showConfirmButton: false,
+            notification.error({
+                message: "Error",
+                description: "Uang pembayaran kurang!",
+                duration: 1.5,
             });
             return;
         }
 
-        Swal.fire({
+        Modal.confirm({
             title: "Proses Pembayaran?",
-            text: isCashLikePayment
+            content: isCashLikePayment
                 ? "Pastikan uang yang diterima sudah sesuai."
                 : "Pembayaran digital akan diproses melalui Midtrans.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Ya, Bayar!",
-        }).then(async (result) => {
-            if (!result.isConfirmed) {
-                return;
-            }
+            okText: "Ya, Bayar!",
+            cancelText: "Batal",
+            onOk: async () => {
+                try {
+                    const response = await fetch("/account/transactions", {
+                        method: "POST",
+                        headers: {
+                            Accept: "application/json",
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN":
+                                document
+                                    .querySelector('meta[name="csrf-token"]')
+                                    ?.getAttribute("content") || "",
+                        },
+                        credentials: "same-origin",
+                        body: JSON.stringify({
+                            customer_id: customerId,
+                            discount: discountValue,
+                            discount_type: discountType,
+                            cash: isCashLikePayment ? cashValue : 0,
+                            payment_method: paymentMethod,
+                        }),
+                    });
 
-            try {
-                const response = await fetch("/account/transactions", {
-                    method: "POST",
-                    headers: {
-                        Accept: "application/json",
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN":
-                            document
-                                .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute("content") || "",
-                    },
-                    credentials: "same-origin",
-                    body: JSON.stringify({
-                        customer_id: customerId,
-                        discount: discountValue,
-                        discount_type: discountType,
-                        cash: isCashLikePayment ? cashValue : 0,
-                        payment_method: paymentMethod,
-                    }),
-                });
+                    const data = await response.json().catch(() => ({}));
 
-                const data = await response.json().catch(() => ({}));
-
-                if (!response.ok || !data.success) {
-                    throw new Error(
-                        data.message || "Terjadi kesalahan sistem.",
-                    );
-                }
-
-                if (data.payment_method === "digital") {
-                    if (!data.snap_token) {
-                        throw new Error("Snap token tidak tersedia.");
+                    if (!response.ok || !data.success) {
+                        throw new Error(
+                            data.message || "Terjadi kesalahan sistem.",
+                        );
                     }
 
-                    openMidtransPopup(data.snap_token, data.invoice);
-                    return;
-                }
+                    if (data.payment_method === "digital") {
+                        if (!data.snap_token) {
+                            throw new Error("Snap token tidak tersedia.");
+                        }
 
-                router.get(`/account/transactions/${data.invoice}`);
-            } catch (error) {
-                Swal.fire(
-                    "Error!",
-                    error.message || "Terjadi kesalahan sistem.",
-                    "error",
-                );
-            }
+                        openMidtransPopup(data.snap_token, data.invoice);
+                        return;
+                    }
+
+                    router.get(`/account/transactions/${data.invoice}`);
+                } catch (error) {
+                    notification.error({
+                        message: "Error",
+                        description:
+                            error.message || "Terjadi kesalahan sistem.",
+                    });
+                }
+            },
         });
     };
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "F2" || e.key === "f2") {
+                e.preventDefault();
+                storeTransaction(e);
+            } else if (e.key === "F3" || e.key === "f3") {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            } else if (e.key === "Escape") {
+                if (ppobModalProduct) {
+                    setPpobModalProduct(null);
+                } else if (unitModalProduct) {
+                    setUnitModalProduct(null);
+                } else if (showQuickCreateModal) {
+                    setShowQuickCreateModal(false);
+                }
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [
+        ppobModalProduct,
+        unitModalProduct,
+        showQuickCreateModal,
+        localCarts,
+        paymentMethod,
+        discountValue,
+        discountType,
+        cashValue,
+        customerId,
+    ]);
 
     return (
         <>
@@ -952,692 +785,129 @@ export default function TransactionCreate() {
                             <span>{cartQty} item dalam keranjang</span>
                         </div>
 
-                        <Link
-                            href="/account/transactions"
-                            className="btn btn-outline-secondary btn-sm"
-                        >
-                            <i className="fas fa-receipt me-2"></i>
-                            Riwayat
+                        <Link href="/account/transactions">
+                            <Button icon={<FileTextOutlined />}>
+                                Riwayat
+                            </Button>
                         </Link>
                     </div>
 
                     <div className="row g-3">
                         <div className="col-12 col-xl-8">
-                            <section className="pos-sale-panel">
-                                <form
-                                    className="pos-search-bar"
-                                    onSubmit={handleSearch}
-                                >
-                                    <div className="input-group">
-                                        <span className="input-group-text">
-                                            <i className="fas fa-search"></i>
-                                        </span>
-
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            placeholder="Scan barcode atau cari produk"
-                                            value={searchQuery}
-                                            onChange={(e) =>
-                                                setSearchQuery(e.target.value)
-                                            }
-                                            autoFocus
-                                        />
-
-                                        <button
-                                            className="btn btn-success"
-                                            type="submit"
-                                        >
-                                            Cari
-                                        </button>
-                                    </div>
-                                </form>
-
-                                <div className="pos-category-strip">
-                                    <button
-                                        type="button"
-                                        className={`pos-category-pill ${
-                                            String(categoryId) === ""
-                                                ? "active"
-                                                : ""
-                                        }`}
-                                        onClick={() => handleCategoryClick("")}
-                                    >
-                                        Semua
-                                    </button>
-
-                                    {categories.map((category) => (
-                                        <button
-                                            type="button"
-                                            key={category.id}
-                                            className={`pos-category-pill ${
-                                                String(categoryId) ===
-                                                String(category.id)
-                                                    ? "active"
-                                                    : ""
-                                            }`}
-                                            onClick={() =>
-                                                handleCategoryClick(category.id)
-                                            }
-                                        >
-                                            {category.name}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="pos-product-grid">
-                                    {products.data.length > 0 ? (
-                                        products.data.map((product) => {
-                                            const isPpob = product.product_type === "ppob";
-                                            const isService = product.product_type === "service";
-                                            const defaultUnit = product.default_sell_unit || product.product_units?.find((u) => u.is_default_sell);
-                                            const displayPrice = defaultUnit?.sell_price ?? product.sell_price;
-                                            const componentBlocked = isService && serviceComponentBlocked(product);
-                                            const disabled = isPpob
-                                                ? false
-                                                : isService
-                                                  ? componentBlocked
-                                                  : product.stock < 1;
-
-                                            return (
-                                            <button
-                                                type="button"
-                                                className={`pos-product-tile ${disabled ? "is-disabled" : ""}`}
-                                                key={product.id}
-                                                onClick={() => !disabled && addToCart(product)}
-                                                disabled={disabled}
-                                            >
-                                                <span className="pos-product-image">
-                                                    {product.image ? (
-                                                        <img src={product.image} alt={product.title} />
-                                                    ) : (
-                                                        <i className={`fa ${isPpob ? "fa-bolt" : isService ? "fa-print" : "fa-box"}`}></i>
-                                                    )}
-                                                    {disabled && (
-                                                        <span className="pos-product-empty">
-                                                            {isService ? "Bahan habis" : "Habis"}
-                                                        </span>
-                                                    )}
-                                                    {isPpob && (
-                                                        <span className="badge bg-info position-absolute top-0 end-0 m-1">PPOB</span>
-                                                    )}
-                                                    {isService && !disabled && serviceComponentLow(product) && (
-                                                        <span className="badge bg-warning text-dark position-absolute top-0 end-0 m-1">Bahan menipis</span>
-                                                    )}
-                                                    {isService && (
-                                                        <span className="badge bg-secondary position-absolute top-0 start-0 m-1">Layanan</span>
-                                                    )}
-                                                </span>
-                                                <span className="pos-product-name">{product.title}</span>
-                                                <span className="pos-product-meta">
-                                                    <span>
-                                                        {isPpob
-                                                            ? "Digital"
-                                                            : isService
-                                                              ? "Pakai bahan baku"
-                                                              : `Stok ${product.stock}`}
-                                                    </span>
-                                                    <strong>{isPpob ? "Modal+Fee" : formatRupiah(displayPrice)}</strong>
-                                                </span>
-                                            </button>
-                                        );})
-                                    ) : (
-                                        <div className="pos-empty-state">
-                                            <i className="fas fa-box-open"></i>
-                                            <strong>
-                                                Produk tidak ditemukan
-                                            </strong>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {products.links.length > 0 && (
-                                    <div className="pos-pagination">
-                                        <ul className="pagination pagination-sm mb-0">
-                                            {products.links.map(
-                                                (link, index) => (
-                                                    <li
-                                                        key={index}
-                                                        className={`page-item ${
-                                                            link.active
-                                                                ? "active"
-                                                                : ""
-                                                        } ${
-                                                            link.url === null
-                                                                ? "disabled"
-                                                                : ""
-                                                        }`}
-                                                    >
-                                                        <Link
-                                                            className="page-link"
-                                                            href={
-                                                                link.url || "#"
-                                                            }
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: link.label,
-                                                            }}
-                                                            preserveState
-                                                            preserveScroll
-                                                        />
-                                                    </li>
-                                                ),
-                                            )}
-                                        </ul>
-                                    </div>
-                                )}
-                            </section>
+                            <PosProductGrid
+                                searchInputRef={searchInputRef}
+                                products={products}
+                                categories={categories}
+                                categoryId={categoryId}
+                                searchQuery={searchQuery}
+                                onSearchQueryChange={setSearchQuery}
+                                onSearch={handleSearch}
+                                onCategoryClick={handleCategoryClick}
+                                onAddToCart={addToCart}
+                            />
                         </div>
 
                         <div className="col-12 col-xl-4">
                             <section className="pos-checkout-panel">
-                                <div className="pos-checkout-header">
-                                    <div>
-                                        <h5>Keranjang</h5>
-                                        <span>
-                                            {localCarts.length} baris transaksi
-                                        </span>
-                                    </div>
+                                <PosCartPanel
+                                    activeCarts={activeCarts}
+                                    heldCarts={heldCarts}
+                                    cartQty={cartQty}
+                                    localCartsCount={localCarts.length}
+                                    errors={errors}
+                                    flash={flash}
+                                    ppobAccount={ppobAccount}
+                                    customerSearch={customerSearch}
+                                    customerResults={customerResults}
+                                    customerLoading={customerLoading}
+                                    selectedCustomer={selectedCustomer}
+                                    showCustomerDropdown={showCustomerDropdown}
+                                    onCustomerSearch={handleCustomerSearch}
+                                    onSelectCustomer={selectCustomer}
+                                    onClearCustomer={clearCustomer}
+                                    onShowQuickCreate={() =>
+                                        setShowQuickCreateModal(true)
+                                    }
+                                    onCustomerFocus={() => {
+                                        if (customerResults.length > 0) {
+                                            setShowCustomerDropdown(true);
+                                        }
+                                    }}
+                                    onUpdateQty={handleQtyChange}
+                                    onDelete={deleteCart}
+                                    onToggleHold={toggleCartHold}
+                                    onDiscountChange={handleDiscountChange}
+                                />
 
-                                    <span className="pos-cart-count">
-                                        {cartQty}
-                                    </span>
-                                </div>
-
-                                {(errors.error || flash?.error) && (
-                                    <div className="alert alert-danger mx-3 mt-3 mb-0">
-                                        {errors.error || flash.error}
-                                    </div>
-                                )}
-
-                                {ppobAccount && (
-                                    <div className={`alert mx-3 mt-3 mb-0 ${ppobAccount.is_low_balance ? "alert-danger" : "alert-secondary"}`}>
-                                        Saldo PPOB ({ppobAccount.name}): <strong>{formatRupiah(ppobAccount.current_balance)}</strong>
-                                    </div>
-                                )}
-
-                                <div className="pos-cart-list">
-                                    {activeCarts.length > 0 || heldCarts.length > 0 ? (
-                                        <>
-                                            {activeCarts.map((cart) => renderCartRow(cart))}
-                                            {heldCarts.length > 0 && (
-                                                <div className="px-3 pt-2">
-                                                    <small className="text-muted fw-semibold">
-                                                        Item ditahan ({heldCarts.length})
-                                                    </small>
-                                                </div>
-                                            )}
-                                            {heldCarts.map((cart) => renderCartRow(cart, { held: true }))}
-                                        </>
-                                    ) : (
-                                        <div className="pos-empty-cart">
-                                            <i className="fas fa-shopping-basket"></i>
-                                            <strong>Keranjang kosong</strong>
-                                            <span>
-                                                Item belanja akan tampil di
-                                                bagian ini.
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <form
-                                    className="pos-payment-form"
+                                <PosPaymentSummary
+                                    paymentMethod={paymentMethod}
+                                    onPaymentMethodChange={(value) => {
+                                        setPaymentMethod(value);
+                                        if (value === "digital") {
+                                            setCash("");
+                                        }
+                                    }}
+                                    discount={discount}
+                                    onDiscountChange={setDiscount}
+                                    discountType={discountType}
+                                    onDiscountTypeToggle={() =>
+                                        setDiscountType(
+                                            discountType === "nominal"
+                                                ? "percent"
+                                                : "nominal",
+                                        )
+                                    }
+                                    cash={cash}
+                                    onCashChange={setCash}
+                                    cashOptions={cashOptions}
+                                    isCashLikePayment={isCashLikePayment}
+                                    subtotal={subtotal}
+                                    discountAmount={discountAmount}
+                                    grandTotal={grandTotal}
+                                    change={change}
+                                    activeCartsCount={activeCarts.length}
                                     onSubmit={storeTransaction}
-                                >
-                                    <div className="mb-3">
-                                        <label className="form-label">
-                                            Metode Pembayaran
-                                        </label>
-
-                                        <div className="pos-method-toggle">
-                                            <input
-                                                type="radio"
-                                                className="btn-check"
-                                                name="payment_method"
-                                                id="payment-cash"
-                                                value="cash"
-                                                checked={
-                                                    paymentMethod === "cash"
-                                                }
-                                                onChange={(e) =>
-                                                    setPaymentMethod(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                            <label
-                                                className="pos-method-option"
-                                                htmlFor="payment-cash"
-                                            >
-                                                Tunai
-                                            </label>
-
-                                            <input
-                                                type="radio"
-                                                className="btn-check"
-                                                name="payment_method"
-                                                id="payment-digital"
-                                                value="digital"
-                                                checked={
-                                                    paymentMethod === "digital"
-                                                }
-                                                onChange={(e) => {
-                                                    setPaymentMethod(
-                                                        e.target.value,
-                                                    );
-                                                    setCash("");
-                                                }}
-                                            />
-                                            <label
-                                                className="pos-method-option"
-                                                htmlFor="payment-digital"
-                                            >
-                                                Digital
-                                            </label>
-
-                                            <input
-                                                type="radio"
-                                                className="btn-check"
-                                                name="payment_method"
-                                                id="payment-qris"
-                                                value="qris"
-                                                checked={paymentMethod === "qris"}
-                                                onChange={(e) =>
-                                                    setPaymentMethod(e.target.value)
-                                                }
-                                            />
-                                            <label
-                                                className="pos-method-option"
-                                                htmlFor="payment-qris"
-                                            >
-                                                QRIS
-                                            </label>
-
-                                            <input
-                                                type="radio"
-                                                className="btn-check"
-                                                name="payment_method"
-                                                id="payment-transfer"
-                                                value="transfer"
-                                                checked={paymentMethod === "transfer"}
-                                                onChange={(e) =>
-                                                    setPaymentMethod(e.target.value)
-                                                }
-                                            />
-                                            <label
-                                                className="pos-method-option"
-                                                htmlFor="payment-transfer"
-                                            >
-                                                Transfer
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div className="mb-3" ref={customerDropdownRef}>
-                                        <label className="form-label">
-                                            Pelanggan
-                                        </label>
-
-                                        <div className="input-group">
-                                            {selectedCustomer ? (
-                                                <>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control"
-                                                        value={selectedCustomer.name}
-                                                        readOnly
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-outline-secondary"
-                                                        onClick={clearCustomer}
-                                                        title="Hapus pelanggan"
-                                                    >
-                                                        <i className="fas fa-times"></i>
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    placeholder="Cari nama atau No. HP..."
-                                                    value={customerSearch}
-                                                    onChange={(e) =>
-                                                        handleCustomerSearch(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    onFocus={() => {
-                                                        if (
-                                                            customerResults.length > 0
-                                                        ) {
-                                                            setShowCustomerDropdown(true);
-                                                        }
-                                                    }}
-                                                />
-                                            )}
-
-                                            <button
-                                                type="button"
-                                                className="btn btn-outline-primary"
-                                                onClick={() =>
-                                                    setShowQuickCreateModal(true)
-                                                }
-                                                title="Tambah Pelanggan Cepat"
-                                            >
-                                                <i className="fas fa-plus"></i>
-                                            </button>
-                                        </div>
-
-                                        {showCustomerDropdown &&
-                                            customerResults.length > 0 && (
-                                                <ul className="pos-customer-dropdown list-group mt-1">
-                                                    <li className="list-group-item list-group-item-light small">
-                                                        <em>Umum</em>
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-link btn-sm float-end"
-                                                            onClick={clearCustomer}
-                                                        >
-                                                            Pilih
-                                                        </button>
-                                                    </li>
-                                                    {customerResults.map((c) => (
-                                                        <li
-                                                            key={c.id}
-                                                            className="list-group-item list-group-item-action"
-                                                            style={{ cursor: "pointer" }}
-                                                            onClick={() =>
-                                                                selectCustomer(c)
-                                                            }
-                                                        >
-                                                            <strong>{c.name}</strong>
-                                                            {c.no_telp && (
-                                                                <small className="d-block text-muted">
-                                                                    {c.no_telp}
-                                                                </small>
-                                                            )}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
-
-                                        {showCustomerDropdown &&
-                                            customerResults.length === 0 &&
-                                            !customerLoading &&
-                                            customerSearch.trim().length > 0 && (
-                                                <div className="list-group mt-1">
-                                                    <div className="list-group-item text-muted small">
-                                                        Tidak ditemukan.{" "}
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-link btn-sm p-0"
-                                                            onClick={() =>
-                                                                setShowQuickCreateModal(
-                                                                    true,
-                                                                )
-                                                            }
-                                                        >
-                                                            Tambah baru?
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                        {customerLoading && (
-                                            <div className="text-muted small mt-1">
-                                                Mencari...
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="row g-2 mb-3">
-                                        <div
-                                            className={
-                                                isCashLikePayment
-                                                    ? "col-5"
-                                                    : "col-12"
-                                            }
-                                        >
-                                            <label className="form-label">
-                                                Diskon
-                                            </label>
-                                            <div className="input-group">
-                                                <input
-                                                    type="number"
-                                                    className="form-control"
-                                                    value={discount}
-                                                    onChange={(e) =>
-                                                        setDiscount(e.target.value)
-                                                    }
-                                                    min="0"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className={`btn btn-outline-secondary ${discountType === "percent" ? "active" : ""}`}
-                                                    style={{ width: "4rem" }}
-                                                    onClick={() => setDiscountType(
-                                                        discountType === "nominal" ? "percent" : "nominal"
-                                                    )}
-                                                    title={discountType === "nominal" ? "Ubah ke persen" : "Ubah ke nominal"}
-                                                >
-                                                    {discountType === "nominal" ? "Rp" : "%"}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {isCashLikePayment && (
-                                            <div className="col-7">
-                                                <label className="form-label">
-                                                    {paymentMethod === "cash"
-                                                        ? "Uang Tunai"
-                                                        : paymentMethod === "qris"
-                                                          ? "Nominal QRIS"
-                                                          : "Nominal Transfer"}
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    className="form-control pos-cash-input"
-                                                    value={cash}
-                                                    onChange={(e) =>
-                                                        setCash(e.target.value)
-                                                    }
-                                                    min="0"
-                                                    required
-                                                />
-
-                                                {cashOptions.length > 0 && (
-                                                    <div className="pos-cash-shortcuts">
-                                                        {cashOptions.map(
-                                                            (option, index) => (
-                                                                <button
-                                                                    type="button"
-                                                                    key={option}
-                                                                    onClick={() =>
-                                                                        setCash(
-                                                                            String(
-                                                                                option,
-                                                                            ),
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {index === 0
-                                                                        ? "Pas"
-                                                                        : formatRupiah(
-                                                                              option,
-                                                                          )}
-                                                                </button>
-                                                            ),
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {paymentMethod === "digital" && (
-                                        <div className="alert alert-info small">
-                                            Pembayaran digital akan diproses
-                                            melalui Midtrans. Kasir tidak perlu
-                                            mengisi uang tunai.
-                                        </div>
-                                    )}
-
-                                    <div className="pos-summary-box">
-                                        <div>
-                                            <span>Subtotal</span>
-                                            <strong>
-                                                {formatRupiah(subtotal)}
-                                            </strong>
-                                        </div>
-
-                                        <div>
-                                            <span>Diskon</span>
-                                            <strong className="text-danger">
-                                                -{formatRupiah(discountAmount)}
-                                            </strong>
-                                        </div>
-
-                                        <div className="pos-summary-total">
-                                            <span>Total</span>
-                                            <strong>
-                                                {formatRupiah(grandTotal)}
-                                            </strong>
-                                        </div>
-
-                                        <div>
-                                            <span>
-                                                {isCashLikePayment
-                                                    ? "Kembalian"
-                                                    : "Status"}
-                                            </span>
-                                            <strong className="text-success">
-                                                {isCashLikePayment
-                                                    ? formatRupiah(change)
-                                                    : "Menunggu pembayaran"}
-                                            </strong>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        className="btn btn-success btn-lg w-100 pos-pay-button"
-                                        disabled={activeCarts.length === 0}
-                                    >
-                                        <i className="fas fa-check-circle me-2"></i>
-                                        Proses Pembayaran
-                                    </button>
-                                </form>
+                                />
                             </section>
                         </div>
                     </div>
                 </div>
 
-                {ppobModalProduct && (
-                    <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-                        <div className="modal-dialog">
-                            <div className="modal-content">
-                                <form onSubmit={submitPpobCart}>
-                                    <div className="modal-header">
-                                        <h5 className="modal-title">{ppobModalProduct.title}</h5>
-                                        <button type="button" className="btn-close" onClick={() => setPpobModalProduct(null)}></button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <div className="mb-3">
-                                            <label className="form-label">No. Pelanggan / Meter / HP (Opsional)</label>
-                                            <input type="text" className="form-control" value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Harga Modal *</label>
-                                            <input type="number" min="1" className="form-control" value={ppobCost} onChange={(e) => setPpobCost(e.target.value)} required />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Admin Fee *</label>
-                                            <input type="number" min="0" className="form-control" value={adminFee} onChange={(e) => setAdminFee(e.target.value)} required />
-                                        </div>
-                                        <div className="alert alert-light mb-0">
-                                            Harga Jual: <strong>{formatRupiah(Number(ppobCost || 0) + Number(adminFee || 0))}</strong>
-                                        </div>
-                                    </div>
-                                    <div className="modal-footer">
-                                        <button type="button" className="btn btn-secondary" onClick={() => setPpobModalProduct(null)}>Batal</button>
-                                        <button type="submit" className="btn btn-success">Tambah ke Keranjang</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <PosPpobModal
+                    product={ppobModalProduct}
+                    open={!!ppobModalProduct}
+                    customerRef={customerRef}
+                    ppobCost={ppobCost}
+                    adminFee={adminFee}
+                    onCustomerRefChange={setCustomerRef}
+                    onPpobCostChange={setPpobCost}
+                    onAdminFeeChange={setAdminFee}
+                    onCancel={() => setPpobModalProduct(null)}
+                    onSubmit={submitPpobCart}
+                />
 
-                {unitModalProduct && (
-                    <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-                        <div className="modal-dialog">
-                            <div className="modal-content">
-                                <form onSubmit={submitUnitCart}>
-                                    <div className="modal-header">
-                                        <h5 className="modal-title">Pilih Satuan</h5>
-                                        <button type="button" className="btn-close" onClick={() => setUnitModalProduct(null)}></button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <p className="mb-2">{unitModalProduct.title}</p>
-                                        <select className="form-select" value={selectedUnitId} onChange={(e) => setSelectedUnitId(e.target.value)} required>
-                                            {(unitModalProduct.product_units || []).map((row) => (
-                                                <option key={row.id} value={row.unit_id}>
-                                                    {row.unit?.name} ({row.unit?.abbreviation}) - {formatRupiah(row.sell_price)}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="modal-footer">
-                                        <button type="button" className="btn btn-secondary" onClick={() => setUnitModalProduct(null)}>Batal</button>
-                                        <button type="submit" className="btn btn-success">Tambah</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            {showQuickCreateModal && (
-                    <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-                        <div className="modal-dialog">
-                            <div className="modal-content">
-                                <form onSubmit={submitQuickCreateCustomer}>
-                                    <div className="modal-header">
-                                        <h5 className="modal-title">Tambah Pelanggan Cepat</h5>
-                                        <button type="button" className="btn-close" onClick={() => { setShowQuickCreateModal(false); setQuickCustomerName(""); setQuickCustomerPhone(""); }}></button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <div className="mb-3">
-                                            <label className="form-label">Nama *</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                value={quickCustomerName}
-                                                onChange={(e) => setQuickCustomerName(e.target.value)}
-                                                required
-                                                autoFocus
-                                            />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">No. HP (opsional)</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                value={quickCustomerPhone}
-                                                onChange={(e) => setQuickCustomerPhone(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="modal-footer">
-                                        <button type="button" className="btn btn-secondary" onClick={() => { setShowQuickCreateModal(false); setQuickCustomerName(""); setQuickCustomerPhone(""); }}>Batal</button>
-                                        <button type="submit" className="btn btn-success">Simpan & Pilih</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <PosUnitModal
+                    product={unitModalProduct}
+                    open={!!unitModalProduct}
+                    selectedUnitId={selectedUnitId}
+                    onUnitChange={setSelectedUnitId}
+                    onCancel={() => setUnitModalProduct(null)}
+                    onSubmit={submitUnitCart}
+                />
 
+                <PosQuickCustomerModal
+                    open={showQuickCreateModal}
+                    name={quickCustomerName}
+                    phone={quickCustomerPhone}
+                    onNameChange={setQuickCustomerName}
+                    onPhoneChange={setQuickCustomerPhone}
+                    onCancel={() => {
+                        setShowQuickCreateModal(false);
+                        setQuickCustomerName("");
+                        setQuickCustomerPhone("");
+                    }}
+                    onSubmit={submitQuickCreateCustomer}
+                />
             </LayoutAccount>
         </>
     );
