@@ -1,44 +1,85 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Button, Card, Form, Input, Typography } from "antd";
+import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
+
+const { Title } = Typography;
 
 export default function UnitEdit() {
     const { unit, errors = {} } = usePage().props;
     const [name, setName] = useState(unit.name || "");
     const [abbreviation, setAbbreviation] = useState(unit.abbreviation || "");
+    const [saving, setSaving] = useState(false);
 
     const submit = (e) => {
         e.preventDefault();
-        router.put(`/account/units/${unit.id}`, { name, abbreviation });
+        setSaving(true);
+
+        router.put(
+            `/account/units/${unit.id}`,
+            { name, abbreviation },
+            { onFinish: () => setSaving(false) },
+        );
     };
 
     return (
         <>
             <Head title="Edit Satuan - ZenPOS" />
+
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 col-lg-6">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between">
-                                <h5 className="mb-0 fw-bold">EDIT SATUAN</h5>
-                                <Link href="/account/units" className="btn btn-secondary btn-sm">KEMBALI</Link>
-                            </div>
-                            <div className="card-body">
-                                <form onSubmit={submit}>
-                                    <div className="mb-3">
-                                        <label className="fw-bold mb-2">Nama Satuan</label>
-                                        <input type="text" className={`form-control ${errors.name ? "is-invalid" : ""}`} value={name} onChange={(e) => setName(e.target.value)} />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="fw-bold mb-2">Singkatan</label>
-                                        <input type="text" className={`form-control ${errors.abbreviation ? "is-invalid" : ""}`} value={abbreviation} onChange={(e) => setAbbreviation(e.target.value)} />
-                                    </div>
-                                    <button type="submit" className="btn btn-success">UPDATE</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <Card
+                    style={{ maxWidth: 640 }}
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            EDIT SATUAN
+                        </Title>
+                    }
+                    extra={
+                        <Link href="/account/units">
+                            <Button icon={<ArrowLeftOutlined />}>
+                                KEMBALI
+                            </Button>
+                        </Link>
+                    }
+                >
+                    <form onSubmit={submit}>
+                        <Form.Item
+                            label="Nama Satuan"
+                            validateStatus={errors.name ? "error" : ""}
+                            help={errors.name}
+                            required
+                        >
+                            <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Singkatan"
+                            validateStatus={errors.abbreviation ? "error" : ""}
+                            help={errors.abbreviation}
+                            required
+                        >
+                            <Input
+                                value={abbreviation}
+                                onChange={(e) =>
+                                    setAbbreviation(e.target.value)
+                                }
+                            />
+                        </Form.Item>
+
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<SaveOutlined />}
+                            loading={saving}
+                        >
+                            UPDATE
+                        </Button>
+                    </form>
+                </Card>
             </LayoutAccount>
         </>
     );

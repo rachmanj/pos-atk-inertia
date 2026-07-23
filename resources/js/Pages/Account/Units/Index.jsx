@@ -1,79 +1,96 @@
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, usePage } from "@inertiajs/react";
+import { Button, Card, Space, Table, Typography } from "antd";
+import {
+    EditOutlined,
+    PlusOutlined,
+    BlockOutlined,
+} from "@ant-design/icons";
 import Pagination from "../../../Shared/Pagination";
 import Search from "../../../Shared/Search";
 import Delete from "../../../Shared/Delete";
 import hasAnyPermission from "../../../Utils/Permissions";
 
+const { Title } = Typography;
+
 export default function UnitIndex() {
     const { units, auth = {} } = usePage().props;
     const permissions = auth.permissions || {};
 
+    const columns = [
+        {
+            title: "No.",
+            width: 70,
+            render: (_, __, index) => units.from + index,
+        },
+        {
+            title: "Nama",
+            dataIndex: "name",
+        },
+        {
+            title: "Singkatan",
+            dataIndex: "abbreviation",
+        },
+        {
+            title: "Aksi",
+            width: 120,
+            render: (_, unit) => (
+                <Space>
+                    {hasAnyPermission(["units.edit"], permissions) && (
+                        <Link href={`/account/units/${unit.id}/edit`}>
+                            <Button
+                                size="small"
+                                icon={<EditOutlined />}
+                            />
+                        </Link>
+                    )}
+                    {hasAnyPermission(["units.delete"], permissions) && (
+                        <Delete URL={`/account/units/${unit.id}`} />
+                    )}
+                </Space>
+            ),
+        },
+    ];
+
     return (
         <>
             <Head title="Satuan - ZenPOS" />
+
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-balance-scale me-2"></i>
-                                    SATUAN
-                                </h5>
-                                {hasAnyPermission(["units.create"], permissions) && (
-                                    <Link href="/account/units/create" className="btn btn-success shadow-sm rounded-sm">
-                                        <i className="fas fa-plus-circle me-2"></i>
-                                        TAMBAH SATUAN
-                                    </Link>
-                                )}
-                            </div>
-                            <div className="card-body">
-                                <div className="mb-3">
-                                    <Search URL="/account/units" />
-                                </div>
-                                <div className="table-responsive">
-                                    <table className="table table-bordered table-centered mb-0 rounded">
-                                        <thead className="thead-dark text-white bg-dark">
-                                            <tr>
-                                                <th style={{ width: "5%" }}>No.</th>
-                                                <th>Nama</th>
-                                                <th>Singkatan</th>
-                                                <th style={{ width: "15%" }}>Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {units.data.length > 0 ? (
-                                                units.data.map((unit, index) => (
-                                                    <tr key={unit.id}>
-                                                        <td>{units.from + index}</td>
-                                                        <td>{unit.name}</td>
-                                                        <td>{unit.abbreviation}</td>
-                                                        <td>
-                                                            {hasAnyPermission(["units.edit"], permissions) && (
-                                                                <Link href={`/account/units/${unit.id}/edit`} className="btn btn-warning btn-sm text-white me-1">
-                                                                    <i className="fas fa-edit"></i>
-                                                                </Link>
-                                                            )}
-                                                            {hasAnyPermission(["units.delete"], permissions) && (
-                                                                <Delete URL={`/account/units/${unit.id}`} />
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <tr>
-                                                    <td colSpan="4" className="text-center">Belum ada data satuan.</td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <Pagination links={units.links} />
-                            </div>
-                        </div>
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <BlockOutlined style={{ marginRight: 8 }} />
+                            SATUAN
+                        </Title>
+                    }
+                    extra={
+                        hasAnyPermission(["units.create"], permissions) && (
+                            <Link href="/account/units/create">
+                                <Button
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                >
+                                    TAMBAH SATUAN
+                                </Button>
+                            </Link>
+                        )
+                    }
+                >
+                    <div style={{ marginBottom: 16 }}>
+                        <Search URL="/account/units" />
                     </div>
-                </div>
+
+                    <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={units.data}
+                        pagination={false}
+                        locale={{ emptyText: "Belum ada data satuan." }}
+                    />
+
+                    <Pagination links={units.links} meta={units} />
+                </Card>
             </LayoutAccount>
         </>
     );

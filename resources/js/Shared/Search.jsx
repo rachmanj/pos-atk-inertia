@@ -1,17 +1,25 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
+import { Input } from "antd";
 
-export default function Search({ URL }) {
+export default function Search({
+    URL,
+    placeholder = "Ketik kata kunci lalu tekan Enter...",
+    onSearch,
+}) {
     const [search, setSearch] = useState("");
 
-    const searchHandler = (e) => {
-        e.preventDefault();
+    const handleSearch = (value) => {
+        const query = value ?? search;
+
+        if (onSearch) {
+            onSearch(query);
+            return;
+        }
 
         router.get(
             URL,
-            {
-                q: search,
-            },
+            { q: query },
             {
                 preserveState: true,
                 replace: true,
@@ -20,20 +28,13 @@ export default function Search({ URL }) {
     };
 
     return (
-        <form onSubmit={searchHandler}>
-            <div className="input-group">
-                <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="form-control border-0 shadow-sm"
-                    placeholder="Ketik kata kunci lalu tekan Enter..."
-                />
-
-                <span className="input-group-text border-0 shadow-sm">
-                    <i className="fas fa-search"></i>
-                </span>
-            </div>
-        </form>
+        <Input.Search
+            placeholder={placeholder}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onSearch={handleSearch}
+            allowClear
+            enterButton
+        />
     );
 }

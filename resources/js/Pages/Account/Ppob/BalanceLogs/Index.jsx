@@ -1,9 +1,28 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import LayoutAccount from "../../../../Layouts/Account";
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
+import {
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Form,
+    Input,
+    InputNumber,
+    Row,
+    Select,
+    Space,
+    Table,
+    Tag,
+    Typography,
+} from "antd";
+import { FilterOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import Pagination from "../../../../Shared/Pagination";
 import hasAnyPermission from "../../../../Utils/Permissions";
 import { formatRupiah } from "../../../../Utils/format";
+import dayjs from "dayjs";
+
+const { Title, Text } = Typography;
 
 const typeLabels = {
     opening_balance: "Saldo Awal",
@@ -17,186 +36,449 @@ export default function PpobBalanceLogIndex() {
     const permissions = auth.permissions || {};
     const isAdmin = hasAnyPermission(["ppob-accounts.edit"], permissions);
 
-    const [ppobAccountId, setPpobAccountId] = useState(filters.ppob_account_id || "");
+    const [ppobAccountId, setPpobAccountId] = useState(
+        filters.ppob_account_id || "",
+    );
     const [type, setType] = useState(filters.type || "");
     const [startDate, setStartDate] = useState(filters.start_date || "");
     const [endDate, setEndDate] = useState(filters.end_date || "");
-    const [topUpAccountId, setTopUpAccountId] = useState(accounts[0]?.id ? String(accounts[0].id) : "");
+    const [topUpAccountId, setTopUpAccountId] = useState(
+        accounts[0]?.id ? String(accounts[0].id) : "",
+    );
     const [topUpAmount, setTopUpAmount] = useState("");
     const [topUpNote, setTopUpNote] = useState("");
     const [adjustDirection, setAdjustDirection] = useState("increase");
+    const [filtering, setFiltering] = useState(false);
 
-    const applyFilter = (e) => {
-        e.preventDefault();
-        router.get("/account/ppob-balance-logs", {
-            ppob_account_id: ppobAccountId,
-            type,
-            start_date: startDate,
-            end_date: endDate,
-        });
+    const applyFilter = () => {
+        setFiltering(true);
+        router.get(
+            "/account/ppob-balance-logs",
+            {
+                ppob_account_id: ppobAccountId,
+                type,
+                start_date: startDate,
+                end_date: endDate,
+            },
+            { onFinish: () => setFiltering(false) },
+        );
     };
 
     const submitTopUp = (e) => {
         e.preventDefault();
-        router.post("/account/ppob-balance-logs", {
-            ppob_account_id: topUpAccountId,
-            type: "top_up",
-            amount: topUpAmount,
-            note: topUpNote,
-        }, {
-            onSuccess: () => {
-                setTopUpAmount("");
-                setTopUpNote("");
+        router.post(
+            "/account/ppob-balance-logs",
+            {
+                ppob_account_id: topUpAccountId,
+                type: "top_up",
+                amount: topUpAmount,
+                note: topUpNote,
             },
-        });
+            {
+                onSuccess: () => {
+                    setTopUpAmount("");
+                    setTopUpNote("");
+                },
+            },
+        );
     };
 
     const submitAdjustment = (e) => {
         e.preventDefault();
-        router.post("/account/ppob-balance-logs", {
-            ppob_account_id: topUpAccountId,
-            type: "adjustment",
-            amount: topUpAmount,
-            direction: adjustDirection,
-            note: topUpNote,
-        }, {
-            onSuccess: () => {
-                setTopUpAmount("");
-                setTopUpNote("");
+        router.post(
+            "/account/ppob-balance-logs",
+            {
+                ppob_account_id: topUpAccountId,
+                type: "adjustment",
+                amount: topUpAmount,
+                direction: adjustDirection,
+                note: topUpNote,
             },
-        });
+            {
+                onSuccess: () => {
+                    setTopUpAmount("");
+                    setTopUpNote("");
+                },
+            },
+        );
     };
+
+    const columns = [
+        {
+            title: "Tanggal",
+            dataIndex: "created_at",
+            render: (value) =>
+                new Date(value).toLocaleString("id-ID"),
+        },
+        {
+            title: "Akun",
+            render: (_, log) => log.ppob_account?.name,
+        },
+        {
+            title: "Tipe",
+            dataIndex: "type",
+            render: (value) => (
+                <Tag>{typeLabels[value] || value}</Tag>
+            ),
+        },
+        {
+            title: "Jumlah",
+            dataIndex: "amount",
+            render: (value) => (
+                <span className={value < 0 ? "text-danger" : "text-success"}>
+                    {formatRupiah(value)}
+                </span>
+            ),
+        },
+        {
+            title: "Saldo Sebelum",
+            dataIndex: "balance_before",
+            render: (value) => formatRupiah(value),
+        },
+        {
+            title: "Saldo Sesudah",
+            dataIndex: "balance_after",
+            render: (value) => formatRupiah(value),
+        },
+        {
+            title: "Kasir",
+            render: (_, log) => log.user?.name,
+        },
+        {
+            title: "Catatan",
+            dataIndex: "note",
+            render: (value) => value || "-",
+        },
+    ];
 
     return (
         <>
             <Head title="Riwayat Saldo PPOB - ZenPOS" />
+
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0">
-                                <h5 className="mb-0 fw-bold"><i className="fas fa-list me-2"></i>RIWAYAT SALDO PPOB</h5>
-                            </div>
-                            <div className="card-body">
-                                {accounts.length > 0 && (
-                                    <div className="row g-3 mb-4">
-                                        {accounts.map((a) => (
-                                            <div className="col-md-4" key={a.id}>
-                                                <div className={`border rounded-3 p-3 h-100 ${a.is_active ? "bg-light" : "bg-white"}`}>
-                                                    <small className="text-muted d-block mb-1">
-                                                        Saldo Sistem Saat Ini {a.is_active && <span className="badge bg-success ms-1">Aktif</span>}
-                                                    </small>
-                                                    <div className="fw-bold fs-5">{a.name}</div>
-                                                    <div className="fw-bold text-primary">{formatRupiah(a.current_balance)}</div>
-                                                </div>
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <UnorderedListOutlined style={{ marginRight: 8 }} />
+                            RIWAYAT SALDO PPOB
+                        </Title>
+                    }
+                >
+                    {accounts.length > 0 && (
+                        <>
+                            <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+                                {accounts.map((account) => (
+                                    <Col xs={24} md={8} key={account.id}>
+                                        <Card
+                                            size="small"
+                                            className={
+                                                account.is_active
+                                                    ? "bg-light"
+                                                    : ""
+                                            }
+                                        >
+                                            <Text
+                                                type="secondary"
+                                                style={{
+                                                    display: "block",
+                                                    fontSize: 12,
+                                                }}
+                                            >
+                                                Saldo Sistem Saat Ini{" "}
+                                                {account.is_active && (
+                                                    <Tag color="success">
+                                                        Aktif
+                                                    </Tag>
+                                                )}
+                                            </Text>
+                                            <Text strong>{account.name}</Text>
+                                            <div>
+                                                <Text
+                                                    strong
+                                                    style={{ color: "#1677ff" }}
+                                                >
+                                                    {formatRupiah(
+                                                        account.current_balance,
+                                                    )}
+                                                </Text>
                                             </div>
-                                        ))}
-                                        <div className="col-12">
-                                            <small className="text-muted">
-                                                Akun ini bisa dipakai bersamaan oleh beberapa kasir shift yang berbeda. Cocokkan saldo di atas dengan saldo di app provider, lalu catat selisihnya lewat Penyesuaian di bawah &mdash; bukan lewat form buka/tutup shift.
-                                            </small>
-                                        </div>
-                                    </div>
+                                        </Card>
+                                    </Col>
+                                ))}
+                            </Row>
+
+                            <Text
+                                type="secondary"
+                                style={{
+                                    display: "block",
+                                    marginBottom: 16,
+                                    fontSize: 12,
+                                }}
+                            >
+                                Akun ini bisa dipakai bersamaan oleh beberapa
+                                kasir shift yang berbeda. Cocokkan saldo di atas
+                                dengan saldo di app provider, lalu catat
+                                selisihnya lewat Penyesuaian di bawah — bukan
+                                lewat form buka/tutup shift.
+                            </Text>
+                        </>
+                    )}
+
+                    <Row gutter={[8, 8]} style={{ marginBottom: 16 }}>
+                        <Col xs={24} md={6}>
+                            <Select
+                                style={{ width: "100%" }}
+                                value={ppobAccountId || undefined}
+                                onChange={(value) =>
+                                    setPpobAccountId(value || "")
+                                }
+                                placeholder="Semua Akun"
+                                allowClear
+                                options={[
+                                    ...accounts.map((account) => ({
+                                        value: String(account.id),
+                                        label: account.name,
+                                    })),
+                                ]}
+                            />
+                        </Col>
+                        <Col xs={24} md={4}>
+                            <Select
+                                style={{ width: "100%" }}
+                                value={type || undefined}
+                                onChange={(value) => setType(value || "")}
+                                placeholder="Semua Tipe"
+                                allowClear
+                                options={Object.entries(typeLabels).map(
+                                    ([key, label]) => ({
+                                        value: key,
+                                        label,
+                                    }),
                                 )}
+                            />
+                        </Col>
+                        <Col xs={24} md={4}>
+                            <DatePicker
+                                style={{ width: "100%" }}
+                                value={
+                                    startDate ? dayjs(startDate) : null
+                                }
+                                onChange={(date) =>
+                                    setStartDate(
+                                        date
+                                            ? date.format("YYYY-MM-DD")
+                                            : "",
+                                    )
+                                }
+                                placeholder="Tanggal mulai"
+                                format="DD/MM/YYYY"
+                            />
+                        </Col>
+                        <Col xs={24} md={4}>
+                            <DatePicker
+                                style={{ width: "100%" }}
+                                value={endDate ? dayjs(endDate) : null}
+                                onChange={(date) =>
+                                    setEndDate(
+                                        date
+                                            ? date.format("YYYY-MM-DD")
+                                            : "",
+                                    )
+                                }
+                                placeholder="Tanggal akhir"
+                                format="DD/MM/YYYY"
+                            />
+                        </Col>
+                        <Col xs={24} md={4}>
+                            <Button
+                                type="primary"
+                                icon={<FilterOutlined />}
+                                onClick={applyFilter}
+                                loading={filtering}
+                                block
+                            >
+                                Filter
+                            </Button>
+                        </Col>
+                    </Row>
 
-                                <form className="row g-2 mb-4" onSubmit={applyFilter}>
-                                    <div className="col-md-3">
-                                        <select className="form-select" value={ppobAccountId} onChange={(e) => setPpobAccountId(e.target.value)}>
-                                            <option value="">Semua Akun</option>
-                                            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="col-md-2">
-                                        <select className="form-select" value={type} onChange={(e) => setType(e.target.value)}>
-                                            <option value="">Semua Tipe</option>
-                                            {Object.entries(typeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="col-md-2"><input type="date" className="form-control" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
-                                    <div className="col-md-2"><input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
-                                    <div className="col-md-2"><button className="btn btn-primary w-100">Filter</button></div>
-                                </form>
+                    {hasAnyPermission(
+                        ["ppob-balance-logs.store"],
+                        permissions,
+                    ) && (
+                        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+                            <Col xs={24} lg={12}>
+                                <Card size="small" title="Top Up Saldo">
+                                    <form onSubmit={submitTopUp}>
+                                        <Space
+                                            direction="vertical"
+                                            style={{ width: "100%" }}
+                                            size="small"
+                                        >
+                                            <Select
+                                                value={topUpAccountId}
+                                                onChange={setTopUpAccountId}
+                                                style={{ width: "100%" }}
+                                                options={accounts.map(
+                                                    (account) => ({
+                                                        value: String(
+                                                            account.id,
+                                                        ),
+                                                        label: account.name,
+                                                    }),
+                                                )}
+                                            />
+                                            <Row gutter={8}>
+                                                <Col span={12}>
+                                                    <InputNumber
+                                                        min={1}
+                                                        style={{
+                                                            width: "100%",
+                                                        }}
+                                                        placeholder="Jumlah"
+                                                        value={
+                                                            topUpAmount || null
+                                                        }
+                                                        onChange={(value) =>
+                                                            setTopUpAmount(
+                                                                value ?? "",
+                                                            )
+                                                        }
+                                                        required
+                                                    />
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Input
+                                                        placeholder="Catatan"
+                                                        value={topUpNote}
+                                                        onChange={(e) =>
+                                                            setTopUpNote(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
+                                                </Col>
+                                            </Row>
+                                            <Button
+                                                type="primary"
+                                                htmlType="submit"
+                                                size="small"
+                                            >
+                                                Catat Top Up
+                                            </Button>
+                                        </Space>
+                                    </form>
+                                </Card>
+                            </Col>
 
-                                {hasAnyPermission(["ppob-balance-logs.store"], permissions) && (
-                                    <div className="row g-3 mb-4">
-                                        <div className="col-lg-6">
-                                            <div className="border rounded p-3">
-                                                <h6 className="fw-bold">Top Up Saldo</h6>
-                                                <form onSubmit={submitTopUp} className="row g-2">
-                                                    <div className="col-12">
-                                                        <select className="form-select" value={topUpAccountId} onChange={(e) => setTopUpAccountId(e.target.value)} required>
-                                                            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                                        </select>
-                                                    </div>
-                                                    <div className="col-6"><input type="number" min="1" className="form-control" placeholder="Jumlah" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} required /></div>
-                                                    <div className="col-6"><input type="text" className="form-control" placeholder="Catatan" value={topUpNote} onChange={(e) => setTopUpNote(e.target.value)} /></div>
-                                                    <div className="col-12"><button className="btn btn-success btn-sm">Catat Top Up</button></div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                        {isAdmin && (
-                                            <div className="col-lg-6">
-                                                <div className="border rounded p-3">
-                                                    <h6 className="fw-bold">Penyesuaian (Admin)</h6>
-                                                    <form onSubmit={submitAdjustment} className="row g-2">
-                                                        <div className="col-12">
-                                                            <select className="form-select" value={topUpAccountId} onChange={(e) => setTopUpAccountId(e.target.value)} required>
-                                                                {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                                            </select>
-                                                        </div>
-                                                        <div className="col-4">
-                                                            <select className="form-select" value={adjustDirection} onChange={(e) => setAdjustDirection(e.target.value)}>
-                                                                <option value="increase">Tambah</option>
-                                                                <option value="decrease">Kurang</option>
-                                                            </select>
-                                                        </div>
-                                                        <div className="col-8"><input type="number" min="1" className="form-control" placeholder="Jumlah" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} required /></div>
-                                                        <div className="col-12"><input type="text" className="form-control" placeholder="Catatan" value={topUpNote} onChange={(e) => setTopUpNote(e.target.value)} /></div>
-                                                        <div className="col-12"><button className="btn btn-warning btn-sm text-white">Catat Penyesuaian</button></div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                            {isAdmin && (
+                                <Col xs={24} lg={12}>
+                                    <Card
+                                        size="small"
+                                        title="Penyesuaian (Admin)"
+                                    >
+                                        <form onSubmit={submitAdjustment}>
+                                            <Space
+                                                direction="vertical"
+                                                style={{ width: "100%" }}
+                                                size="small"
+                                            >
+                                                <Select
+                                                    value={topUpAccountId}
+                                                    onChange={
+                                                        setTopUpAccountId
+                                                    }
+                                                    style={{ width: "100%" }}
+                                                    options={accounts.map(
+                                                        (account) => ({
+                                                            value: String(
+                                                                account.id,
+                                                            ),
+                                                            label: account.name,
+                                                        }),
+                                                    )}
+                                                />
+                                                <Row gutter={8}>
+                                                    <Col span={8}>
+                                                        <Select
+                                                            value={
+                                                                adjustDirection
+                                                            }
+                                                            onChange={
+                                                                setAdjustDirection
+                                                            }
+                                                            style={{
+                                                                width: "100%",
+                                                            }}
+                                                            options={[
+                                                                {
+                                                                    value: "increase",
+                                                                    label: "Tambah",
+                                                                },
+                                                                {
+                                                                    value: "decrease",
+                                                                    label: "Kurang",
+                                                                },
+                                                            ]}
+                                                        />
+                                                    </Col>
+                                                    <Col span={16}>
+                                                        <InputNumber
+                                                            min={1}
+                                                            style={{
+                                                                width: "100%",
+                                                            }}
+                                                            placeholder="Jumlah"
+                                                            value={
+                                                                topUpAmount ||
+                                                                null
+                                                            }
+                                                            onChange={(
+                                                                value,
+                                                            ) =>
+                                                                setTopUpAmount(
+                                                                    value ??
+                                                                        "",
+                                                                )
+                                                            }
+                                                            required
+                                                        />
+                                                    </Col>
+                                                </Row>
+                                                <Input
+                                                    placeholder="Catatan"
+                                                    value={topUpNote}
+                                                    onChange={(e) =>
+                                                        setTopUpNote(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                />
+                                                <Button
+                                                    htmlType="submit"
+                                                    size="small"
+                                                >
+                                                    Catat Penyesuaian
+                                                </Button>
+                                            </Space>
+                                        </form>
+                                    </Card>
+                                </Col>
+                            )}
+                        </Row>
+                    )}
 
-                                <div className="table-responsive">
-                                    <table className="table table-bordered">
-                                        <thead className="bg-dark text-white">
-                                            <tr>
-                                                <th>Tanggal</th>
-                                                <th>Akun</th>
-                                                <th>Tipe</th>
-                                                <th>Jumlah</th>
-                                                <th>Saldo Sebelum</th>
-                                                <th>Saldo Sesudah</th>
-                                                <th>Kasir</th>
-                                                <th>Catatan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {logs.data.length ? logs.data.map((log) => (
-                                                <tr key={log.id}>
-                                                    <td>{new Date(log.created_at).toLocaleString("id-ID")}</td>
-                                                    <td>{log.ppob_account?.name}</td>
-                                                    <td><span className="badge bg-secondary">{typeLabels[log.type] || log.type}</span></td>
-                                                    <td className={log.amount < 0 ? "text-danger" : "text-success"}>{formatRupiah(log.amount)}</td>
-                                                    <td>{formatRupiah(log.balance_before)}</td>
-                                                    <td>{formatRupiah(log.balance_after)}</td>
-                                                    <td>{log.user?.name}</td>
-                                                    <td>{log.note || "-"}</td>
-                                                </tr>
-                                            )) : (
-                                                <tr><td colSpan="8" className="text-center">Belum ada riwayat saldo.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <Pagination links={logs.links} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={logs.data}
+                        pagination={false}
+                        scroll={{ x: true }}
+                        locale={{ emptyText: "Belum ada riwayat saldo." }}
+                    />
+
+                    <Pagination links={logs.links} meta={logs} />
+                </Card>
             </LayoutAccount>
         </>
     );

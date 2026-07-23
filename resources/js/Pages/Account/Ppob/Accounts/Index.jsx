@@ -1,66 +1,104 @@
 import LayoutAccount from "../../../../Layouts/Account";
 import { Head, Link, usePage } from "@inertiajs/react";
+import { Button, Card, Table, Tag, Typography } from "antd";
+import { EditOutlined, PlusOutlined, WalletOutlined } from "@ant-design/icons";
 import hasAnyPermission from "../../../../Utils/Permissions";
 import { formatRupiah } from "../../../../Utils/format";
+
+const { Title } = Typography;
 
 export default function PpobAccountIndex() {
     const { accounts = [], auth = {} } = usePage().props;
     const permissions = auth.permissions || {};
 
+    const columns = [
+        {
+            title: "Nama",
+            dataIndex: "name",
+        },
+        {
+            title: "Saldo",
+            dataIndex: "current_balance",
+            render: (value, record) => (
+                <span
+                    className={
+                        record.current_balance <= record.min_balance_alert
+                            ? "text-danger fw-bold"
+                            : ""
+                    }
+                >
+                    {formatRupiah(value)}
+                </span>
+            ),
+        },
+        {
+            title: "Alert Minimum",
+            dataIndex: "min_balance_alert",
+            render: (value) => formatRupiah(value),
+        },
+        {
+            title: "Status",
+            dataIndex: "is_active",
+            render: (isActive) => (
+                <Tag color={isActive ? "success" : "default"}>
+                    {isActive ? "Aktif" : "Nonaktif"}
+                </Tag>
+            ),
+        },
+        {
+            title: "Aksi",
+            width: 100,
+            render: (_, account) =>
+                hasAnyPermission(["ppob-accounts.edit"], permissions) ? (
+                    <Link href={`/account/ppob-accounts/${account.id}/edit`}>
+                        <Button
+                            size="small"
+                            icon={<EditOutlined />}
+                        >
+                            Edit
+                        </Button>
+                    </Link>
+                ) : null,
+        },
+    ];
+
     return (
         <>
             <Head title="Akun PPOB - ZenPOS" />
+
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between">
-                                <h5 className="mb-0 fw-bold"><i className="fas fa-wallet me-2"></i>AKUN PPOB</h5>
-                                {hasAnyPermission(["ppob-accounts.create"], permissions) && (
-                                    <Link href="/account/ppob-accounts/create" className="btn btn-success btn-sm">TAMBAH AKUN</Link>
-                                )}
-                            </div>
-                            <div className="card-body">
-                                <div className="table-responsive">
-                                    <table className="table table-bordered">
-                                        <thead className="bg-dark text-white">
-                                            <tr>
-                                                <th>Nama</th>
-                                                <th>Saldo</th>
-                                                <th>Alert Minimum</th>
-                                                <th>Status</th>
-                                                <th>Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {accounts.length ? accounts.map((account) => (
-                                                <tr key={account.id}>
-                                                    <td>{account.name}</td>
-                                                    <td className={account.current_balance <= account.min_balance_alert ? "text-danger fw-bold" : ""}>
-                                                        {formatRupiah(account.current_balance)}
-                                                    </td>
-                                                    <td>{formatRupiah(account.min_balance_alert)}</td>
-                                                    <td>
-                                                        <span className={`badge ${account.is_active ? "bg-success" : "bg-secondary"}`}>
-                                                            {account.is_active ? "Aktif" : "Nonaktif"}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        {hasAnyPermission(["ppob-accounts.edit"], permissions) && (
-                                                            <Link href={`/account/ppob-accounts/${account.id}/edit`} className="btn btn-warning btn-sm text-white">Edit</Link>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            )) : (
-                                                <tr><td colSpan="5" className="text-center">Belum ada akun PPOB.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <WalletOutlined style={{ marginRight: 8 }} />
+                            AKUN PPOB
+                        </Title>
+                    }
+                    extra={
+                        hasAnyPermission(
+                            ["ppob-accounts.create"],
+                            permissions,
+                        ) && (
+                            <Link href="/account/ppob-accounts/create">
+                                <Button
+                                    type="primary"
+                                    size="small"
+                                    icon={<PlusOutlined />}
+                                >
+                                    TAMBAH AKUN
+                                </Button>
+                            </Link>
+                        )
+                    }
+                >
+                    <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={accounts}
+                        pagination={false}
+                        locale={{ emptyText: "Belum ada akun PPOB." }}
+                    />
+                </Card>
             </LayoutAccount>
         </>
     );

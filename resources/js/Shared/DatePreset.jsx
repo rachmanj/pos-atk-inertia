@@ -1,75 +1,71 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { DatePicker } from "antd";
+import dayjs from "dayjs";
 
-const presets = [
-    { label: "Hari ini", getRange: () => ({ start: today(), end: today() }) },
-    { label: "Kemarin", getRange: () => ({ start: yesterday(), end: yesterday() }) },
-    { label: "Minggu ini", getRange: () => weekToDate },
-    { label: "Bulan ini", getRange: () => monthToDate },
-    { label: "Bulan lalu", getRange: () => lastMonth },
-];
+const { RangePicker } = DatePicker;
 
-function today() {
-    return new Date().toISOString().slice(0, 10);
+function getWeekRange() {
+    const now = dayjs();
+    const dayOfWeek = now.day();
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    return [now.subtract(diff, "day").startOf("day"), now.endOf("day")];
 }
 
-function yesterday() {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
-}
-
-function weekToDate() {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday start
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - diff);
-    return { start: monday.toISOString().slice(0, 10), end: today() };
-}
-
-function monthToDate() {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { start: firstDay.toISOString().slice(0, 10), end: today() };
-}
-
-function lastMonth() {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
-    return {
-        start: firstDay.toISOString().slice(0, 10),
-        end: lastDay.toISOString().slice(0, 10),
-    };
+function getPresets() {
+    return [
+        {
+            label: "Hari ini",
+            value: [dayjs().startOf("day"), dayjs().endOf("day")],
+        },
+        {
+            label: "Kemarin",
+            value: [
+                dayjs().subtract(1, "day").startOf("day"),
+                dayjs().subtract(1, "day").endOf("day"),
+            ],
+        },
+        {
+            label: "Minggu ini",
+            value: getWeekRange(),
+        },
+        {
+            label: "Bulan ini",
+            value: [dayjs().startOf("month"), dayjs().endOf("day")],
+        },
+        {
+            label: "Bulan lalu",
+            value: [
+                dayjs().subtract(1, "month").startOf("month"),
+                dayjs().subtract(1, "month").endOf("month"),
+            ],
+        },
+    ];
 }
 
 export default function DatePreset({ onApply }) {
-    const [activePreset, setActivePreset] = useState(null);
+    const presets = useMemo(() => getPresets(), []);
+    const [dates, setDates] = useState(null);
 
-    const handlePreset = (preset) => {
-        const range = preset.getRange();
-        setActivePreset(preset.label);
-        if (onApply) {
-            onApply(range.start, range.end);
+    const handleChange = (values) => {
+        setDates(values);
+
+        if (values?.[0] && values?.[1] && onApply) {
+            onApply(
+                values[0].format("YYYY-MM-DD"),
+                values[1].format("YYYY-MM-DD"),
+            );
         }
     };
 
     return (
-        <div className="d-flex flex-wrap gap-1">
-            {presets.map((preset) => (
-                <button
-                    key={preset.label}
-                    type="button"
-                    className={`btn btn-sm ${
-                        activePreset === preset.label
-                            ? "btn-primary"
-                            : "btn-outline-secondary"
-                    }`}
-                    onClick={() => handlePreset(preset)}
-                >
-                    {preset.label}
-                </button>
-            ))}
-        </div>
+        <RangePicker
+            value={dates}
+            onChange={handleChange}
+            presets={presets}
+            format="DD/MM/YYYY"
+            placeholder={["Tanggal mulai", "Tanggal akhir"]}
+            style={{ width: "100%" }}
+        />
     );
 }

@@ -1,7 +1,24 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
-import Swal from "sweetalert2";
+import {
+    Button,
+    Card,
+    Col,
+    Form,
+    Input,
+    Row,
+    Typography,
+    notification,
+} from "antd";
+import {
+    ArrowLeftOutlined,
+    SaveOutlined,
+    UserOutlined,
+} from "@ant-design/icons";
+
+const { Title } = Typography;
+const { TextArea } = Input;
 
 export default function CustomerEdit() {
     const { errors = {}, customer } = usePage().props;
@@ -10,171 +27,126 @@ export default function CustomerEdit() {
     const [noTelp, setNoTelp] = useState(customer.no_telp);
     const [email, setEmail] = useState(customer.email || "");
     const [address, setAddress] = useState(customer.address);
+    const [saving, setSaving] = useState(false);
 
-    const updateCustomer = async (e) => {
+    const updateCustomer = (e) => {
         e.preventDefault();
+        setSaving(true);
 
         router.put(
             `/account/customers/${customer.id}`,
             {
-                name: name,
+                name,
                 no_telp: noTelp,
-                email: email,
-                address: address,
+                email,
+                address,
             },
             {
                 onSuccess: () => {
-                    Swal.fire({
-                        title: "Success!",
-                        text: "Data Updated Successfully!",
-                        icon: "success",
-                        showConfirmButton: false,
-                        timer: 1500,
+                    notification.success({
+                        message: "Berhasil",
+                        description: "Pelanggan berhasil diperbarui.",
+                        duration: 2,
                     });
                 },
+                onFinish: () => setSaving(false),
             },
         );
     };
 
     return (
         <>
-            <Head>
-                <title>Edit Customer - ZenPOS</title>
-            </Head>
+            <Head title="Edit Pelanggan - ZenPOS" />
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 col-md-12 col-lg-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-user-edit me-2"></i>
-                                    EDIT CUSTOMER
-                                </h5>
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <UserOutlined style={{ marginRight: 8 }} />
+                            EDIT PELANGGAN
+                        </Title>
+                    }
+                    extra={
+                        <Link href="/account/customers">
+                            <Button icon={<ArrowLeftOutlined />}>
+                                KEMBALI
+                            </Button>
+                        </Link>
+                    }
+                >
+                    <form onSubmit={updateCustomer}>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Nama Lengkap"
+                                    validateStatus={errors.name ? "error" : ""}
+                                    help={errors.name}
+                                    required
+                                >
+                                    <Input
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Masukkan nama pelanggan"
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Nomor Telepon"
+                                    validateStatus={
+                                        errors.no_telp ? "error" : ""
+                                    }
+                                    help={errors.no_telp}
+                                    required
+                                >
+                                    <Input
+                                        value={noTelp}
+                                        onChange={(e) =>
+                                            setNoTelp(e.target.value)
+                                        }
+                                        placeholder="Masukkan nomor telepon (08...)"
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                                <div>
-                                    <Link
-                                        href="/account/customers"
-                                        className="btn btn-secondary shadow-sm rounded-sm"
-                                    >
-                                        <i className="fas fa-arrow-left me-2"></i>
-                                        BACK
-                                    </Link>
-                                </div>
-                            </div>
+                        <Form.Item
+                            label="Email (Opsional)"
+                            validateStatus={errors.email ? "error" : ""}
+                            help={errors.email}
+                        >
+                            <Input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Masukkan alamat email"
+                            />
+                        </Form.Item>
 
-                            <div className="card-body">
-                                <form onSubmit={updateCustomer}>
-                                    <div className="row">
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Full Name
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className={`form-control ${
-                                                    errors.name
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={name}
-                                                onChange={(e) =>
-                                                    setName(e.target.value)
-                                                }
-                                                placeholder="Enter Customer Name"
-                                            />
-                                            {errors.name && (
-                                                <div className="invalid-feedback">
-                                                    {errors.name}
-                                                </div>
-                                            )}
-                                        </div>
+                        <Form.Item
+                            label="Alamat"
+                            validateStatus={errors.address ? "error" : ""}
+                            help={errors.address}
+                            required
+                        >
+                            <TextArea
+                                rows={3}
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                placeholder="Masukkan alamat lengkap"
+                            />
+                        </Form.Item>
 
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Phone Number
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className={`form-control ${
-                                                    errors.no_telp
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={noTelp}
-                                                onChange={(e) =>
-                                                    setNoTelp(e.target.value)
-                                                }
-                                                placeholder="Enter Phone Number (08...)"
-                                            />
-                                            {errors.no_telp && (
-                                                <div className="invalid-feedback">
-                                                    {errors.no_telp}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Email Address (Optional)
-                                        </label>
-                                        <input
-                                            type="email"
-                                            className={`form-control ${
-                                                errors.email ? "is-invalid" : ""
-                                            }`}
-                                            value={email}
-                                            onChange={(e) =>
-                                                setEmail(e.target.value)
-                                            }
-                                            placeholder="Enter Email Address"
-                                        />
-                                        {errors.email && (
-                                            <div className="invalid-feedback">
-                                                {errors.email}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Address
-                                        </label>
-                                        <textarea
-                                            className={`form-control ${
-                                                errors.address
-                                                    ? "is-invalid"
-                                                    : ""
-                                            }`}
-                                            value={address}
-                                            onChange={(e) =>
-                                                setAddress(e.target.value)
-                                            }
-                                            rows="3"
-                                            placeholder="Enter Complete Address"
-                                        ></textarea>
-                                        {errors.address && (
-                                            <div className="invalid-feedback">
-                                                {errors.address}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <button
-                                            type="submit"
-                                            className="btn btn-success shadow-sm rounded-sm"
-                                        >
-                                            <i className="fas fa-save me-2"></i>
-                                            UPDATE
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<SaveOutlined />}
+                            loading={saving}
+                        >
+                            PERBARUI
+                        </Button>
+                    </form>
+                </Card>
             </LayoutAccount>
         </>
     );

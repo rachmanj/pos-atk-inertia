@@ -1,61 +1,116 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import LayoutAccount from "../../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
+import {
+    Button,
+    Card,
+    Form,
+    Input,
+    InputNumber,
+    Switch,
+    Typography,
+} from "antd";
+import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
 import { formatRupiah } from "../../../../Utils/format";
+
+const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 export default function PpobAccountEdit() {
     const { account } = usePage().props;
     const [name, setName] = useState(account.name || "");
-    const [minBalanceAlert, setMinBalanceAlert] = useState(String(account.min_balance_alert || 0));
+    const [minBalanceAlert, setMinBalanceAlert] = useState(
+        Number(account.min_balance_alert || 0),
+    );
     const [isActive, setIsActive] = useState(!!account.is_active);
     const [note, setNote] = useState(account.note || "");
+    const [saving, setSaving] = useState(false);
 
     const submit = (e) => {
         e.preventDefault();
-        router.put(`/account/ppob-accounts/${account.id}`, {
-            name,
-            min_balance_alert: minBalanceAlert,
-            is_active: isActive,
-            note,
-        });
+        setSaving(true);
+
+        router.put(
+            `/account/ppob-accounts/${account.id}`,
+            {
+                name,
+                min_balance_alert: minBalanceAlert,
+                is_active: isActive,
+                note,
+            },
+            { onFinish: () => setSaving(false) },
+        );
     };
 
     return (
         <>
             <Head title="Edit Akun PPOB - ZenPOS" />
+
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-lg-6">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between">
-                                <h5 className="mb-0 fw-bold">EDIT AKUN PPOB</h5>
-                                <Link href="/account/ppob-accounts" className="btn btn-secondary btn-sm">KEMBALI</Link>
-                            </div>
-                            <div className="card-body">
-                                <p className="text-muted">Saldo saat ini: <strong>{formatRupiah(account.current_balance)}</strong></p>
-                                <form onSubmit={submit}>
-                                    <div className="mb-3">
-                                        <label className="fw-bold">Nama Provider</label>
-                                        <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="fw-bold">Alert Saldo Minimum</label>
-                                        <input type="number" min="0" className="form-control" value={minBalanceAlert} onChange={(e) => setMinBalanceAlert(e.target.value)} />
-                                    </div>
-                                    <div className="mb-3 form-check">
-                                        <input type="checkbox" className="form-check-input" id="is_active" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-                                        <label className="form-check-label" htmlFor="is_active">Aktif</label>
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="fw-bold">Catatan</label>
-                                        <textarea className="form-control" rows="3" value={note} onChange={(e) => setNote(e.target.value)} />
-                                    </div>
-                                    <button type="submit" className="btn btn-success">UPDATE</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <Card
+                    style={{ maxWidth: 640 }}
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            EDIT AKUN PPOB
+                        </Title>
+                    }
+                    extra={
+                        <Link href="/account/ppob-accounts">
+                            <Button icon={<ArrowLeftOutlined />}>
+                                KEMBALI
+                            </Button>
+                        </Link>
+                    }
+                >
+                    <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+                        Saldo saat ini:{" "}
+                        <Text strong>{formatRupiah(account.current_balance)}</Text>
+                    </Text>
+
+                    <form onSubmit={submit}>
+                        <Form.Item label="Nama Provider" required>
+                            <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                        </Form.Item>
+
+                        <Form.Item label="Alert Saldo Minimum">
+                            <InputNumber
+                                min={0}
+                                style={{ width: "100%" }}
+                                value={minBalanceAlert}
+                                onChange={(value) =>
+                                    setMinBalanceAlert(value ?? 0)
+                                }
+                            />
+                        </Form.Item>
+
+                        <Form.Item label="Aktif">
+                            <Switch
+                                checked={isActive}
+                                onChange={setIsActive}
+                            />
+                        </Form.Item>
+
+                        <Form.Item label="Catatan">
+                            <TextArea
+                                rows={3}
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                            />
+                        </Form.Item>
+
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<SaveOutlined />}
+                            loading={saving}
+                        >
+                            UPDATE
+                        </Button>
+                    </form>
+                </Card>
             </LayoutAccount>
         </>
     );

@@ -1,7 +1,25 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import Swal from "sweetalert2";
+import {
+    Button,
+    Card,
+    Col,
+    Form,
+    Input,
+    Row,
+    Switch,
+    Typography,
+    notification,
+} from "antd";
+import {
+    ArrowLeftOutlined,
+    SaveOutlined,
+    TruckOutlined,
+} from "@ant-design/icons";
+
+const { Title } = Typography;
+const { TextArea } = Input;
 
 export default function SupplierEdit() {
     const { errors = {}, supplier } = usePage().props;
@@ -12,9 +30,11 @@ export default function SupplierEdit() {
     const [address, setAddress] = useState(supplier.address || "");
     const [note, setNote] = useState(supplier.note || "");
     const [isActive, setIsActive] = useState(Boolean(supplier.is_active));
+    const [saving, setSaving] = useState(false);
 
     const updateSupplier = (e) => {
         e.preventDefault();
+        setSaving(true);
 
         router.put(
             `/account/suppliers/${supplier.id}`,
@@ -28,210 +48,125 @@ export default function SupplierEdit() {
             },
             {
                 onSuccess: () => {
-                    Swal.fire({
-                        title: "Berhasil",
-                        text: "Supplier berhasil diperbarui.",
-                        icon: "success",
-                        showConfirmButton: false,
-                        timer: 1500,
+                    notification.success({
+                        message: "Berhasil",
+                        description: "Supplier berhasil diperbarui.",
+                        duration: 2,
                     });
                 },
+                onFinish: () => setSaving(false),
             },
         );
     };
 
     return (
         <>
-            <Head>
-                <title>Edit Supplier - ZenPOS</title>
-            </Head>
+            <Head title="Edit Supplier - ZenPOS" />
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-truck me-2"></i>
-                                    EDIT SUPPLIER
-                                </h5>
-
-                                <Link
-                                    href="/account/suppliers"
-                                    className="btn btn-secondary shadow-sm rounded-sm"
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <TruckOutlined style={{ marginRight: 8 }} />
+                            EDIT SUPPLIER
+                        </Title>
+                    }
+                    extra={
+                        <Link href="/account/suppliers">
+                            <Button icon={<ArrowLeftOutlined />}>
+                                KEMBALI
+                            </Button>
+                        </Link>
+                    }
+                >
+                    <form onSubmit={updateSupplier}>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Nama Supplier"
+                                    validateStatus={errors.name ? "error" : ""}
+                                    help={errors.name}
+                                    required
                                 >
-                                    <i className="fas fa-arrow-left me-2"></i>
-                                    KEMBALI
-                                </Link>
-                            </div>
+                                    <Input
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Nomor Telepon"
+                                    validateStatus={
+                                        errors.no_telp ? "error" : ""
+                                    }
+                                    help={errors.no_telp}
+                                    required
+                                >
+                                    <Input
+                                        value={phone}
+                                        onChange={(e) =>
+                                            setPhone(e.target.value)
+                                        }
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                            <div className="card-body">
-                                <form onSubmit={updateSupplier}>
-                                    <div className="row">
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Nama Supplier
-                                                <span className="text-danger ms-1">
-                                                    *
-                                                </span>
-                                            </label>
+                        <Form.Item
+                            label="Email"
+                            validateStatus={errors.email ? "error" : ""}
+                            help={errors.email}
+                        >
+                            <Input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                        </Form.Item>
 
-                                            <input
-                                                type="text"
-                                                className={`form-control ${
-                                                    errors.name
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={name}
-                                                onChange={(e) =>
-                                                    setName(e.target.value)
-                                                }
-                                            />
+                        <Form.Item
+                            label="Alamat"
+                            validateStatus={errors.address ? "error" : ""}
+                            help={errors.address}
+                            required
+                        >
+                            <TextArea
+                                rows={3}
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                            />
+                        </Form.Item>
 
-                                            {errors.name && (
-                                                <div className="invalid-feedback">
-                                                    {errors.name}
-                                                </div>
-                                            )}
-                                        </div>
+                        <Form.Item
+                            label="Catatan"
+                            validateStatus={errors.note ? "error" : ""}
+                            help={errors.note}
+                        >
+                            <TextArea
+                                rows={3}
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                            />
+                        </Form.Item>
 
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Nomor Telepon
-                                                <span className="text-danger ms-1">
-                                                    *
-                                                </span>
-                                            </label>
+                        <Form.Item label="Supplier aktif">
+                            <Switch
+                                checked={isActive}
+                                onChange={setIsActive}
+                            />
+                        </Form.Item>
 
-                                            <input
-                                                type="text"
-                                                className={`form-control ${
-                                                    errors.no_telp
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={phone}
-                                                onChange={(e) =>
-                                                    setPhone(e.target.value)
-                                                }
-                                            />
-
-                                            {errors.no_telp && (
-                                                <div className="invalid-feedback">
-                                                    {errors.no_telp}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Email
-                                        </label>
-
-                                        <input
-                                            type="email"
-                                            className={`form-control ${
-                                                errors.email ? "is-invalid" : ""
-                                            }`}
-                                            value={email}
-                                            onChange={(e) =>
-                                                setEmail(e.target.value)
-                                            }
-                                        />
-
-                                        {errors.email && (
-                                            <div className="invalid-feedback">
-                                                {errors.email}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Alamat
-                                            <span className="text-danger ms-1">
-                                                *
-                                            </span>
-                                        </label>
-
-                                        <textarea
-                                            className={`form-control ${
-                                                errors.address
-                                                    ? "is-invalid"
-                                                    : ""
-                                            }`}
-                                            rows="3"
-                                            value={address}
-                                            onChange={(e) =>
-                                                setAddress(e.target.value)
-                                            }
-                                        ></textarea>
-
-                                        {errors.address && (
-                                            <div className="invalid-feedback">
-                                                {errors.address}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Catatan
-                                        </label>
-
-                                        <textarea
-                                            className={`form-control ${
-                                                errors.note ? "is-invalid" : ""
-                                            }`}
-                                            rows="3"
-                                            value={note}
-                                            onChange={(e) =>
-                                                setNote(e.target.value)
-                                            }
-                                        ></textarea>
-
-                                        {errors.note && (
-                                            <div className="invalid-feedback">
-                                                {errors.note}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="form-check form-switch mb-4">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            checked={isActive}
-                                            onChange={(e) =>
-                                                setIsActive(e.target.checked)
-                                            }
-                                            id="supplierEditActive"
-                                        />
-
-                                        <label
-                                            className="form-check-label fw-bold"
-                                            htmlFor="supplierEditActive"
-                                        >
-                                            Supplier aktif
-                                        </label>
-                                    </div>
-
-                                    <div>
-                                        <button
-                                            type="submit"
-                                            className="btn btn-success shadow-sm rounded-sm"
-                                        >
-                                            <i className="fas fa-save me-2"></i>
-                                            PERBARUI
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<SaveOutlined />}
+                            loading={saving}
+                        >
+                            PERBARUI
+                        </Button>
+                    </form>
+                </Card>
             </LayoutAccount>
         </>
     );
