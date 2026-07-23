@@ -1,4 +1,16 @@
-import React from "react";
+import {
+    Alert,
+    Button,
+    Empty,
+    Flex,
+    InputNumber,
+    Select,
+    Table,
+    Typography,
+} from "antd";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+
+const { Text } = Typography;
 
 export default function ProductComponentBuilder({
     physicalProducts = [],
@@ -25,101 +37,97 @@ export default function ProductComponentBuilder({
         onChange(rows.filter((_, rowIndex) => rowIndex !== index));
     };
 
+    const productOptions = physicalProducts.map((product) => ({
+        value: String(product.id),
+        label: `${product.title} (${product.barcode}) — stok ${product.stock} ${product.unit}`,
+    }));
+
+    const columns = [
+        {
+            title: "Bahan Baku",
+            render: (_, row, index) => (
+                <Select
+                    showSearch
+                    optionFilterProp="label"
+                    style={{ width: "100%" }}
+                    placeholder="Pilih produk fisik"
+                    value={row.component_product_id || undefined}
+                    options={productOptions}
+                    onChange={(value) =>
+                        updateRow(index, "component_product_id", value)
+                    }
+                />
+            ),
+        },
+        {
+            title: "Qty / Unit Layanan",
+            width: 160,
+            render: (_, row, index) => (
+                <InputNumber
+                    min={0.0001}
+                    step={0.0001}
+                    style={{ width: "100%" }}
+                    value={row.qty_per_unit}
+                    onChange={(value) =>
+                        updateRow(index, "qty_per_unit", value ?? 1)
+                    }
+                />
+            ),
+        },
+        {
+            title: "",
+            width: 60,
+            align: "center",
+            render: (_, __, index) => (
+                <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => removeRow(index)}
+                    disabled={rows.length === 1}
+                />
+            ),
+        },
+    ];
+
     return (
-        <div className="mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-                <label className="fw-bold mb-0">Bahan Baku (Resep)</label>
-                <button
-                    type="button"
-                    className="btn btn-sm btn-outline-primary"
+        <div style={{ marginBottom: 24 }}>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
+                <Text strong>Bahan Baku (Resep)</Text>
+                <Button
+                    type="dashed"
+                    size="small"
+                    icon={<PlusOutlined />}
                     onClick={addRow}
                 >
-                    <i className="fas fa-plus me-1"></i>
                     Tambah Bahan
-                </button>
-            </div>
+                </Button>
+            </Flex>
 
-            <div className="alert alert-info py-2 small mb-3">
-                Setiap unit layanan yang terjual akan mengurangi stok bahan baku sesuai qty di bawah.
-            </div>
+            <Alert
+                type="info"
+                showIcon
+                message="Setiap unit layanan yang terjual akan mengurangi stok bahan baku sesuai qty di bawah."
+                style={{ marginBottom: 12 }}
+            />
 
             {errors.components && (
-                <div className="text-danger small mb-2">{errors.components}</div>
+                <Text type="danger" style={{ display: "block", marginBottom: 8 }}>
+                    {errors.components}
+                </Text>
             )}
 
             {rows.length === 0 ? (
-                <div className="border rounded-3 p-3 text-muted small">
-                    Belum ada bahan baku. Tambahkan minimal satu produk fisik.
-                </div>
+                <Empty description="Belum ada bahan baku. Tambahkan minimal satu produk fisik." />
             ) : (
-                <div className="table-responsive">
-                    <table className="table table-bordered align-middle mb-0">
-                        <thead className="table-light">
-                            <tr>
-                                <th>Bahan Baku</th>
-                                <th style={{ width: "160px" }}>Qty / Unit Layanan</th>
-                                <th style={{ width: "60px" }}></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rows.map((row, index) => (
-                                <tr key={index}>
-                                    <td>
-                                        <select
-                                            className="form-select"
-                                            value={row.component_product_id}
-                                            onChange={(e) =>
-                                                updateRow(
-                                                    index,
-                                                    "component_product_id",
-                                                    e.target.value,
-                                                )
-                                            }
-                                        >
-                                            <option value="">
-                                                -- Pilih Produk Fisik --
-                                            </option>
-                                            {physicalProducts.map((product) => (
-                                                <option
-                                                    key={product.id}
-                                                    value={product.id}
-                                                >
-                                                    {product.title} ({product.barcode}) — stok {product.stock} {product.unit}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input
-                                            type="number"
-                                            min="0.0001"
-                                            step="0.0001"
-                                            className="form-control"
-                                            value={row.qty_per_unit}
-                                            onChange={(e) =>
-                                                updateRow(
-                                                    index,
-                                                    "qty_per_unit",
-                                                    e.target.value,
-                                                )
-                                            }
-                                        />
-                                    </td>
-                                    <td className="text-center">
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-outline-danger"
-                                            onClick={() => removeRow(index)}
-                                            disabled={rows.length === 1}
-                                        >
-                                            <i className="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <Table
+                    size="small"
+                    rowKey={(_, index) => index}
+                    columns={columns}
+                    dataSource={rows}
+                    pagination={false}
+                    scroll={{ x: 600 }}
+                />
             )}
         </div>
     );

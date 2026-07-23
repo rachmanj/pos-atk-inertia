@@ -1,6 +1,23 @@
-import React from "react";
+import {
+    Button,
+    Flex,
+    InputNumber,
+    Radio,
+    Select,
+    Space,
+    Table,
+    Typography,
+} from "antd";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 
-export default function ProductUnitBuilder({ units = [], rows = [], onChange, errors = {} }) {
+const { Text } = Typography;
+
+export default function ProductUnitBuilder({
+    units = [],
+    rows = [],
+    onChange,
+    errors = {},
+}) {
     const updateRow = (index, field, value) => {
         const next = rows.map((row, rowIndex) => {
             if (rowIndex !== index) {
@@ -15,7 +32,10 @@ export default function ProductUnitBuilder({ units = [], rows = [], onChange, er
 
             return {
                 ...row,
-                [field]: field === "is_base_unit" || field === "is_default_sell" ? !!value : value,
+                [field]:
+                    field === "is_base_unit" || field === "is_default_sell"
+                        ? !!value
+                        : value,
             };
         });
 
@@ -40,62 +60,125 @@ export default function ProductUnitBuilder({ units = [], rows = [], onChange, er
         onChange(rows.filter((_, rowIndex) => rowIndex !== index));
     };
 
+    const unitOptions = units.map((unit) => ({
+        value: String(unit.id),
+        label: `${unit.name} (${unit.abbreviation})`,
+    }));
+
+    const columns = [
+        {
+            title: "Satuan",
+            width: 200,
+            render: (_, row, index) => (
+                <Select
+                    style={{ width: "100%" }}
+                    placeholder="Pilih"
+                    value={row.unit_id || undefined}
+                    options={unitOptions}
+                    onChange={(value) => updateRow(index, "unit_id", value)}
+                />
+            ),
+        },
+        {
+            title: "Konversi ke Base",
+            width: 140,
+            render: (_, row, index) => (
+                <InputNumber
+                    min={0.0001}
+                    step={0.0001}
+                    style={{ width: "100%" }}
+                    value={row.conversion_factor}
+                    onChange={(value) =>
+                        updateRow(index, "conversion_factor", value ?? 1)
+                    }
+                />
+            ),
+        },
+        {
+            title: "Harga Jual",
+            width: 140,
+            render: (_, row, index) => (
+                <InputNumber
+                    min={0}
+                    style={{ width: "100%" }}
+                    value={row.sell_price}
+                    onChange={(value) =>
+                        updateRow(index, "sell_price", value ?? 0)
+                    }
+                />
+            ),
+        },
+        {
+            title: "Base",
+            width: 70,
+            align: "center",
+            render: (_, row, index) => (
+                <Radio
+                    checked={!!row.is_base_unit}
+                    onChange={() => updateRow(index, "is_base_unit", true)}
+                />
+            ),
+        },
+        {
+            title: "Default Jual",
+            width: 100,
+            align: "center",
+            render: (_, row, index) => (
+                <Radio
+                    checked={!!row.is_default_sell}
+                    onChange={() => updateRow(index, "is_default_sell", true)}
+                />
+            ),
+        },
+        {
+            title: "",
+            width: 60,
+            align: "center",
+            render: (_, __, index) => (
+                <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => removeRow(index)}
+                    disabled={rows.length === 1}
+                />
+            ),
+        },
+    ];
+
     return (
-        <div className="mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-1">
-                <label className="fw-bold mb-0">Satuan & Harga Jual</label>
-                <button type="button" className="btn btn-sm btn-outline-primary" onClick={addRow}>
-                    <i className="fas fa-plus me-1"></i> Tambah Satuan
-                </button>
-            </div>
-            <small className="d-block text-muted mb-2">Harga jual per satuan; satuan default dipakai di POS dan daftar produk.</small>
-            {errors.product_units && <div className="text-danger small mb-2">{errors.product_units}</div>}
-            <div className="table-responsive">
-                <table className="table table-bordered table-sm">
-                    <thead className="table-light">
-                        <tr>
-                            <th>Satuan</th>
-                            <th>Konversi ke Base</th>
-                            <th>Harga Jual</th>
-                            <th>Base</th>
-                            <th>Default Jual</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows.map((row, index) => (
-                            <tr key={index}>
-                                <td>
-                                    <select className="form-select form-select-sm" value={row.unit_id} onChange={(e) => updateRow(index, "unit_id", e.target.value)} required>
-                                        <option value="">Pilih</option>
-                                        {units.map((unit) => (
-                                            <option key={unit.id} value={unit.id}>{unit.name} ({unit.abbreviation})</option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="number" min="0.0001" step="0.0001" className="form-control form-control-sm" value={row.conversion_factor} onChange={(e) => updateRow(index, "conversion_factor", e.target.value)} />
-                                </td>
-                                <td>
-                                    <input type="number" min="0" className="form-control form-control-sm" value={row.sell_price} onChange={(e) => updateRow(index, "sell_price", e.target.value)} />
-                                </td>
-                                <td className="text-center">
-                                    <input type="radio" name="base_unit" checked={!!row.is_base_unit} onChange={() => updateRow(index, "is_base_unit", true)} />
-                                </td>
-                                <td className="text-center">
-                                    <input type="radio" name="default_sell" checked={!!row.is_default_sell} onChange={() => updateRow(index, "is_default_sell", true)} />
-                                </td>
-                                <td>
-                                    <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeRow(index)} disabled={rows.length === 1}>
-                                        <i className="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            <small className="text-muted">Contoh: 1 box = 40 pcs → konversi 40 jika base unit adalah pcs.</small>
+        <div style={{ marginBottom: 24 }}>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 4 }}>
+                <Text strong>Satuan & Harga Jual</Text>
+                <Button
+                    type="dashed"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={addRow}
+                >
+                    Tambah Satuan
+                </Button>
+            </Flex>
+            <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
+                Harga jual per satuan; satuan default dipakai di POS dan daftar
+                produk.
+            </Text>
+            {errors.product_units && (
+                <Text type="danger" style={{ display: "block", marginBottom: 8 }}>
+                    {errors.product_units}
+                </Text>
+            )}
+            <Table
+                size="small"
+                rowKey={(_, index) => index}
+                columns={columns}
+                dataSource={rows}
+                pagination={false}
+                scroll={{ x: 700 }}
+            />
+            <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
+                Contoh: 1 box = 40 pcs → konversi 40 jika base unit adalah pcs.
+            </Text>
         </div>
     );
 }

@@ -6,6 +6,28 @@ import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import {
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Input,
+    Row,
+    Select,
+    Space,
+    Statistic,
+    Table,
+    Tag,
+    Typography,
+} from "antd";
+import {
+    EyeOutlined,
+    FileExcelOutlined,
+    FilterOutlined,
+    LineChartOutlined,
+    ReloadOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+import {
     LineChart,
     Line,
     BarChart,
@@ -18,6 +40,8 @@ import {
     ResponsiveContainer,
 } from "recharts";
 
+const { Title, Text } = Typography;
+
 const paymentMethodLabels = {
     cash: "Tunai",
     digital: "Digital",
@@ -25,11 +49,11 @@ const paymentMethodLabels = {
     transfer: "Transfer",
 };
 
-const paymentMethodBadges = {
-    cash: "badge bg-success shadow-sm",
-    digital: "badge bg-primary shadow-sm",
-    qris: "badge bg-info text-dark shadow-sm",
-    transfer: "badge bg-warning text-dark shadow-sm",
+const paymentMethodColors = {
+    cash: "success",
+    digital: "blue",
+    qris: "cyan",
+    transfer: "warning",
 };
 
 export default function SalesReport() {
@@ -50,19 +74,20 @@ export default function SalesReport() {
     const [startDate, setStartDate] = useState(filters.start_date || "");
     const [endDate, setEndDate] = useState(filters.end_date || "");
     const [paymentMethod, setPaymentMethod] = useState(
-        filters.payment_method || "",
+        filters.payment_method || undefined,
     );
-    const [cashierId, setCashierId] = useState(filters.cashier_id || "");
+    const [cashierId, setCashierId] = useState(
+        filters.cashier_id || undefined,
+    );
 
     const handleFilter = (e) => {
         e.preventDefault();
-
         router.get("/account/reports/sales", {
             q: search,
             start_date: startDate,
             end_date: endDate,
-            payment_method: paymentMethod,
-            cashier_id: cashierId,
+            payment_method: paymentMethod || "",
+            cashier_id: cashierId || "",
         });
     };
 
@@ -70,9 +95,8 @@ export default function SalesReport() {
         setSearch("");
         setStartDate(filters.start_date || "");
         setEndDate(filters.end_date || "");
-        setPaymentMethod("");
-        setCashierId("");
-
+        setPaymentMethod(undefined);
+        setCashierId(undefined);
         router.get("/account/reports/sales");
     };
 
@@ -83,13 +107,13 @@ export default function SalesReport() {
             q: search,
             start_date: start,
             end_date: end,
-            payment_method: paymentMethod,
-            cashier_id: cashierId,
+            payment_method: paymentMethod || "",
+            cashier_id: cashierId || "",
         });
     };
 
     const handleExport = () => {
-        window.location.href = `/account/reports/sales/export?start_date=${startDate}&end_date=${endDate}&payment_method=${paymentMethod}&cashier_id=${cashierId}`;
+        window.location.href = `/account/reports/sales/export?start_date=${startDate}&end_date=${endDate}&payment_method=${paymentMethod || ""}&cashier_id=${cashierId || ""}`;
     };
 
     const formatChartRupiah = (value) => {
@@ -99,458 +123,387 @@ export default function SalesReport() {
     };
 
     const formatDate = (value) => {
-        if (!value) {
-            return "-";
-        }
-
+        if (!value) return "-";
         return new Date(value).toLocaleString("id-ID", {
             dateStyle: "medium",
             timeStyle: "short",
         });
     };
 
+    const columns = [
+        {
+            title: "No.",
+            width: 60,
+            align: "center",
+            render: (_, __, index) =>
+                index + 1 + (sales.current_page - 1) * sales.per_page,
+        },
+        {
+            title: "Invoice",
+            dataIndex: "invoice",
+            render: (invoice) => <Text strong style={{ color: "#1677ff" }}>{invoice}</Text>,
+        },
+        {
+            title: "Tanggal Lunas",
+            render: (_, sale) =>
+                formatDate(sale.paid_at || sale.created_at),
+        },
+        {
+            title: "Kasir",
+            render: (_, sale) => sale.cashier?.name || "-",
+        },
+        {
+            title: "Customer",
+            render: (_, sale) => sale.customer?.name || "Umum",
+        },
+        {
+            title: "Metode",
+            align: "center",
+            render: (_, sale) => (
+                <Tag color={paymentMethodColors[sale.payment_method] || "default"}>
+                    {paymentMethodLabels[sale.payment_method] ||
+                        sale.payment_method ||
+                        "-"}
+                </Tag>
+            ),
+        },
+        {
+            title: "Item",
+            align: "center",
+            render: (_, sale) => (
+                <Text strong>{Number(sale.total_items || 0)}</Text>
+            ),
+        },
+        {
+            title: "Diskon",
+            align: "right",
+            render: (_, sale) => (
+                <Text type="danger">{formatRupiah(sale.discount)}</Text>
+            ),
+        },
+        {
+            title: "Total",
+            align: "right",
+            render: (_, sale) => (
+                <Text strong style={{ color: "#52c41a" }}>
+                    {formatRupiah(sale.grand_total)}
+                </Text>
+            ),
+        },
+        {
+            title: "Aksi",
+            width: 100,
+            align: "center",
+            render: (_, sale) =>
+                hasAnyPermission(["transactions.show"], permissions) ? (
+                    <Link href={`/account/transactions/${sale.invoice}`}>
+                        <Button size="small" icon={<EyeOutlined />}>
+                            Detail
+                        </Button>
+                    </Link>
+                ) : (
+                    "-"
+                ),
+        },
+    ];
+
     return (
         <>
             <Head title="Laporan Penjualan" />
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-chart-line me-2"></i>
-                                    LAPORAN PENJUALAN
-                                </h5>
-                                {hasAnyPermission(["reports.export"], permissions) && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-success btn-sm shadow-sm"
-                                        onClick={handleExport}
-                                    >
-                                        <i className="fas fa-file-excel me-1"></i>
-                                        Export Excel
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="card-body">
-                                <form onSubmit={handleFilter} className="mb-4">
-                                    <div className="row g-3">
-                                        <div className="col-lg-3">
-                                            <input
-                                                type="text"
-                                                className="form-control border-0 shadow-sm"
-                                                value={search}
-                                                onChange={(e) =>
-                                                    setSearch(e.target.value)
-                                                }
-                                                placeholder="Cari invoice, customer, atau kasir..."
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={startDate}
-                                                onChange={(e) =>
-                                                    setStartDate(e.target.value)
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={endDate}
-                                                onChange={(e) =>
-                                                    setEndDate(e.target.value)
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <select
-                                                className="form-select border-0 shadow-sm"
-                                                value={paymentMethod}
-                                                onChange={(e) =>
-                                                    setPaymentMethod(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            >
-                                                <option value="">
-                                                    Semua Metode
-                                                </option>
-                                                <option value="cash">
-                                                    Tunai
-                                                </option>
-                                                <option value="digital">
-                                                    Digital
-                                                </option>
-                                                <option value="qris">
-                                                    QRIS
-                                                </option>
-                                                <option value="transfer">
-                                                    Transfer
-                                                </option>
-                                            </select>
-                                        </div>
-
-                                        {isAdmin && (
-                                            <div className="col-lg-3">
-                                                <select
-                                                    className="form-select border-0 shadow-sm"
-                                                    value={cashierId}
-                                                    onChange={(e) =>
-                                                        setCashierId(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                >
-                                                    <option value="">
-                                                        Semua Kasir
-                                                    </option>
-                                                    {cashiers.map((cashier) => (
-                                                        <option
-                                                            key={cashier.id}
-                                                            value={cashier.id}
-                                                        >
-                                                            {cashier.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        <div className="col-lg-3 d-flex gap-2">
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary shadow-sm w-100"
-                                            >
-                                                <i className="fas fa-filter me-2"></i>
-                                                Filter
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className="btn btn-secondary shadow-sm w-100"
-                                                onClick={handleReset}
-                                            >
-                                                <i className="fas fa-sync-alt me-2"></i>
-                                                Reset
-                                            </button>
-                                        </div>
-
-                                        <div className="col-12">
-                                            <DatePreset onApply={handleDatePreset} />
-                                        </div>
-                                    </div>
-                                </form>
-
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-3">
-                                        <Link
-                                            href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&cashier_id=${cashierId}`}
-                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
-                                        >
-                                            <small className="text-muted">
-                                                Penjualan Bersih
-                                            </small>
-                                            <h6 className="fw-bold text-success mb-1">
-                                                {formatRupiah(
-                                                    summary.net_sales,
-                                                )}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Retur:{" "}
-                                                {formatRupiah(
-                                                    summary.total_returns,
-                                                )}
-                                            </small>
-                                        </Link>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">
-                                                Penjualan Kotor
-                                            </small>
-                                            <h6 className="fw-bold text-primary mb-1">
-                                                {formatRupiah(
-                                                    summary.total_sales,
-                                                )}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Diskon:{" "}
-                                                {formatRupiah(
-                                                    summary.total_discount,
-                                                )}
-                                                {" · "}
-                                                Tx: {summary.total_transactions}
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <Link
-                                            href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&payment_method=cash&cashier_id=${cashierId}`}
-                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
-                                        >
-                                            <small className="text-muted">
-                                                Tunai Bersih
-                                            </small>
-                                            <h6 className="fw-bold text-success mb-1">
-                                                {formatRupiah(
-                                                    summary.cash_sales,
-                                                )}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Digital:{" "}
-                                                {formatRupiah(
-                                                    summary.digital_sales,
-                                                )}
-                                            </small>
-                                        </Link>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <Link
-                                            href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&payment_method=qris&cashier_id=${cashierId}`}
-                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
-                                        >
-                                            <small className="text-muted">
-                                                QRIS Bersih
-                                            </small>
-                                            <h6 className="fw-bold text-info mb-1">
-                                                {formatRupiah(
-                                                    summary.qris_sales || 0,
-                                                )}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Transfer:{" "}
-                                                {formatRupiah(
-                                                    summary.transfer_sales || 0,
-                                                )}
-                                            </small>
-                                        </Link>
-                                    </div>
-                                </div>
-
-                                {/* Charts */}
-                                <div className="row g-3 mb-4">
-                                    <div className="col-lg-8">
-                                        <div className="border rounded-3 p-3">
-                                            <h6 className="fw-bold mb-3">
-                                                <i className="fas fa-chart-area me-2"></i>
-                                                Tren Penjualan Harian
-                                            </h6>
-                                            {salesByDay.length > 0 ? (
-                                                <ResponsiveContainer width="100%" height={300}>
-                                                    <LineChart data={salesByDay}>
-                                                        <CartesianGrid strokeDasharray="3 3" />
-                                                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                                                        <YAxis tickFormatter={formatChartRupiah} />
-                                                        <Tooltip
-                                                            formatter={(value) => [
-                                                                formatRupiah(value),
-                                                                "Total",
-                                                            ]}
-                                                        />
-                                                        <Legend />
-                                                        <Line
-                                                            type="monotone"
-                                                            dataKey="total"
-                                                            stroke="#0d6efd"
-                                                            strokeWidth={2}
-                                                            dot={{ r: 3 }}
-                                                            name="Omzet (Rp)"
-                                                        />
-                                                    </LineChart>
-                                                </ResponsiveContainer>
-                                            ) : (
-                                                <p className="text-muted text-center py-4">Belum ada data.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="col-lg-4">
-                                        <div className="border rounded-3 p-3">
-                                            <h6 className="fw-bold mb-3">
-                                                <i className="fas fa-clock me-2"></i>
-                                                Penjualan per Jam
-                                            </h6>
-                                            {salesByHour.length > 0 ? (
-                                                <ResponsiveContainer width="100%" height={300}>
-                                                    <BarChart data={salesByHour}>
-                                                        <CartesianGrid strokeDasharray="3 3" />
-                                                        <XAxis
-                                                            dataKey="hour"
-                                                            tick={{ fontSize: 11 }}
-                                                            label={{ value: "Jam", position: "insideBottom", offset: -5 }}
-                                                        />
-                                                        <YAxis tickFormatter={formatChartRupiah} />
-                                                        <Tooltip
-                                                            formatter={(value) => [
-                                                                formatRupiah(value),
-                                                                "Total",
-                                                            ]}
-                                                            labelFormatter={(label) => `Jam ${label}:00`}
-                                                        />
-                                                        <Bar dataKey="total" fill="#198754" name="Omzet (Rp)" radius={[4, 4, 0, 0]} />
-                                                    </BarChart>
-                                                </ResponsiveContainer>
-                                            ) : (
-                                                <p className="text-muted text-center py-4">Belum ada data.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="table-responsive">
-                                    <table className="table table-bordered align-middle mb-0">
-                                        <thead className="table-dark">
-                                            <tr>
-                                                <th style={{ width: "5%" }}>
-                                                    No.
-                                                </th>
-                                                <th>Invoice</th>
-                                                <th>Tanggal Lunas</th>
-                                                <th>Kasir</th>
-                                                <th>Customer</th>
-                                                <th className="text-center">
-                                                    Metode
-                                                </th>
-                                                <th className="text-center">
-                                                    Item
-                                                </th>
-                                                <th className="text-end">
-                                                    Diskon
-                                                </th>
-                                                <th className="text-end">
-                                                    Total
-                                                </th>
-                                                <th
-                                                    className="text-center"
-                                                    style={{ width: "12%" }}
-                                                >
-                                                    Aksi
-                                                </th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {sales.data.length > 0 ? (
-                                                sales.data.map(
-                                                    (sale, index) => (
-                                                        <tr key={sale.id}>
-                                                            <td className="fw-bold text-center">
-                                                                {index +
-                                                                    1 +
-                                                                    (sales.current_page -
-                                                                        1) *
-                                                                        sales.per_page}
-                                                            </td>
-                                                            <td className="fw-bold text-primary">
-                                                                {sale.invoice}
-                                                            </td>
-                                                            <td>
-                                                                {formatDate(
-                                                                    sale.paid_at ||
-                                                                        sale.created_at,
-                                                                )}
-                                                            </td>
-                                                            <td>
-                                                                {sale.cashier
-                                                                    ?.name ||
-                                                                    "-"}
-                                                            </td>
-                                                            <td>
-                                                                {sale.customer
-                                                                    ?.name ||
-                                                                    "Umum"}
-                                                            </td>
-                                                            <td className="text-center">
-                                                                <span
-                                                                    className={
-                                                                        paymentMethodBadges[
-                                                                            sale
-                                                                                .payment_method
-                                                                        ] ||
-                                                                        "badge bg-secondary shadow-sm"
-                                                                    }
-                                                                >
-                                                                    {paymentMethodLabels[
-                                                                        sale
-                                                                            .payment_method
-                                                                    ] ||
-                                                                        sale.payment_method ||
-                                                                        "-"}
-                                                                </span>
-                                                            </td>
-                                                            <td className="text-center fw-bold">
-                                                                {Number(
-                                                                    sale.total_items ||
-                                                                        0,
-                                                                )}
-                                                            </td>
-                                                            <td className="text-end text-danger">
-                                                                {formatRupiah(
-                                                                    sale.discount,
-                                                                )}
-                                                            </td>
-                                                            <td className="text-end fw-bold text-success">
-                                                                {formatRupiah(
-                                                                    sale.grand_total,
-                                                                )}
-                                                            </td>
-                                                            <td className="text-center">
-                                                                {hasAnyPermission(
-                                                                    [
-                                                                        "transactions.show",
-                                                                    ],
-                                                                    permissions,
-                                                                ) ? (
-                                                                    <Link
-                                                                        href={`/account/transactions/${sale.invoice}`}
-                                                                        className="btn btn-secondary btn-sm shadow-sm"
-                                                                    >
-                                                                        <i className="fas fa-eye me-1"></i>
-                                                                        Detail
-                                                                    </Link>
-                                                                ) : (
-                                                                    "-"
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ),
-                                                )
-                                            ) : (
-                                                <tr>
-                                                    <td
-                                                        colSpan="10"
-                                                        className="text-center py-4"
-                                                    >
-                                                        Belum ada data penjualan
-                                                        untuk filter ini.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="mt-4">
-                                    <Pagination
-                                        links={sales.links}
-                                        align="end"
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <LineChartOutlined style={{ marginRight: 8 }} />
+                            LAPORAN PENJUALAN
+                        </Title>
+                    }
+                    extra={
+                        hasAnyPermission(["reports.export"], permissions) && (
+                            <Button
+                                type="primary"
+                                icon={<FileExcelOutlined />}
+                                onClick={handleExport}
+                            >
+                                Export Excel
+                            </Button>
+                        )
+                    }
+                >
+                    <form onSubmit={handleFilter}>
+                        <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                            <Col xs={24} lg={6}>
+                                <Input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari invoice, customer, atau kasir..."
+                                    allowClear
+                                />
+                            </Col>
+                            <Col xs={12} lg={4}>
+                                <DatePicker
+                                    style={{ width: "100%" }}
+                                    placeholder="Tanggal mulai"
+                                    format="DD/MM/YYYY"
+                                    value={startDate ? dayjs(startDate) : null}
+                                    onChange={(date) =>
+                                        setStartDate(
+                                            date
+                                                ? date.format("YYYY-MM-DD")
+                                                : "",
+                                        )
+                                    }
+                                />
+                            </Col>
+                            <Col xs={12} lg={4}>
+                                <DatePicker
+                                    style={{ width: "100%" }}
+                                    placeholder="Tanggal akhir"
+                                    format="DD/MM/YYYY"
+                                    value={endDate ? dayjs(endDate) : null}
+                                    onChange={(date) =>
+                                        setEndDate(
+                                            date
+                                                ? date.format("YYYY-MM-DD")
+                                                : "",
+                                        )
+                                    }
+                                />
+                            </Col>
+                            <Col xs={24} lg={4}>
+                                <Select
+                                    style={{ width: "100%" }}
+                                    placeholder="Semua Metode"
+                                    allowClear
+                                    value={paymentMethod}
+                                    onChange={setPaymentMethod}
+                                    options={[
+                                        { value: "cash", label: "Tunai" },
+                                        { value: "digital", label: "Digital" },
+                                        { value: "qris", label: "QRIS" },
+                                        { value: "transfer", label: "Transfer" },
+                                    ]}
+                                />
+                            </Col>
+                            {isAdmin && (
+                                <Col xs={24} lg={4}>
+                                    <Select
+                                        style={{ width: "100%" }}
+                                        placeholder="Semua Kasir"
+                                        allowClear
+                                        value={cashierId}
+                                        onChange={setCashierId}
+                                        options={cashiers.map((cashier) => ({
+                                            value: String(cashier.id),
+                                            label: cashier.name,
+                                        }))}
                                     />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                </Col>
+                            )}
+                            <Col xs={24} lg={isAdmin ? 6 : 6}>
+                                <Space>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        icon={<FilterOutlined />}
+                                    >
+                                        Filter
+                                    </Button>
+                                    <Button
+                                        icon={<ReloadOutlined />}
+                                        onClick={handleReset}
+                                    >
+                                        Reset
+                                    </Button>
+                                </Space>
+                            </Col>
+                            <Col span={24}>
+                                <DatePreset onApply={handleDatePreset} />
+                            </Col>
+                        </Row>
+                    </form>
+
+                    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                        <Col xs={24} sm={12} md={6}>
+                            <Link
+                                href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&cashier_id=${cashierId || ""}`}
+                            >
+                                <Card size="small" hoverable>
+                                    <Statistic
+                                        title="Penjualan Bersih"
+                                        value={formatRupiah(summary.net_sales)}
+                                        valueStyle={{
+                                            color: "#52c41a",
+                                            fontSize: 18,
+                                        }}
+                                    />
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Retur: {formatRupiah(summary.total_returns)}
+                                    </Text>
+                                </Card>
+                            </Link>
+                        </Col>
+                        <Col xs={24} sm={12} md={6}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Penjualan Kotor"
+                                    value={formatRupiah(summary.total_sales)}
+                                    valueStyle={{ color: "#1677ff", fontSize: 18 }}
+                                />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Diskon: {formatRupiah(summary.total_discount)} ·
+                                    Tx: {summary.total_transactions}
+                                </Text>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} md={6}>
+                            <Link
+                                href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&payment_method=cash&cashier_id=${cashierId || ""}`}
+                            >
+                                <Card size="small" hoverable>
+                                    <Statistic
+                                        title="Tunai Bersih"
+                                        value={formatRupiah(summary.cash_sales)}
+                                        valueStyle={{
+                                            color: "#52c41a",
+                                            fontSize: 18,
+                                        }}
+                                    />
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Digital:{" "}
+                                        {formatRupiah(summary.digital_sales)}
+                                    </Text>
+                                </Card>
+                            </Link>
+                        </Col>
+                        <Col xs={24} sm={12} md={6}>
+                            <Link
+                                href={`/account/reports/sales?start_date=${startDate}&end_date=${endDate}&payment_method=qris&cashier_id=${cashierId || ""}`}
+                            >
+                                <Card size="small" hoverable>
+                                    <Statistic
+                                        title="QRIS Bersih"
+                                        value={formatRupiah(summary.qris_sales || 0)}
+                                        valueStyle={{ color: "#13c2c2", fontSize: 18 }}
+                                    />
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Transfer:{" "}
+                                        {formatRupiah(summary.transfer_sales || 0)}
+                                    </Text>
+                                </Card>
+                            </Link>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                        <Col xs={24} lg={16}>
+                            <Card
+                                size="small"
+                                title="Tren Penjualan Harian"
+                            >
+                                {salesByDay.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <LineChart data={salesByDay}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis
+                                                dataKey="date"
+                                                tick={{ fontSize: 11 }}
+                                            />
+                                            <YAxis
+                                                tickFormatter={formatChartRupiah}
+                                            />
+                                            <Tooltip
+                                                formatter={(value) => [
+                                                    formatRupiah(value),
+                                                    "Total",
+                                                ]}
+                                            />
+                                            <Legend />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="total"
+                                                stroke="#1677ff"
+                                                strokeWidth={2}
+                                                dot={{ r: 3 }}
+                                                name="Omzet (Rp)"
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            display: "block",
+                                            textAlign: "center",
+                                            padding: 32,
+                                        }}
+                                    >
+                                        Belum ada data.
+                                    </Text>
+                                )}
+                            </Card>
+                        </Col>
+                        <Col xs={24} lg={8}>
+                            <Card size="small" title="Penjualan per Jam">
+                                {salesByHour.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={salesByHour}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis
+                                                dataKey="hour"
+                                                tick={{ fontSize: 11 }}
+                                            />
+                                            <YAxis
+                                                tickFormatter={formatChartRupiah}
+                                            />
+                                            <Tooltip
+                                                formatter={(value) => [
+                                                    formatRupiah(value),
+                                                    "Total",
+                                                ]}
+                                                labelFormatter={(label) =>
+                                                    `Jam ${label}:00`
+                                                }
+                                            />
+                                            <Bar
+                                                dataKey="total"
+                                                fill="#52c41a"
+                                                name="Omzet (Rp)"
+                                                radius={[4, 4, 0, 0]}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            display: "block",
+                                            textAlign: "center",
+                                            padding: 32,
+                                        }}
+                                    >
+                                        Belum ada data.
+                                    </Text>
+                                )}
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={sales.data}
+                        pagination={false}
+                        scroll={{ x: 1000 }}
+                        locale={{
+                            emptyText:
+                                "Belum ada data penjualan untuk filter ini.",
+                        }}
+                    />
+
+                    <Pagination links={sales.links} meta={sales} align="end" />
+                </Card>
             </LayoutAccount>
         </>
     );

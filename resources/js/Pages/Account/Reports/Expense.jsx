@@ -6,15 +6,40 @@ import { formatRupiah } from "../../../Utils/format";
 import { Head, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import {
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Input,
+    Row,
+    Select,
+    Space,
+    Statistic,
+    Table,
+    Tag,
+    Typography,
+} from "antd";
+import {
+    CalendarOutlined,
+    FileExcelOutlined,
+    FilterOutlined,
+    FileTextOutlined,
+    ReloadOutlined,
+    TagsOutlined,
+    UnorderedListOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+import {
     BarChart,
     Bar,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
     ResponsiveContainer,
 } from "recharts";
+
+const { Title, Text } = Typography;
 
 export default function ExpenseReport() {
     const {
@@ -34,8 +59,10 @@ export default function ExpenseReport() {
     const [search, setSearch] = useState(filters.q || "");
     const [startDate, setStartDate] = useState(filters.start_date || "");
     const [endDate, setEndDate] = useState(filters.end_date || "");
-    const [category, setCategory] = useState(filters.category || "");
-    const [cashierId, setCashierId] = useState(filters.cashier_id || "");
+    const [category, setCategory] = useState(filters.category || undefined);
+    const [cashierId, setCashierId] = useState(
+        filters.cashier_id || undefined,
+    );
 
     const handleFilter = (e) => {
         e.preventDefault();
@@ -43,8 +70,8 @@ export default function ExpenseReport() {
             q: search,
             start_date: startDate,
             end_date: endDate,
-            category: category,
-            cashier_id: cashierId,
+            category: category || "",
+            cashier_id: cashierId || "",
         });
     };
 
@@ -52,8 +79,8 @@ export default function ExpenseReport() {
         setSearch("");
         setStartDate("");
         setEndDate("");
-        setCategory("");
-        setCashierId("");
+        setCategory(undefined);
+        setCashierId(undefined);
         router.get("/account/reports/expense");
     };
 
@@ -64,8 +91,8 @@ export default function ExpenseReport() {
             q: search,
             start_date: start,
             end_date: end,
-            category: category,
-            cashier_id: cashierId,
+            category: category || "",
+            cashier_id: cashierId || "",
         });
     };
 
@@ -74,8 +101,8 @@ export default function ExpenseReport() {
             q: search,
             start_date: startDate,
             end_date: endDate,
-            category: category,
-            cashier_id: cashierId,
+            category: category || "",
+            cashier_id: cashierId || "",
         });
         window.location.href = `/account/reports/expense/export?${params.toString()}`;
     };
@@ -86,240 +113,329 @@ export default function ExpenseReport() {
         return value;
     };
 
+    const columns = [
+        {
+            title: "No.",
+            width: 60,
+            align: "center",
+            render: (_, __, index) =>
+                index + 1 + (expenses.current_page - 1) * expenses.per_page,
+        },
+        {
+            title: "Kode",
+            dataIndex: "code",
+            render: (code) => <Text style={{ color: "#1677ff" }}>{code}</Text>,
+        },
+        {
+            title: "Tanggal",
+            dataIndex: "expense_date",
+        },
+        {
+            title: "Kategori",
+            dataIndex: "category",
+            render: (cat) => <Tag>{cat}</Tag>,
+        },
+        {
+            title: "Judul",
+            dataIndex: "title",
+            render: (title) => <Text strong>{title}</Text>,
+        },
+        {
+            title: "Staff",
+            render: (_, expense) => expense.user?.name ?? "-",
+        },
+        {
+            title: "Jumlah",
+            align: "right",
+            render: (_, expense) => (
+                <Text strong type="danger">
+                    {formatRupiah(expense.amount)}
+                </Text>
+            ),
+        },
+    ];
+
     return (
         <>
             <Head title="Laporan Pengeluaran" />
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-receipt me-2"></i>
-                                    LAPORAN PENGELUARAN
-                                </h5>
-                                {hasAnyPermission(["reports.export"], permissions) && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-success btn-sm shadow-sm"
-                                        onClick={handleExport}
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <FileTextOutlined style={{ marginRight: 8 }} />
+                            LAPORAN PENGELUARAN
+                        </Title>
+                    }
+                    extra={
+                        hasAnyPermission(["reports.export"], permissions) && (
+                            <Button
+                                type="primary"
+                                icon={<FileExcelOutlined />}
+                                onClick={handleExport}
+                            >
+                                Export Excel
+                            </Button>
+                        )
+                    }
+                >
+                    <form onSubmit={handleFilter}>
+                        <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                            <Col xs={24} lg={6}>
+                                <Input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari pengeluaran..."
+                                    allowClear
+                                />
+                            </Col>
+                            <Col xs={12} lg={4}>
+                                <DatePicker
+                                    style={{ width: "100%" }}
+                                    placeholder="Tanggal mulai"
+                                    format="DD/MM/YYYY"
+                                    value={startDate ? dayjs(startDate) : null}
+                                    onChange={(date) =>
+                                        setStartDate(
+                                            date
+                                                ? date.format("YYYY-MM-DD")
+                                                : "",
+                                        )
+                                    }
+                                />
+                            </Col>
+                            <Col xs={12} lg={4}>
+                                <DatePicker
+                                    style={{ width: "100%" }}
+                                    placeholder="Tanggal akhir"
+                                    format="DD/MM/YYYY"
+                                    value={endDate ? dayjs(endDate) : null}
+                                    onChange={(date) =>
+                                        setEndDate(
+                                            date
+                                                ? date.format("YYYY-MM-DD")
+                                                : "",
+                                        )
+                                    }
+                                />
+                            </Col>
+                            <Col xs={24} lg={4}>
+                                <Select
+                                    style={{ width: "100%" }}
+                                    placeholder="Semua Kategori"
+                                    allowClear
+                                    value={category}
+                                    onChange={setCategory}
+                                    options={categoryList.map((cat) => ({
+                                        value: cat,
+                                        label: cat,
+                                    }))}
+                                />
+                            </Col>
+                            {isAdmin && (
+                                <Col xs={24} lg={4}>
+                                    <Select
+                                        style={{ width: "100%" }}
+                                        placeholder="Semua Staff"
+                                        allowClear
+                                        value={cashierId}
+                                        onChange={setCashierId}
+                                        options={cashiers.map((c) => ({
+                                            value: String(c.id),
+                                            label: c.name,
+                                        }))}
+                                    />
+                                </Col>
+                            )}
+                            <Col xs={24} lg={isAdmin ? 6 : 6}>
+                                <Space>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        icon={<FilterOutlined />}
                                     >
-                                        <i className="far fa-file-excel me-1"></i>
-                                        Export Excel
-                                    </button>
+                                        Filter
+                                    </Button>
+                                    <Button
+                                        icon={<ReloadOutlined />}
+                                        onClick={handleReset}
+                                    >
+                                        Reset
+                                    </Button>
+                                </Space>
+                            </Col>
+                            <Col span={24}>
+                                <DatePreset onApply={handleDatePreset} />
+                            </Col>
+                        </Row>
+                    </form>
+
+                    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                        <Col xs={24} md={8}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Total Pengeluaran"
+                                    value={formatRupiah(summary.total_amount)}
+                                    valueStyle={{ color: "#ff4d4f", fontSize: 18 }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} md={8}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Jumlah Transaksi"
+                                    value={summary.total_count}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} md={8}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Rata-rata per Transaksi"
+                                    value={formatRupiah(
+                                        summary.avg_per_transaction,
+                                    )}
+                                />
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                        <Col xs={24} md={12}>
+                            <Card
+                                size="small"
+                                title={
+                                    <Space>
+                                        <TagsOutlined />
+                                        Pengeluaran per Kategori
+                                    </Space>
+                                }
+                            >
+                                {byCategory.length > 0 ? (
+                                    <ResponsiveContainer
+                                        width="100%"
+                                        height={280}
+                                    >
+                                        <BarChart
+                                            data={byCategory}
+                                            layout="vertical"
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis
+                                                type="number"
+                                                tickFormatter={formatChartRupiah}
+                                            />
+                                            <YAxis
+                                                type="category"
+                                                dataKey="category"
+                                                width={100}
+                                                tick={{ fontSize: 11 }}
+                                            />
+                                            <Tooltip
+                                                formatter={(value) => [
+                                                    formatRupiah(value),
+                                                    "Total",
+                                                ]}
+                                            />
+                                            <Bar
+                                                dataKey="total_amount"
+                                                fill="#ff4d4f"
+                                                name="Total"
+                                                radius={[0, 4, 4, 0]}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            display: "block",
+                                            textAlign: "center",
+                                            padding: 32,
+                                        }}
+                                    >
+                                        Belum ada data.
+                                    </Text>
                                 )}
-                            </div>
-
-                            <div className="card-body">
-                                <form onSubmit={handleFilter} className="mb-4">
-                                    <div className="row g-3">
-                                        <div className="col-lg-3">
-                                            <input
-                                                type="text"
-                                                className="form-control border-0 shadow-sm"
-                                                value={search}
-                                                onChange={(e) => setSearch(e.target.value)}
-                                                placeholder="Cari pengeluaran..."
+                            </Card>
+                        </Col>
+                        <Col xs={24} md={12}>
+                            <Card
+                                size="small"
+                                title={
+                                    <Space>
+                                        <CalendarOutlined />
+                                        Tren Bulanan
+                                    </Space>
+                                }
+                            >
+                                {byMonth.length > 0 ? (
+                                    <ResponsiveContainer
+                                        width="100%"
+                                        height={280}
+                                    >
+                                        <BarChart data={byMonth}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis
+                                                dataKey="month"
+                                                tick={{ fontSize: 11 }}
                                             />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={startDate}
-                                                onChange={(e) => setStartDate(e.target.value)}
+                                            <YAxis
+                                                tickFormatter={formatChartRupiah}
                                             />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={endDate}
-                                                onChange={(e) => setEndDate(e.target.value)}
+                                            <Tooltip
+                                                formatter={(value) => [
+                                                    formatRupiah(value),
+                                                    "Total",
+                                                ]}
                                             />
-                                        </div>
+                                            <Bar
+                                                dataKey="total_amount"
+                                                fill="#fa8c16"
+                                                name="Total"
+                                                radius={[4, 4, 0, 0]}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            display: "block",
+                                            textAlign: "center",
+                                            padding: 32,
+                                        }}
+                                    >
+                                        Belum ada data.
+                                    </Text>
+                                )}
+                            </Card>
+                        </Col>
+                    </Row>
 
-                                        <div className="col-lg-2">
-                                            <select
-                                                className="form-select border-0 shadow-sm"
-                                                value={category}
-                                                onChange={(e) => setCategory(e.target.value)}
-                                            >
-                                                <option value="">Semua Kategori</option>
-                                                {categoryList.map((cat) => (
-                                                    <option key={cat} value={cat}>
-                                                        {cat}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
+                    <Title level={5} style={{ marginBottom: 12 }}>
+                        <UnorderedListOutlined style={{ marginRight: 8 }} />
+                        Detail Pengeluaran
+                    </Title>
 
-                                        {isAdmin && (
-                                            <div className="col-lg-3">
-                                                <select
-                                                    className="form-select border-0 shadow-sm"
-                                                    value={cashierId}
-                                                    onChange={(e) => setCashierId(e.target.value)}
-                                                >
-                                                    <option value="">Semua Staff</option>
-                                                    {cashiers.map((c) => (
-                                                        <option key={c.id} value={c.id}>
-                                                            {c.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
+                    <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={expenses.data}
+                        pagination={false}
+                        scroll={{ x: 800 }}
+                        locale={{
+                            emptyText:
+                                "Belum ada data pengeluaran untuk filter ini.",
+                        }}
+                    />
 
-                                        <div className="col-lg-2 d-flex gap-2">
-                                            <button type="submit" className="btn btn-primary shadow-sm w-100">
-                                                <i className="fas fa-filter me-2"></i>Filter
-                                            </button>
-                                            <button type="button" className="btn btn-secondary shadow-sm w-100" onClick={handleReset}>
-                                                <i className="fas fa-sync-alt me-2"></i>Reset
-                                            </button>
-                                        </div>
-
-                                        <div className="col-12">
-                                            <DatePreset onApply={handleDatePreset} />
-                                        </div>
-                                    </div>
-                                </form>
-
-                                {/* Summary Cards */}
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-4">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">Total Pengeluaran</small>
-                                            <h6 className="fw-bold text-danger mb-1">{formatRupiah(summary.total_amount)}</h6>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-4">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">Jumlah Transaksi</small>
-                                            <h6 className="fw-bold mb-1">{summary.total_count}</h6>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-4">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">Rata-rata per Transaksi</small>
-                                            <h6 className="fw-bold mb-1">{formatRupiah(summary.avg_per_transaction)}</h6>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Charts */}
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-6">
-                                        <div className="border rounded-3 p-3">
-                                            <h6 className="fw-bold mb-3">
-                                                <i className="fas fa-tags me-2"></i>
-                                                Pengeluaran per Kategori
-                                            </h6>
-                                            {byCategory.length > 0 ? (
-                                                <ResponsiveContainer width="100%" height={280}>
-                                                    <BarChart data={byCategory} layout="vertical">
-                                                        <CartesianGrid strokeDasharray="3 3" />
-                                                        <XAxis type="number" tickFormatter={formatChartRupiah} />
-                                                        <YAxis type="category" dataKey="category" width={100} tick={{ fontSize: 11 }} />
-                                                        <Tooltip
-                                                            formatter={(value) => [
-                                                                formatRupiah(value),
-                                                                "Total",
-                                                            ]}
-                                                        />
-                                                        <Bar dataKey="total_amount" fill="#dc3545" name="Total" radius={[0, 4, 4, 0]} />
-                                                    </BarChart>
-                                                </ResponsiveContainer>
-                                            ) : (
-                                                <p className="text-muted text-center py-4">Belum ada data.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div className="border rounded-3 p-3">
-                                            <h6 className="fw-bold mb-3">
-                                                <i className="fas fa-calendar-alt me-2"></i>
-                                                Tren Bulanan
-                                            </h6>
-                                            {byMonth.length > 0 ? (
-                                                <ResponsiveContainer width="100%" height={280}>
-                                                    <BarChart data={byMonth}>
-                                                        <CartesianGrid strokeDasharray="3 3" />
-                                                        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                                                        <YAxis tickFormatter={formatChartRupiah} />
-                                                        <Tooltip
-                                                            formatter={(value) => [
-                                                                formatRupiah(value),
-                                                                "Total",
-                                                            ]}
-                                                        />
-                                                        <Bar dataKey="total_amount" fill="#fd7e14" name="Total" radius={[4, 4, 0, 0]} />
-                                                    </BarChart>
-                                                </ResponsiveContainer>
-                                            ) : (
-                                                <p className="text-muted text-center py-4">Belum ada data.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Detail Table */}
-                                <h6 className="fw-bold mb-3">
-                                    <i className="fas fa-list me-2"></i>
-                                    Detail Pengeluaran
-                                </h6>
-                                <div className="table-responsive">
-                                    <table className="table table-bordered align-middle mb-0">
-                                        <thead className="table-dark">
-                                            <tr>
-                                                <th style={{ width: "5%" }}>No.</th>
-                                                <th>Kode</th>
-                                                <th>Tanggal</th>
-                                                <th>Kategori</th>
-                                                <th>Judul</th>
-                                                <th>Staff</th>
-                                                <th className="text-end">Jumlah</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {expenses.data.length > 0 ? (
-                                                expenses.data.map((expense, index) => (
-                                                    <tr key={expense.id}>
-                                                        <td className="fw-bold text-center">
-                                                            {index + 1 + (expenses.current_page - 1) * expenses.per_page}
-                                                        </td>
-                                                        <td className="text-primary">{expense.code}</td>
-                                                        <td>{expense.expense_date}</td>
-                                                        <td>
-                                                            <span className="badge bg-secondary shadow-sm">{expense.category}</span>
-                                                        </td>
-                                                        <td className="fw-bold">{expense.title}</td>
-                                                        <td>{expense.user?.name ?? "-"}</td>
-                                                        <td className="text-end text-danger fw-bold">{formatRupiah(expense.amount)}</td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <tr>
-                                                    <td colSpan="7" className="text-center py-4">
-                                                        Belum ada data pengeluaran untuk filter ini.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="mt-4">
-                                    <Pagination links={expenses.links} align="end" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <Pagination
+                        links={expenses.links}
+                        meta={expenses}
+                        align="end"
+                    />
+                </Card>
             </LayoutAccount>
         </>
     );

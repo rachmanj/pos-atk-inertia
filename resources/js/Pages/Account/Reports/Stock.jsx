@@ -5,6 +5,30 @@ import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import {
+    Button,
+    Card,
+    Col,
+    Input,
+    InputNumber,
+    Row,
+    Select,
+    Space,
+    Statistic,
+    Table,
+    Tag,
+    Typography,
+} from "antd";
+import {
+    FileExcelOutlined,
+    FilterOutlined,
+    HistoryOutlined,
+    InboxOutlined,
+    ReloadOutlined,
+    SlidersOutlined,
+} from "@ant-design/icons";
+
+const { Title, Text } = Typography;
 
 const movementTypeLabels = {
     in: "Masuk",
@@ -12,25 +36,10 @@ const movementTypeLabels = {
     adjustment: "Penyesuaian",
 };
 
-const getStockBadge = (stock, threshold) => {
-    if (stock <= 0) {
-        return {
-            label: "Habis",
-            className: "badge bg-danger shadow-sm",
-        };
-    }
-
-    if (stock <= threshold) {
-        return {
-            label: "Menipis",
-            className: "badge bg-warning text-dark shadow-sm",
-        };
-    }
-
-    return {
-        label: "Aman",
-        className: "badge bg-success shadow-sm",
-    };
+const getStockTag = (stock, threshold) => {
+    if (stock <= 0) return { label: "Habis", color: "error" };
+    if (stock <= threshold) return { label: "Menipis", color: "warning" };
+    return { label: "Aman", color: "success" };
 };
 
 export default function StockReport() {
@@ -45,8 +54,12 @@ export default function StockReport() {
     const permissions = auth.permissions || {};
 
     const [search, setSearch] = useState(filters.q || "");
-    const [categoryId, setCategoryId] = useState(filters.category_id || "");
-    const [stockStatus, setStockStatus] = useState(filters.stock_status || "");
+    const [categoryId, setCategoryId] = useState(
+        filters.category_id || undefined,
+    );
+    const [stockStatus, setStockStatus] = useState(
+        filters.stock_status || undefined,
+    );
     const [lowThreshold, setLowThreshold] = useState(
         filters.low_threshold || 10,
     );
@@ -56,11 +69,10 @@ export default function StockReport() {
 
     const handleFilter = (e) => {
         e.preventDefault();
-
         router.get("/account/reports/stock", {
             q: search,
-            category_id: categoryId,
-            stock_status: stockStatus,
+            category_id: categoryId || "",
+            stock_status: stockStatus || "",
             low_threshold: lowThreshold,
             dead_stock_days: deadStockDays,
         });
@@ -68,534 +80,431 @@ export default function StockReport() {
 
     const handleReset = () => {
         setSearch("");
-        setCategoryId("");
-        setStockStatus("");
+        setCategoryId(undefined);
+        setStockStatus(undefined);
         setLowThreshold(10);
         setDeadStockDays(90);
-
         router.get("/account/reports/stock");
     };
 
     const handleExport = () => {
         const params = new URLSearchParams({
             q: search,
-            category_id: categoryId,
-            stock_status: stockStatus,
+            category_id: categoryId || "",
+            stock_status: stockStatus || "",
             low_threshold: lowThreshold,
             dead_stock_days: deadStockDays,
         });
-
         window.location.href = `/account/reports/stock/export?${params.toString()}`;
     };
 
     const formatDate = (value) => {
-        if (!value) {
-            return "-";
-        }
-
+        if (!value) return "-";
         return new Date(value).toLocaleString("id-ID", {
             dateStyle: "medium",
             timeStyle: "short",
         });
     };
 
+    const columns = [
+        {
+            title: "No.",
+            width: 60,
+            align: "center",
+            render: (_, __, index) =>
+                index + 1 + (products.current_page - 1) * products.per_page,
+        },
+        {
+            title: "Produk",
+            render: (_, product) => (
+                <>
+                    <Text strong style={{ color: "#1677ff" }}>
+                        {product.title}
+                    </Text>
+                    <div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                            {product.barcode || "-"}
+                        </Text>
+                    </div>
+                </>
+            ),
+        },
+        {
+            title: "Kategori",
+            render: (_, product) => product.category?.name || "-",
+        },
+        {
+            title: "Stok",
+            align: "center",
+            render: (_, product) => (
+                <Text strong>
+                    {product.stock}{" "}
+                    <Text type="secondary">{product.unit || "pcs"}</Text>
+                </Text>
+            ),
+        },
+        {
+            title: "HPP (WAC)",
+            align: "right",
+            render: (_, product) => formatRupiah(product.avg_cost),
+        },
+        {
+            title: "Harga Jual (base)",
+            align: "right",
+            render: (_, product) => formatRupiah(product.sell_price),
+        },
+        {
+            title: "Nilai Modal",
+            align: "right",
+            render: (_, product) => (
+                <Text strong style={{ color: "#52c41a" }}>
+                    {formatRupiah(product.inventory_cost_value)}
+                </Text>
+            ),
+        },
+        {
+            title: "Status",
+            align: "center",
+            render: (_, product) => {
+                const badge = getStockTag(
+                    product.stock,
+                    Number(filters.low_threshold),
+                );
+                return (
+                    <Space wrap size={4}>
+                        {product.is_dead_stock && (
+                            <Tag color="default">Dead</Tag>
+                        )}
+                        {product.needs_reorder && (
+                            <Tag color="warning">Reorder</Tag>
+                        )}
+                        <Tag color={badge.color}>{badge.label}</Tag>
+                    </Space>
+                );
+            },
+        },
+        {
+            title: "Terakhir Keluar",
+            align: "center",
+            render: (_, product) => {
+                if (product.days_since_last_out === null) {
+                    return product.stock > 0 ? (
+                        <Tag color="default">Belum pernah</Tag>
+                    ) : (
+                        "-"
+                    );
+                }
+                return (
+                    <Tag
+                        color={
+                            product.is_dead_stock
+                                ? "default"
+                                : product.days_since_last_out > 30
+                                  ? "warning"
+                                  : "success"
+                        }
+                    >
+                        {product.days_since_last_out} hari
+                    </Tag>
+                );
+            },
+        },
+        {
+            title: "Pergerakan Terakhir",
+            render: (_, product) =>
+                product.latest_movement ? (
+                    <>
+                        <Text strong>
+                            {product.latest_movement.source_label}
+                            {product.latest_movement.type
+                                ? ` / ${
+                                      movementTypeLabels[
+                                          product.latest_movement.type
+                                      ] || product.latest_movement.type
+                                  }`
+                                : ""}
+                        </Text>
+                        <div>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                {formatDate(
+                                    product.latest_movement.created_at,
+                                )}
+                            </Text>
+                        </div>
+                        <div>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                {product.latest_movement.user?.name || "-"}
+                            </Text>
+                        </div>
+                    </>
+                ) : (
+                    <Text type="secondary">Belum ada</Text>
+                ),
+        },
+        {
+            title: "Aksi",
+            width: 180,
+            align: "center",
+            render: (_, product) => {
+                const canViewMovement = hasAnyPermission(
+                    ["stock_movements.index"],
+                    permissions,
+                );
+                const canAdjustStock = hasAnyPermission(
+                    ["stock_movements.create"],
+                    permissions,
+                );
+
+                if (!canViewMovement && !canAdjustStock) return "-";
+
+                return (
+                    <Space>
+                        {canViewMovement && (
+                            <Link
+                                href={`/account/stock-movements?q=${encodeURIComponent(product.barcode || product.title)}`}
+                            >
+                                <Button
+                                    size="small"
+                                    icon={<HistoryOutlined />}
+                                >
+                                    Riwayat
+                                </Button>
+                            </Link>
+                        )}
+                        {canAdjustStock && (
+                            <Link
+                                href={`/account/stock-movements/create?product_id=${product.id}`}
+                            >
+                                <Button
+                                    size="small"
+                                    type="primary"
+                                    icon={<SlidersOutlined />}
+                                >
+                                    Sesuaikan
+                                </Button>
+                            </Link>
+                        )}
+                    </Space>
+                );
+            },
+        },
+    ];
+
     return (
         <>
             <Head title="Laporan Stok" />
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-boxes me-2"></i>
-                                    LAPORAN STOK
-                                </h5>
-                                {hasAnyPermission(["reports.export"], permissions) && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-success btn-sm shadow-sm"
-                                        onClick={handleExport}
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <InboxOutlined style={{ marginRight: 8 }} />
+                            LAPORAN STOK
+                        </Title>
+                    }
+                    extra={
+                        hasAnyPermission(["reports.export"], permissions) && (
+                            <Button
+                                type="primary"
+                                icon={<FileExcelOutlined />}
+                                onClick={handleExport}
+                            >
+                                Export Excel
+                            </Button>
+                        )
+                    }
+                >
+                    <form onSubmit={handleFilter}>
+                        <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                            <Col xs={24} lg={6}>
+                                <Input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari produk, barcode, atau kategori..."
+                                    allowClear
+                                />
+                            </Col>
+                            <Col xs={24} lg={4}>
+                                <Select
+                                    style={{ width: "100%" }}
+                                    placeholder="Semua Kategori"
+                                    allowClear
+                                    value={categoryId}
+                                    onChange={setCategoryId}
+                                    options={categories.map((category) => ({
+                                        value: String(category.id),
+                                        label: category.name,
+                                    }))}
+                                />
+                            </Col>
+                            <Col xs={24} lg={4}>
+                                <Select
+                                    style={{ width: "100%" }}
+                                    placeholder="Semua Status"
+                                    allowClear
+                                    value={stockStatus}
+                                    onChange={setStockStatus}
+                                    options={[
+                                        { value: "available", label: "Aman" },
+                                        { value: "low", label: "Menipis" },
+                                        { value: "out", label: "Habis" },
+                                        {
+                                            value: "dead_stock",
+                                            label: "Dead Stock",
+                                        },
+                                    ]}
+                                />
+                            </Col>
+                            <Col xs={12} lg={3}>
+                                <InputNumber
+                                    min={1}
+                                    style={{ width: "100%" }}
+                                    value={lowThreshold}
+                                    onChange={setLowThreshold}
+                                    placeholder="Ambang menipis"
+                                />
+                            </Col>
+                            <Col xs={12} lg={3}>
+                                <InputNumber
+                                    min={1}
+                                    style={{ width: "100%" }}
+                                    value={deadStockDays}
+                                    onChange={setDeadStockDays}
+                                    placeholder="Hari dead stock"
+                                />
+                            </Col>
+                            <Col xs={24} lg={4}>
+                                <Space>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        icon={<FilterOutlined />}
                                     >
-                                        <i className="far fa-file-excel me-1"></i>
-                                        Export Excel
-                                    </button>
-                                )}
-                            </div>
+                                        Filter
+                                    </Button>
+                                    <Button
+                                        icon={<ReloadOutlined />}
+                                        onClick={handleReset}
+                                    >
+                                        Reset
+                                    </Button>
+                                </Space>
+                            </Col>
+                            <Col span={24}>
+                                <DatePreset
+                                    onApply={(start, end) => {
+                                        router.get("/account/reports/stock", {
+                                            q: search,
+                                            category_id: categoryId || "",
+                                            stock_status: stockStatus || "",
+                                            low_threshold: lowThreshold,
+                                            dead_stock_days: deadStockDays,
+                                            start_date: start,
+                                            end_date: end,
+                                        });
+                                    }}
+                                />
+                            </Col>
+                        </Row>
+                    </form>
 
-                            <div className="card-body">
-                                <form onSubmit={handleFilter} className="mb-4">
-                                    <div className="row g-3">
-                                        <div className="col-lg-4">
-                                            <input
-                                                type="text"
-                                                className="form-control border-0 shadow-sm"
-                                                value={search}
-                                                onChange={(e) =>
-                                                    setSearch(e.target.value)
-                                                }
-                                                placeholder="Cari produk, barcode, atau kategori..."
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <select
-                                                className="form-select border-0 shadow-sm"
-                                                value={categoryId}
-                                                onChange={(e) =>
-                                                    setCategoryId(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            >
-                                                <option value="">
-                                                    Semua Kategori
-                                                </option>
-                                                {categories.map((category) => (
-                                                    <option
-                                                        key={category.id}
-                                                        value={category.id}
-                                                    >
-                                                        {category.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <select
-                                                className="form-select border-0 shadow-sm"
-                                                value={stockStatus}
-                                                onChange={(e) =>
-                                                    setStockStatus(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            >
-                                                <option value="">
-                                                    Semua Status
-                                                </option>
-                                                <option value="available">
-                                                    Aman
-                                                </option>
-                                                <option value="low">
-                                                    Menipis
-                                                </option>
-                                                <option value="out">
-                                                    Habis
-                                                </option>
-                                                <option value="dead_stock">
-                                                    Dead Stock
-                                                </option>
-                                            </select>
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className="form-control border-0 shadow-sm"
-                                                value={lowThreshold}
-                                                onChange={(e) =>
-                                                    setLowThreshold(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="Ambang menipis"
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className="form-control border-0 shadow-sm"
-                                                value={deadStockDays}
-                                                onChange={(e) =>
-                                                    setDeadStockDays(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="Hari dead stock"
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2 d-flex gap-2">
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary shadow-sm w-100"
-                                            >
-                                                <i className="fas fa-filter me-2"></i>
-                                                Filter
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className="btn btn-secondary shadow-sm w-100"
-                                                onClick={handleReset}
-                                            >
-                                                <i className="fas fa-sync-alt me-2"></i>
-                                                Reset
-                                            </button>
-                                        </div>
-
-                                        <div className="col-12">
-                                            <DatePreset
-                                                onApply={(start, end) => {
-                                                    router.get("/account/reports/stock", {
-                                                        q: search,
-                                                        category_id: categoryId,
-                                                        stock_status: stockStatus,
-                                                        low_threshold: lowThreshold,
-                                                        dead_stock_days: deadStockDays,
-                                                        start_date: start,
-                                                        end_date: end,
-                                                    });
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </form>
-
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">
-                                                Total Produk
-                                            </small>
-                                            <h6 className="fw-bold mb-1">
-                                                {summary.total_products}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Aktif: {summary.active_products}
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">
-                                                Total Unit Stok
-                                            </small>
-                                            <h6 className="fw-bold mb-1">
-                                                {summary.total_stock_qty}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Habis:{" "}
-                                                {summary.out_of_stock_products}
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">
-                                                Nilai Modal
-                                            </small>
-                                            <h6 className="fw-bold text-success mb-1">
-                                                {formatRupiah(
-                                                    summary.inventory_cost_value,
-                                                )}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Nilai jual:{" "}
-                                                {formatRupiah(
-                                                    summary.inventory_sell_value,
-                                                )}
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <Link
-                                            href={`/account/reports/stock?stock_status=out`}
-                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
-                                        >
-                                            <small className="text-muted">
-                                                Stok Habis
-                                            </small>
-                                            <h6 className="fw-bold text-danger mb-1">
-                                                {summary.out_of_stock_products}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Klik untuk filter
-                                            </small>
-                                        </Link>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <Link
-                                            href={`/account/reports/stock?stock_status=low&low_threshold=${filters.low_threshold}`}
-                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
-                                        >
-                                            <small className="text-muted">
-                                                Produk Menipis
-                                            </small>
-                                            <h6 className="fw-bold text-warning mb-1">
-                                                {summary.low_stock_products}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Ambang: {filters.low_threshold}
-                                            </small>
-                                        </Link>
-                                    </div>
-                                </div>
-
-                                <div className="table-responsive">
-                                    <table className="table table-bordered align-middle mb-0">
-                                        <thead className="table-dark">
-                                            <tr>
-                                                <th style={{ width: "5%" }}>
-                                                    No.
-                                                </th>
-                                                <th>Produk</th>
-                                                <th>Kategori</th>
-                                                <th className="text-center">
-                                                    Stok
-                                                </th>
-                                                <th className="text-end">
-                                                    HPP (WAC)
-                                                </th>
-                                                <th className="text-end">
-                                                    Harga Jual (base)
-                                                </th>
-                                                <th className="text-end">
-                                                    Nilai Modal
-                                                </th>
-                                                <th className="text-center">
-                                                    Status
-                                                </th>
-                                                <th className="text-center">
-                                                    Terakhir Keluar
-                                                </th>
-                                                <th>Pergerakan Terakhir</th>
-                                                <th
-                                                    className="text-center"
-                                                    style={{ width: "16%" }}
-                                                >
-                                                    Aksi
-                                                </th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {products.data.length > 0 ? (
-                                                products.data.map(
-                                                    (product, index) => {
-                                                        const badge =
-                                                            getStockBadge(
-                                                                product.stock,
-                                                                Number(
-                                                                    filters.low_threshold,
-                                                                ),
-                                                            );
-
-                                                        const canViewMovement =
-                                                            hasAnyPermission(
-                                                                [
-                                                                    "stock_movements.index",
-                                                                ],
-                                                                permissions,
-                                                            );
-                                                        const canAdjustStock =
-                                                            hasAnyPermission(
-                                                                [
-                                                                    "stock_movements.create",
-                                                                ],
-                                                                permissions,
-                                                            );
-
-                                                        return (
-                                                            <tr
-                                                                key={product.id}
-                                                            >
-                                                                <td className="fw-bold text-center">
-                                                                    {index +
-                                                                        1 +
-                                                                        (products.current_page -
-                                                                            1) *
-                                                                            products.per_page}
-                                                                </td>
-                                                                <td>
-                                                                    <div className="fw-bold text-primary">
-                                                                        {
-                                                                            product.title
-                                                                        }
-                                                                    </div>
-                                                                    <small className="text-muted">
-                                                                        {product.barcode ||
-                                                                            "-"}
-                                                                    </small>
-                                                                </td>
-                                                                <td>
-                                                                    {product
-                                                                        .category
-                                                                        ?.name ||
-                                                                        "-"}
-                                                                </td>
-                                                                <td className="text-center fw-bold">
-                                                                    {
-                                                                        product.stock
-                                                                    }{" "}
-                                                                    <small className="text-muted">
-                                                                        {product.unit ||
-                                                                            "pcs"}
-                                                                    </small>
-                                                                </td>
-                                                                <td className="text-end">
-                                                                    {formatRupiah(
-                                                                        product.avg_cost,
-                                                                    )}
-                                                                </td>
-                                                                <td className="text-end">
-                                                                    {formatRupiah(
-                                                                        product.sell_price,
-                                                                    )}
-                                                                </td>
-                                                                <td className="text-end fw-bold text-success">
-                                                                    {formatRupiah(
-                                                                        product.inventory_cost_value,
-                                                                    )}
-                                                                </td>
-                                                                <td className="text-center">
-                                                                    {product.is_dead_stock && (
-                                                                        <span className="badge bg-dark shadow-sm ms-1">Dead</span>
-                                                                    )}
-                                                                    {product.needs_reorder && (
-                                                                        <span className="badge bg-warning text-dark shadow-sm ms-1">Reorder</span>
-                                                                    )}
-                                                                    <span
-                                                                        className={
-                                                                            badge.className
-                                                                        }
-                                                                    >
-                                                                        {
-                                                                            badge.label
-                                                                        }
-                                                                    </span>
-                                                                </td>
-                                                                <td className="text-center">
-                                                                    {product.days_since_last_out === null
-                                                                        ? product.stock > 0 ? (
-                                                                            <span className="badge bg-dark shadow-sm">
-                                                                                Belum pernah
-                                                                            </span>
-                                                                        ) : "-"
-                                                                        : (
-                                                                            <span
-                                                                                className={`badge ${product.is_dead_stock ? "bg-dark" : product.days_since_last_out > 30 ? "bg-warning text-dark" : "bg-success"} shadow-sm`}
-                                                                            >
-                                                                                {product.days_since_last_out} hari
-                                                                            </span>
-                                                                        )
-                                                                    }
-                                                                </td>
-                                                                <td>
-                                                                    {product.latest_movement ? (
-                                                                        <>
-                                                                            <div className="fw-bold">
-                                                                                {
-                                                                                    product
-                                                                                        .latest_movement
-                                                                                        .source_label
-                                                                                }
-                                                                                {product
-                                                                                    .latest_movement
-                                                                                    .type
-                                                                                    ? ` / ${
-                                                                                          movementTypeLabels[
-                                                                                              product
-                                                                                                  .latest_movement
-                                                                                                  .type
-                                                                                          ] ||
-                                                                                          product
-                                                                                              .latest_movement
-                                                                                              .type
-                                                                                      }`
-                                                                                    : ""}
-                                                                            </div>
-                                                                            <small className="text-muted d-block">
-                                                                                {formatDate(
-                                                                                    product
-                                                                                        .latest_movement
-                                                                                        .created_at,
-                                                                                )}
-                                                                            </small>
-                                                                            <small className="text-muted d-block">
-                                                                                {product
-                                                                                    .latest_movement
-                                                                                    .user
-                                                                                    ?.name ||
-                                                                                    "-"}
-                                                                            </small>
-                                                                        </>
-                                                                    ) : (
-                                                                        <span className="text-muted">
-                                                                            Belum
-                                                                            ada
-                                                                        </span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="text-center">
-                                                                    {canViewMovement ||
-                                                                    canAdjustStock ? (
-                                                                        <div className="d-flex justify-content-center gap-2">
-                                                                            {canViewMovement && (
-                                                                                <Link
-                                                                                    href={`/account/stock-movements?q=${encodeURIComponent(
-                                                                                        product.barcode ||
-                                                                                            product.title,
-                                                                                    )}`}
-                                                                                    className="btn btn-secondary btn-sm shadow-sm"
-                                                                                >
-                                                                                    <i className="fas fa-history me-1"></i>
-                                                                                    Riwayat
-                                                                                </Link>
-                                                                            )}
-                                                                            {canAdjustStock && (
-                                                                                <Link
-                                                                                    href={`/account/stock-movements/create?product_id=${product.id}`}
-                                                                                    className="btn btn-primary btn-sm shadow-sm"
-                                                                                >
-                                                                                    <i className="fas fa-sliders-h me-1"></i>
-                                                                                    Sesuaikan
-                                                                                </Link>
-                                                                            )}
-                                                                        </div>
-                                                                    ) : (
-                                                                        "-"
-                                                                    )}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    },
-                                                )
-                                            ) : (
-                                                <tr>
-                                                    <td
-                                                        colSpan="11"
-                                                        className="text-center py-4"
-                                                    >
-                                                        Belum ada data stok
-                                                        untuk filter ini.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="mt-4">
-                                    <Pagination
-                                        links={products.links}
-                                        align="end"
+                    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                        <Col xs={24} sm={12} md={8} lg={4}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Total Produk"
+                                    value={summary.total_products}
+                                />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Aktif: {summary.active_products}
+                                </Text>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} md={8} lg={4}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Total Unit Stok"
+                                    value={summary.total_stock_qty}
+                                />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Habis: {summary.out_of_stock_products}
+                                </Text>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} md={8} lg={4}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Nilai Modal"
+                                    value={formatRupiah(
+                                        summary.inventory_cost_value,
+                                    )}
+                                    valueStyle={{
+                                        color: "#52c41a",
+                                        fontSize: 16,
+                                    }}
+                                />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Nilai jual:{" "}
+                                    {formatRupiah(summary.inventory_sell_value)}
+                                </Text>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} md={8} lg={4}>
+                            <Link href="/account/reports/stock?stock_status=out">
+                                <Card size="small" hoverable>
+                                    <Statistic
+                                        title="Stok Habis"
+                                        value={summary.out_of_stock_products}
+                                        valueStyle={{
+                                            color: "#ff4d4f",
+                                            fontSize: 18,
+                                        }}
                                     />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Klik untuk filter
+                                    </Text>
+                                </Card>
+                            </Link>
+                        </Col>
+                        <Col xs={24} sm={12} md={8} lg={4}>
+                            <Link
+                                href={`/account/reports/stock?stock_status=low&low_threshold=${filters.low_threshold}`}
+                            >
+                                <Card size="small" hoverable>
+                                    <Statistic
+                                        title="Produk Menipis"
+                                        value={summary.low_stock_products}
+                                        valueStyle={{
+                                            color: "#faad14",
+                                            fontSize: 18,
+                                        }}
+                                    />
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Ambang: {filters.low_threshold}
+                                    </Text>
+                                </Card>
+                            </Link>
+                        </Col>
+                    </Row>
+
+                    <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={products.data}
+                        pagination={false}
+                        scroll={{ x: 1200 }}
+                        locale={{
+                            emptyText:
+                                "Belum ada data stok untuk filter ini.",
+                        }}
+                    />
+
+                    <Pagination
+                        links={products.links}
+                        meta={products}
+                        align="end"
+                    />
+                </Card>
             </LayoutAccount>
         </>
     );

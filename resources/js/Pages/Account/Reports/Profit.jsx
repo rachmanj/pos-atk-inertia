@@ -5,6 +5,29 @@ import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import {
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Input,
+    Row,
+    Select,
+    Space,
+    Statistic,
+    Table,
+    Typography,
+} from "antd";
+import {
+    DollarOutlined,
+    EyeOutlined,
+    FileExcelOutlined,
+    FilterOutlined,
+    ReloadOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+
+const { Title, Text } = Typography;
 
 export default function ProfitReport() {
     const {
@@ -21,16 +44,17 @@ export default function ProfitReport() {
     const [search, setSearch] = useState(filters.q || "");
     const [startDate, setStartDate] = useState(filters.start_date || "");
     const [endDate, setEndDate] = useState(filters.end_date || "");
-    const [cashierId, setCashierId] = useState(filters.cashier_id || "");
+    const [cashierId, setCashierId] = useState(
+        filters.cashier_id || undefined,
+    );
 
     const handleFilter = (e) => {
         e.preventDefault();
-
         router.get("/account/reports/profit", {
             q: search,
             start_date: startDate,
             end_date: endDate,
-            cashier_id: cashierId,
+            cashier_id: cashierId || "",
         });
     };
 
@@ -38,8 +62,7 @@ export default function ProfitReport() {
         setSearch("");
         setStartDate(filters.start_date || "");
         setEndDate(filters.end_date || "");
-        setCashierId("");
-
+        setCashierId(undefined);
         router.get("/account/reports/profit");
     };
 
@@ -50,360 +73,301 @@ export default function ProfitReport() {
             q: search,
             start_date: start,
             end_date: end,
-            cashier_id: cashierId,
+            cashier_id: cashierId || "",
         });
     };
 
     const handleExport = () => {
-        window.location.href = `/account/reports/profit/export?start_date=${startDate}&end_date=${endDate}&cashier_id=${cashierId}`;
+        window.location.href = `/account/reports/profit/export?start_date=${startDate}&end_date=${endDate}&cashier_id=${cashierId || ""}`;
     };
 
     const formatDate = (value) => {
-        if (!value) {
-            return "-";
-        }
-
+        if (!value) return "-";
         return new Date(value).toLocaleString("id-ID", {
             dateStyle: "medium",
             timeStyle: "short",
         });
     };
 
+    const columns = [
+        {
+            title: "No.",
+            width: 60,
+            align: "center",
+            render: (_, __, index) =>
+                index + 1 + (profits.current_page - 1) * profits.per_page,
+        },
+        {
+            title: "Invoice",
+            render: (_, profit) => (
+                <Text strong style={{ color: "#1677ff" }}>
+                    {profit.transaction?.invoice || "-"}
+                </Text>
+            ),
+        },
+        {
+            title: "Tanggal",
+            render: (_, profit) =>
+                formatDate(
+                    profit.transaction?.paid_at ||
+                        profit.transaction?.created_at,
+                ),
+        },
+        {
+            title: "Kasir",
+            render: (_, profit) => profit.transaction?.cashier?.name || "-",
+        },
+        {
+            title: "Customer",
+            render: (_, profit) =>
+                profit.transaction?.customer?.name || "Umum",
+        },
+        {
+            title: "Pendapatan",
+            align: "right",
+            render: (_, profit) => (
+                <Text strong style={{ color: "#52c41a" }}>
+                    {formatRupiah(profit.total_revenue)}
+                </Text>
+            ),
+        },
+        {
+            title: "HPP",
+            align: "right",
+            render: (_, profit) => (
+                <Text type="danger">{formatRupiah(profit.total_cost)}</Text>
+            ),
+        },
+        {
+            title: "Laba",
+            align: "right",
+            render: (_, profit) => (
+                <Text
+                    strong
+                    style={{
+                        color:
+                            profit.profit_amount >= 0 ? "#1677ff" : "#ff4d4f",
+                    }}
+                >
+                    {formatRupiah(profit.profit_amount)}
+                </Text>
+            ),
+        },
+        {
+            title: "Aksi",
+            width: 100,
+            align: "center",
+            render: (_, profit) => {
+                const transaction = profit.transaction;
+                return hasAnyPermission(["transactions.show"], permissions) &&
+                    transaction ? (
+                    <Link href={`/account/transactions/${transaction.invoice}`}>
+                        <Button size="small" icon={<EyeOutlined />}>
+                            Detail
+                        </Button>
+                    </Link>
+                ) : (
+                    "-"
+                );
+            },
+        },
+    ];
+
     return (
         <>
             <Head title="Laporan Laba" />
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-coins me-2"></i>
-                                    LAPORAN LABA
-                                </h5>
-                                {hasAnyPermission(["reports.export"], permissions) && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-success btn-sm shadow-sm"
-                                        onClick={handleExport}
-                                    >
-                                        <i className="far fa-file-excel me-1"></i>
-                                        Export Excel
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="card-body">
-                                <form onSubmit={handleFilter} className="mb-4">
-                                    <div className="row g-3">
-                                        <div className="col-lg-4">
-                                            <input
-                                                type="text"
-                                                className="form-control border-0 shadow-sm"
-                                                value={search}
-                                                onChange={(e) =>
-                                                    setSearch(e.target.value)
-                                                }
-                                                placeholder="Cari invoice, customer, atau kasir..."
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={startDate}
-                                                onChange={(e) =>
-                                                    setStartDate(e.target.value)
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={endDate}
-                                                onChange={(e) =>
-                                                    setEndDate(e.target.value)
-                                                }
-                                            />
-                                        </div>
-
-                                        {isAdmin && (
-                                            <div className="col-lg-2">
-                                                <select
-                                                    className="form-select border-0 shadow-sm"
-                                                    value={cashierId}
-                                                    onChange={(e) =>
-                                                        setCashierId(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                >
-                                                    <option value="">
-                                                        Semua Kasir
-                                                    </option>
-                                                    {cashiers.map((cashier) => (
-                                                        <option
-                                                            key={cashier.id}
-                                                            value={cashier.id}
-                                                        >
-                                                            {cashier.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        <div className="col-lg-2 d-flex gap-2">
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary shadow-sm w-100"
-                                            >
-                                                <i className="fas fa-filter me-2"></i>
-                                                Filter
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className="btn btn-secondary shadow-sm w-100"
-                                                onClick={handleReset}
-                                            >
-                                                <i className="fas fa-sync-alt me-2"></i>
-                                                Reset
-                                            </button>
-                                        </div>
-
-                                        <div className="col-12">
-                                            <DatePreset onApply={handleDatePreset} />
-                                        </div>
-                                    </div>
-                                </form>
-
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-3">
-                                        <Link
-                                            href={`/account/reports/profit?start_date=${filters.start_date}&end_date=${filters.end_date}`}
-                                            className="border rounded-3 p-3 h-100 text-decoration-none text-reset d-block"
-                                        >
-                                            <small className="text-muted">
-                                                Pendapatan
-                                            </small>
-                                            <h6 className="fw-bold text-success mb-1">
-                                                {formatRupiah(
-                                                    summary.total_revenue,
-                                                )}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Transaksi:{" "}
-                                                {summary.total_transactions}
-                                                {summary.average_sale > 0 && (
-                                                    <> · Rata-rata: {formatRupiah(summary.average_sale)}</>
-                                                )}
-                                            </small>
-                                        </Link>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">
-                                                HPP
-                                            </small>
-                                            <h6 className="fw-bold text-danger mb-1">
-                                                {formatRupiah(
-                                                    summary.total_cost,
-                                                )}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Margin: {summary.profit_margin}%
-                                                {summary.net_margin_pct != null && (
-                                                    <> · Net: {summary.net_margin_pct}%</>
-                                                )}
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">
-                                                Laba Kotor
-                                            </small>
-                                            <h6 className="fw-bold text-primary mb-1">
-                                                {formatRupiah(
-                                                    summary.gross_profit,
-                                                )}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Sebelum expense
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <small className="text-muted">
-                                                Laba Bersih
-                                            </small>
-                                            <h6
-                                                className={`fw-bold mb-1 ${
-                                                    summary.net_profit >= 0
-                                                        ? "text-success"
-                                                        : "text-danger"
-                                                }`}
-                                            >
-                                                {formatRupiah(
-                                                    summary.net_profit,
-                                                )}
-                                            </h6>
-                                            <small className="text-muted">
-                                                Expense:{" "}
-                                                {formatRupiah(
-                                                    summary.total_expense,
-                                                )}
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="table-responsive">
-                                    <table className="table table-bordered align-middle mb-0">
-                                        <thead className="table-dark">
-                                            <tr>
-                                                <th style={{ width: "5%" }}>
-                                                    No.
-                                                </th>
-                                                <th>Invoice</th>
-                                                <th>Tanggal</th>
-                                                <th>Kasir</th>
-                                                <th>Customer</th>
-                                                <th className="text-end">
-                                                    Pendapatan
-                                                </th>
-                                                <th className="text-end">
-                                                    HPP
-                                                </th>
-                                                <th className="text-end">
-                                                    Laba
-                                                </th>
-                                                <th
-                                                    className="text-center"
-                                                    style={{ width: "12%" }}
-                                                >
-                                                    Aksi
-                                                </th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {profits.data.length > 0 ? (
-                                                profits.data.map(
-                                                    (profit, index) => {
-                                                        const transaction =
-                                                            profit.transaction;
-
-                                                        return (
-                                                            <tr key={profit.id}>
-                                                                <td className="fw-bold text-center">
-                                                                    {index +
-                                                                        1 +
-                                                                        (profits.current_page -
-                                                                            1) *
-                                                                            profits.per_page}
-                                                                </td>
-                                                                <td className="fw-bold text-primary">
-                                                                    {transaction?.invoice ||
-                                                                        "-"}
-                                                                </td>
-                                                                <td>
-                                                                    {formatDate(
-                                                                        transaction?.paid_at ||
-                                                                            transaction?.created_at,
-                                                                    )}
-                                                                </td>
-                                                                <td>
-                                                                    {transaction
-                                                                        ?.cashier
-                                                                        ?.name ||
-                                                                        "-"}
-                                                                </td>
-                                                                <td>
-                                                                    {transaction
-                                                                        ?.customer
-                                                                        ?.name ||
-                                                                        "Umum"}
-                                                                </td>
-                                                                <td className="text-end fw-bold text-success">
-                                                                    {formatRupiah(
-                                                                        profit.total_revenue,
-                                                                    )}
-                                                                </td>
-                                                                <td className="text-end text-danger">
-                                                                    {formatRupiah(
-                                                                        profit.total_cost,
-                                                                    )}
-                                                                </td>
-                                                                <td
-                                                                    className={`text-end fw-bold ${
-                                                                        profit.profit_amount >=
-                                                                        0
-                                                                            ? "text-primary"
-                                                                            : "text-danger"
-                                                                    }`}
-                                                                >
-                                                                    {formatRupiah(
-                                                                        profit.profit_amount,
-                                                                    )}
-                                                                </td>
-                                                                <td className="text-center">
-                                                                    {hasAnyPermission(
-                                                                        [
-                                                                            "transactions.show",
-                                                                        ],
-                                                                        permissions,
-                                                                    ) &&
-                                                                    transaction ? (
-                                                                        <Link
-                                                                            href={`/account/transactions/${transaction.invoice}`}
-                                                                            className="btn btn-secondary btn-sm shadow-sm"
-                                                                        >
-                                                                            <i className="fas fa-eye me-1"></i>
-                                                                            Detail
-                                                                        </Link>
-                                                                    ) : (
-                                                                        "-"
-                                                                    )}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    },
-                                                )
-                                            ) : (
-                                                <tr>
-                                                    <td
-                                                        colSpan="9"
-                                                        className="text-center py-4"
-                                                    >
-                                                        Belum ada data laba
-                                                        untuk filter ini.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="mt-4">
-                                    <Pagination
-                                        links={profits.links}
-                                        align="end"
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <DollarOutlined style={{ marginRight: 8 }} />
+                            LAPORAN LABA
+                        </Title>
+                    }
+                    extra={
+                        hasAnyPermission(["reports.export"], permissions) && (
+                            <Button
+                                type="primary"
+                                icon={<FileExcelOutlined />}
+                                onClick={handleExport}
+                            >
+                                Export Excel
+                            </Button>
+                        )
+                    }
+                >
+                    <form onSubmit={handleFilter}>
+                        <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                            <Col xs={24} lg={8}>
+                                <Input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari invoice, customer, atau kasir..."
+                                    allowClear
+                                />
+                            </Col>
+                            <Col xs={12} lg={4}>
+                                <DatePicker
+                                    style={{ width: "100%" }}
+                                    placeholder="Tanggal mulai"
+                                    format="DD/MM/YYYY"
+                                    value={startDate ? dayjs(startDate) : null}
+                                    onChange={(date) =>
+                                        setStartDate(
+                                            date
+                                                ? date.format("YYYY-MM-DD")
+                                                : "",
+                                        )
+                                    }
+                                />
+                            </Col>
+                            <Col xs={12} lg={4}>
+                                <DatePicker
+                                    style={{ width: "100%" }}
+                                    placeholder="Tanggal akhir"
+                                    format="DD/MM/YYYY"
+                                    value={endDate ? dayjs(endDate) : null}
+                                    onChange={(date) =>
+                                        setEndDate(
+                                            date
+                                                ? date.format("YYYY-MM-DD")
+                                                : "",
+                                        )
+                                    }
+                                />
+                            </Col>
+                            {isAdmin && (
+                                <Col xs={24} lg={4}>
+                                    <Select
+                                        style={{ width: "100%" }}
+                                        placeholder="Semua Kasir"
+                                        allowClear
+                                        value={cashierId}
+                                        onChange={setCashierId}
+                                        options={cashiers.map((cashier) => ({
+                                            value: String(cashier.id),
+                                            label: cashier.name,
+                                        }))}
                                     />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                </Col>
+                            )}
+                            <Col xs={24} lg={isAdmin ? 4 : 8}>
+                                <Space>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        icon={<FilterOutlined />}
+                                    >
+                                        Filter
+                                    </Button>
+                                    <Button
+                                        icon={<ReloadOutlined />}
+                                        onClick={handleReset}
+                                    >
+                                        Reset
+                                    </Button>
+                                </Space>
+                            </Col>
+                            <Col span={24}>
+                                <DatePreset onApply={handleDatePreset} />
+                            </Col>
+                        </Row>
+                    </form>
+
+                    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                        <Col xs={24} sm={12} md={6}>
+                            <Link
+                                href={`/account/reports/profit?start_date=${filters.start_date}&end_date=${filters.end_date}`}
+                            >
+                                <Card size="small" hoverable>
+                                    <Statistic
+                                        title="Pendapatan"
+                                        value={formatRupiah(summary.total_revenue)}
+                                        valueStyle={{
+                                            color: "#52c41a",
+                                            fontSize: 18,
+                                        }}
+                                    />
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Transaksi: {summary.total_transactions}
+                                        {summary.average_sale > 0 && (
+                                            <>
+                                                {" "}
+                                                · Rata-rata:{" "}
+                                                {formatRupiah(summary.average_sale)}
+                                            </>
+                                        )}
+                                    </Text>
+                                </Card>
+                            </Link>
+                        </Col>
+                        <Col xs={24} sm={12} md={6}>
+                            <Card size="small">
+                                <Statistic
+                                    title="HPP"
+                                    value={formatRupiah(summary.total_cost)}
+                                    valueStyle={{ color: "#ff4d4f", fontSize: 18 }}
+                                />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Margin: {summary.profit_margin}%
+                                    {summary.net_margin_pct != null && (
+                                        <> · Net: {summary.net_margin_pct}%</>
+                                    )}
+                                </Text>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} md={6}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Laba Kotor"
+                                    value={formatRupiah(summary.gross_profit)}
+                                    valueStyle={{ color: "#1677ff", fontSize: 18 }}
+                                />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Sebelum expense
+                                </Text>
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={12} md={6}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Laba Bersih"
+                                    value={formatRupiah(summary.net_profit)}
+                                    valueStyle={{
+                                        color:
+                                            summary.net_profit >= 0
+                                                ? "#52c41a"
+                                                : "#ff4d4f",
+                                        fontSize: 18,
+                                    }}
+                                />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Expense:{" "}
+                                    {formatRupiah(summary.total_expense)}
+                                </Text>
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={profits.data}
+                        pagination={false}
+                        scroll={{ x: 900 }}
+                        locale={{
+                            emptyText:
+                                "Belum ada data laba untuk filter ini.",
+                        }}
+                    />
+
+                    <Pagination
+                        links={profits.links}
+                        meta={profits}
+                        align="end"
+                    />
+                </Card>
             </LayoutAccount>
         </>
     );

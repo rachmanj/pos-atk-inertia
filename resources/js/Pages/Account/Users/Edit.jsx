@@ -1,280 +1,234 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
-import Swal from "sweetalert2";
+import {
+    Button,
+    Card,
+    Checkbox,
+    Col,
+    Form,
+    Input,
+    InputNumber,
+    Row,
+    Space,
+    Typography,
+    notification,
+} from "antd";
+import {
+    ArrowLeftOutlined,
+    SaveOutlined,
+    UserOutlined,
+} from "@ant-design/icons";
 import getRoleLabel from "../../../Utils/role";
 
+const { Title } = Typography;
+
 export default function UserEdit() {
-    const { errors, roles, user } = usePage().props;
+    const { errors = {}, roles, user } = usePage().props;
 
     const [name, setName] = useState(user.name);
     const [username, setUsername] = useState(user.username);
     const [email, setEmail] = useState(user.email);
+    const [telegramId, setTelegramId] = useState(user.telegram_id ?? null);
     const [password, setPassword] = useState("");
     const [passwordConfirmation, setPasswordConfirmation] = useState("");
     const [rolesData, setRolesData] = useState(
         user.roles.map((obj) => obj.name),
     );
+    const [saving, setSaving] = useState(false);
 
-    const handleCheckboxChange = (e) => {
-        let data = rolesData;
-
-        if (e.target.checked) {
-            data.push(e.target.value);
-        } else {
-            data.splice(data.indexOf(e.target.value), 1);
-        }
-
-        setRolesData([...data]);
-    };
-
-    const updateUser = async (e) => {
+    const updateUser = (e) => {
         e.preventDefault();
+        setSaving(true);
 
         router.put(
             `/account/users/${user.id}`,
             {
-                name: name,
-                username: username,
-                email: email,
-                password: password,
+                name,
+                username,
+                email,
+                telegram_id: telegramId,
+                password,
                 password_confirmation: passwordConfirmation,
                 roles: rolesData,
             },
             {
                 onSuccess: () => {
-                    Swal.fire({
-                        title: "Berhasil!",
-                        text: "Pengguna berhasil diperbarui.",
-                        icon: "success",
-                        showConfirmButton: false,
-                        timer: 1500,
+                    notification.success({
+                        message: "Berhasil",
+                        description: "Pengguna berhasil diperbarui.",
+                        duration: 2,
                     });
                 },
+                onFinish: () => setSaving(false),
             },
         );
     };
 
     return (
         <>
-            <Head>
-                <title>Edit Pengguna - ZenPOS</title>
-            </Head>
+            <Head title="Edit Pengguna - ZenPOS" />
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-user-edit me-2"></i>
-                                    EDIT PENGGUNA
-                                </h5>
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <UserOutlined style={{ marginRight: 8 }} />
+                            EDIT PENGGUNA
+                        </Title>
+                    }
+                    extra={
+                        <Link href="/account/users">
+                            <Button icon={<ArrowLeftOutlined />}>KEMBALI</Button>
+                        </Link>
+                    }
+                >
+                    <form onSubmit={updateUser}>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Nama Lengkap"
+                                    validateStatus={errors.name ? "error" : ""}
+                                    help={errors.name}
+                                    required
+                                >
+                                    <Input
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Masukkan nama lengkap"
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Username"
+                                    validateStatus={
+                                        errors.username ? "error" : ""
+                                    }
+                                    help={errors.username}
+                                    required
+                                >
+                                    <Input
+                                        value={username}
+                                        onChange={(e) =>
+                                            setUsername(e.target.value)
+                                        }
+                                        placeholder="Masukkan username"
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                                <div>
-                                    <Link
-                                        href="/account/users"
-                                        className="btn btn-secondary shadow-sm rounded-sm"
-                                    >
-                                        <i className="fas fa-arrow-left me-2"></i>
-                                        KEMBALI
-                                    </Link>
-                                </div>
-                            </div>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Alamat Email"
+                                    validateStatus={errors.email ? "error" : ""}
+                                    help={errors.email}
+                                    required
+                                >
+                                    <Input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Masukkan alamat email"
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Telegram ID"
+                                    validateStatus={
+                                        errors.telegram_id ? "error" : ""
+                                    }
+                                    help={
+                                        errors.telegram_id ||
+                                        "ID numerik dari akun Telegram pengguna untuk integrasi bot."
+                                    }
+                                >
+                                    <InputNumber
+                                        style={{ width: "100%" }}
+                                        value={telegramId}
+                                        onChange={setTelegramId}
+                                        placeholder="Contoh: 123456789"
+                                        controls={false}
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                            <div className="card-body">
-                                <form onSubmit={updateUser}>
-                                    <div className="row">
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Nama Lengkap
-                                            </label>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Kata Sandi"
+                                    validateStatus={
+                                        errors.password ? "error" : ""
+                                    }
+                                    help={errors.password}
+                                >
+                                    <Input.Password
+                                        value={password}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
+                                        placeholder="Kosongkan jika tidak ingin diubah"
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item label="Konfirmasi Kata Sandi">
+                                    <Input.Password
+                                        value={passwordConfirmation}
+                                        onChange={(e) =>
+                                            setPasswordConfirmation(
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Kosongkan jika tidak ingin diubah"
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                                            <input
-                                                type="text"
-                                                className={`form-control ${
-                                                    errors.name
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={name}
-                                                onChange={(e) =>
-                                                    setName(e.target.value)
-                                                }
-                                                placeholder="Masukkan nama lengkap"
-                                            />
-
-                                            {errors.name && (
-                                                <div className="invalid-feedback">
-                                                    {errors.name}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Username
-                                            </label>
-
-                                            <input
-                                                type="text"
-                                                className={`form-control ${
-                                                    errors.username
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={username}
-                                                onChange={(e) =>
-                                                    setUsername(e.target.value)
-                                                }
-                                                placeholder="Masukkan username"
-                                            />
-
-                                            {errors.username && (
-                                                <div className="invalid-feedback">
-                                                    {errors.username}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="row">
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Alamat Email
-                                            </label>
-
-                                            <input
-                                                type="email"
-                                                className={`form-control ${
-                                                    errors.email
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={email}
-                                                onChange={(e) =>
-                                                    setEmail(e.target.value)
-                                                }
-                                                placeholder="Masukkan alamat email"
-                                            />
-
-                                            {errors.email && (
-                                                <div className="invalid-feedback">
-                                                    {errors.email}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="row">
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Kata Sandi
-                                            </label>
-
-                                            <input
-                                                type="password"
-                                                className={`form-control ${
-                                                    errors.password
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={password}
-                                                onChange={(e) =>
-                                                    setPassword(e.target.value)
-                                                }
-                                                placeholder="Kosongkan jika tidak ingin diubah"
-                                            />
-
-                                            {errors.password && (
-                                                <div className="invalid-feedback">
-                                                    {errors.password}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Konfirmasi Kata Sandi
-                                            </label>
-
-                                            <input
-                                                type="password"
-                                                className="form-control"
-                                                value={passwordConfirmation}
-                                                onChange={(e) =>
-                                                    setPasswordConfirmation(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="Kosongkan jika tidak ingin diubah"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <hr />
-
-                                    <div className="mb-3">
-                                        <label className="fw-bold mb-3">
-                                            Pilih Role
-                                        </label>
-
-                                        <div className="row">
-                                            {roles.map((role, index) => (
-                                                <div
-                                                    className="col-12 col-md-4 col-lg-3 mb-2"
-                                                    key={index}
-                                                >
-                                                    <div className="form-check">
-                                                        <input
-                                                            className="form-check-input"
-                                                            type="checkbox"
-                                                            value={role.name}
-                                                            onChange={
-                                                                handleCheckboxChange
-                                                            }
-                                                            id={`role-${role.id}`}
-                                                            defaultChecked={rolesData.some(
-                                                                (name) =>
-                                                                    name ===
-                                                                    role.name,
-                                                            )}
-                                                        />
-
-                                                        <label
-                                                            className="form-check-label"
-                                                            htmlFor={`role-${role.id}`}
-                                                        >
-                                                            {getRoleLabel(
-                                                                role.name,
-                                                            )}
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {errors.roles && (
-                                            <div className="alert alert-danger mt-3">
-                                                {errors.roles}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <button
-                                            type="submit"
-                                            className="btn btn-success shadow-sm rounded-sm"
+                        <Form.Item
+                            label="Pilih Role"
+                            validateStatus={errors.roles ? "error" : ""}
+                            help={errors.roles}
+                            required
+                        >
+                            <Checkbox.Group
+                                value={rolesData}
+                                onChange={setRolesData}
+                                style={{ width: "100%" }}
+                            >
+                                <Row gutter={[8, 8]}>
+                                    {roles.map((role) => (
+                                        <Col
+                                            key={role.id}
+                                            xs={24}
+                                            sm={12}
+                                            md={8}
+                                            lg={6}
                                         >
-                                            <i className="fas fa-save me-2"></i>
-                                            PERBARUI
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                            <Checkbox value={role.name}>
+                                                {getRoleLabel(role.name)}
+                                            </Checkbox>
+                                        </Col>
+                                    ))}
+                                </Row>
+                            </Checkbox.Group>
+                        </Form.Item>
+
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<SaveOutlined />}
+                            loading={saving}
+                        >
+                            PERBARUI
+                        </Button>
+                    </form>
+                </Card>
             </LayoutAccount>
         </>
     );

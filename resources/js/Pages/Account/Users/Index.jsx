@@ -1,182 +1,120 @@
-import React from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, Link } from "@inertiajs/react";
+import { Button, Card, Space, Table, Tag, Typography } from "antd";
+import { EditOutlined, PlusOutlined, TeamOutlined } from "@ant-design/icons";
 import Pagination from "../../../Shared/Pagination";
 import Search from "../../../Shared/Search";
 import Delete from "../../../Shared/Delete";
 import hasAnyPermission from "../../../Utils/Permissions";
 import getRoleLabel from "../../../Utils/role";
 
+const { Title } = Typography;
+
 export default function UserIndex() {
     const { users, auth = {} } = usePage().props;
-
     const permissions = auth.permissions || {};
+
+    const columns = [
+        {
+            title: "No.",
+            width: 60,
+            align: "center",
+            render: (_, __, index) =>
+                index + 1 + (users.current_page - 1) * users.per_page,
+        },
+        {
+            title: "Nama Pengguna",
+            dataIndex: "name",
+        },
+        {
+            title: "Username",
+            dataIndex: "username",
+        },
+        {
+            title: "Alamat Email",
+            dataIndex: "email",
+        },
+        {
+            title: "Role",
+            render: (_, user) => (
+                <Space wrap>
+                    {user.roles.map((role) => (
+                        <Tag key={role.id} color="blue">
+                            {getRoleLabel(role.name)}
+                        </Tag>
+                    ))}
+                </Space>
+            ),
+        },
+        {
+            title: "Status",
+            width: 120,
+            render: (_, user) => (
+                <Tag color={user.telegram_id ? "success" : "default"}>
+                    {user.telegram_id ? "Telegram Aktif" : "Belum Terhubung"}
+                </Tag>
+            ),
+        },
+        {
+            title: "Aksi",
+            width: 120,
+            align: "center",
+            render: (_, user) => (
+                <Space>
+                    {hasAnyPermission(["users.edit"], permissions) && (
+                        <Link href={`/account/users/${user.id}/edit`}>
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<EditOutlined />}
+                            />
+                        </Link>
+                    )}
+                    {hasAnyPermission(["users.delete"], permissions) && (
+                        <Delete URL="/account/users" id={user.id} />
+                    )}
+                </Space>
+            ),
+        },
+    ];
 
     return (
         <>
-            <Head>
-                <title>Pengguna - ZenPOS</title>
-            </Head>
+            <Head title="Pengguna - ZenPOS" />
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 col-md-12 col-lg-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-users me-2"></i>
-                                    PENGGUNA
-                                </h5>
-
-                                <div>
-                                    {hasAnyPermission(
-                                        ["users.create"],
-                                        permissions,
-                                    ) && (
-                                        <Link
-                                            href="/account/users/create"
-                                            className="btn btn-success shadow-sm rounded-sm"
-                                        >
-                                            <i className="fas fa-plus-circle me-2"></i>
-                                            TAMBAH PENGGUNA
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="card-body">
-                                <div className="mb-3">
-                                    <Search URL="/account/users" />
-                                </div>
-
-                                <div className="table-responsive">
-                                    <table className="table table-bordered table-centered table-nowrap mb-0 rounded">
-                                        <thead className="thead-dark text-white bg-dark">
-                                            <tr className="border-0">
-                                                <th
-                                                    className="border-0"
-                                                    style={{ width: "5%" }}
-                                                >
-                                                    No.
-                                                </th>
-                                                <th className="border-0">
-                                                    Nama Pengguna
-                                                </th>
-                                                <th className="border-0">
-                                                    Username
-                                                </th>
-                                                <th className="border-0">
-                                                    Alamat Email
-                                                </th>
-                                                <th
-                                                    className="border-0"
-                                                    style={{ width: "20%" }}
-                                                >
-                                                    Role
-                                                </th>
-                                                <th
-                                                    className="border-0"
-                                                    style={{ width: "15%" }}
-                                                >
-                                                    Aksi
-                                                </th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {users.data.length > 0 ? (
-                                                users.data.map(
-                                                    (user, index) => (
-                                                        <tr key={user.id}>
-                                                            <td className="fw-bold text-center">
-                                                                {index +
-                                                                    1 +
-                                                                    (users.current_page -
-                                                                        1) *
-                                                                        users.per_page}
-                                                            </td>
-
-                                                            <td>{user.name}</td>
-
-                                                            <td>{user.username}</td>
-
-                                                            <td>
-                                                                {user.email}
-                                                            </td>
-
-                                                            <td>
-                                                                {user.roles.map(
-                                                                    (role) => (
-                                                                        <span
-                                                                            key={
-                                                                                role.id
-                                                                            }
-                                                                            className="badge bg-primary me-2 shadow-sm"
-                                                                        >
-                                                                            {getRoleLabel(
-                                                                                role.name,
-                                                                            )}
-                                                                        </span>
-                                                                    ),
-                                                                )}
-                                                            </td>
-
-                                                            <td className="text-center">
-                                                                {hasAnyPermission(
-                                                                    [
-                                                                        "users.edit",
-                                                                    ],
-                                                                    permissions,
-                                                                ) && (
-                                                                    <Link
-                                                                        href={`/account/users/${user.id}/edit`}
-                                                                        className="btn btn-primary btn-sm me-2 shadow-sm"
-                                                                    >
-                                                                        <i className="fas fa-pencil-alt"></i>
-                                                                    </Link>
-                                                                )}
-
-                                                                {hasAnyPermission(
-                                                                    [
-                                                                        "users.delete",
-                                                                    ],
-                                                                    permissions,
-                                                                ) && (
-                                                                    <Delete
-                                                                        URL="/account/users"
-                                                                        id={
-                                                                            user.id
-                                                                        }
-                                                                    />
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ),
-                                                )
-                                            ) : (
-                                                <tr>
-                                                    <td
-                                                        colSpan="6"
-                                                        className="text-center py-4"
-                                                    >
-                                                        Data belum tersedia!
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="mt-4">
-                                    <Pagination
-                                        links={users.links}
-                                        align="end"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <TeamOutlined style={{ marginRight: 8 }} />
+                            PENGGUNA
+                        </Title>
+                    }
+                    extra={
+                        hasAnyPermission(["users.create"], permissions) && (
+                            <Link href="/account/users/create">
+                                <Button type="primary" icon={<PlusOutlined />}>
+                                    TAMBAH PENGGUNA
+                                </Button>
+                            </Link>
+                        )
+                    }
+                >
+                    <div style={{ marginBottom: 16 }}>
+                        <Search URL="/account/users" />
                     </div>
-                </div>
+
+                    <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={users.data}
+                        pagination={false}
+                        locale={{ emptyText: "Data belum tersedia!" }}
+                        scroll={{ x: 800 }}
+                    />
+
+                    <Pagination links={users.links} meta={users} align="end" />
+                </Card>
             </LayoutAccount>
         </>
     );

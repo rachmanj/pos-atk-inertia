@@ -1,440 +1,455 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
-import Swal from "sweetalert2";
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    Form,
+    Input,
+    InputNumber,
+    Row,
+    Select,
+    Space,
+    Typography,
+    Upload,
+    notification,
+} from "antd";
+import {
+    ArrowLeftOutlined,
+    BarcodeOutlined,
+    ReloadOutlined,
+    SaveOutlined,
+    UploadOutlined,
+    AppstoreAddOutlined,
+} from "@ant-design/icons";
 import ProductUnitBuilder from "../../../Components/ProductUnitBuilder";
 import ProductComponentBuilder from "../../../Components/ProductComponentBuilder";
 
+const { Title, Text } = Typography;
+
 export default function ProductCreate() {
-    const { errors = {}, categories = [], units = [], physicalProducts = [] } = usePage().props;
+    const {
+        errors = {},
+        categories = [],
+        units = [],
+        physicalProducts = [],
+    } = usePage().props;
 
     const [barcode, setBarcode] = useState("");
     const [title, setTitle] = useState("");
-    const [categoryId, setCategoryId] = useState("");
-    const [image, setImage] = useState("");
+    const [categoryId, setCategoryId] = useState(undefined);
+    const [image, setImage] = useState(null);
     const [description, setDescription] = useState("");
     const [productType, setProductType] = useState("physical");
-    const [openingBuyPrice, setOpeningBuyPrice] = useState("");
-    const [stock, setStock] = useState("");
+    const [openingBuyPrice, setOpeningBuyPrice] = useState(null);
+    const [stock, setStock] = useState(null);
     const [productUnits, setProductUnits] = useState([
-        { unit_id: units[0]?.id ? String(units[0].id) : "", conversion_factor: 1, sell_price: 0, is_base_unit: true, is_default_sell: true },
+        {
+            unit_id: units[0]?.id ? String(units[0].id) : "",
+            conversion_factor: 1,
+            sell_price: 0,
+            is_base_unit: true,
+            is_default_sell: true,
+        },
     ]);
-    const [serviceSellPrice, setServiceSellPrice] = useState("");
-    const [serviceUnitId, setServiceUnitId] = useState(units[0]?.id ? String(units[0].id) : "");
+    const [serviceSellPrice, setServiceSellPrice] = useState(null);
+    const [serviceUnitId, setServiceUnitId] = useState(
+        units[0]?.id ? String(units[0].id) : undefined,
+    );
     const [components, setComponents] = useState([
         { component_product_id: "", qty_per_unit: 1, note: "" },
     ]);
+    const [saving, setSaving] = useState(false);
 
     const isPhysical = productType === "physical";
     const isService = productType === "service";
 
+    const categoryOptions = categories.map((category) => ({
+        value: category.id,
+        label: category.name,
+    }));
+
+    const unitOptions = units.map((unit) => ({
+        value: String(unit.id),
+        label: `${unit.name} (${unit.abbreviation})`,
+    }));
+
+    const productTypeOptions = [
+        { value: "physical", label: "Fisik (Stok)" },
+        { value: "service", label: "Layanan (BOM)" },
+        { value: "ppob", label: "PPOB (Digital)" },
+    ];
+
+    const generateBarcode = () => {
+        const randomBarcode = Math.floor(
+            1000000000000 + Math.random() * 9000000000000,
+        ).toString();
+        setBarcode(randomBarcode);
+    };
+
+    const resetForm = () => {
+        setBarcode("");
+        setTitle("");
+        setCategoryId(undefined);
+        setImage(null);
+        setDescription("");
+        setProductType("physical");
+        setOpeningBuyPrice(null);
+        setStock(null);
+        setProductUnits([
+            {
+                unit_id: units[0]?.id ? String(units[0].id) : "",
+                conversion_factor: 1,
+                sell_price: 0,
+                is_base_unit: true,
+                is_default_sell: true,
+            },
+        ]);
+        setServiceSellPrice(null);
+        setServiceUnitId(units[0]?.id ? String(units[0].id) : undefined);
+        setComponents([
+            { component_product_id: "", qty_per_unit: 1, note: "" },
+        ]);
+    };
+
     const storeProduct = (e) => {
         e.preventDefault();
+        setSaving(true);
 
         const payload = {
-                barcode: barcode,
-                title: title,
-                category_id: categoryId,
-                description: description,
-                product_type: productType,
-                buy_price: isPhysical ? openingBuyPrice : 0,
-                stock: isPhysical ? stock : 0,
-                product_units: JSON.stringify(productUnits.map((row) => ({
+            barcode,
+            title,
+            category_id: categoryId,
+            description,
+            product_type: productType,
+            buy_price: isPhysical ? openingBuyPrice : 0,
+            stock: isPhysical ? stock : 0,
+            product_units: JSON.stringify(
+                productUnits.map((row) => ({
                     ...row,
                     unit_id: Number(row.unit_id),
                     conversion_factor: Number(row.conversion_factor),
                     sell_price: Number(row.sell_price || 0),
-                }))),
-            };
+                })),
+            ),
+        };
 
         if (isService) {
             payload.sell_price = serviceSellPrice;
             payload.unit_id = serviceUnitId;
-            payload.components = JSON.stringify(components.map((row) => ({
-                component_product_id: Number(row.component_product_id),
-                qty_per_unit: Number(row.qty_per_unit || 0),
-                note: row.note || null,
-            })));
+            payload.components = JSON.stringify(
+                components.map((row) => ({
+                    component_product_id: Number(row.component_product_id),
+                    qty_per_unit: Number(row.qty_per_unit || 0),
+                    note: row.note || null,
+                })),
+            );
         }
 
         if (image instanceof File) {
             payload.image = image;
         }
 
-        router.post(
-            "/account/products",
-            payload,
-            {
-                forceFormData: image instanceof File,
-                onSuccess: () => {
-                    Swal.fire({
-                        title: "Berhasil!",
-                        text: "Data berhasil disimpan!",
-                        icon: "success",
-                        showConfirmButton: false,
-                        timer: 1500,
-                    });
-                },
+        router.post("/account/products", payload, {
+            forceFormData: image instanceof File,
+            onSuccess: () => {
+                notification.success({
+                    message: "Berhasil",
+                    description: "Data berhasil disimpan!",
+                    duration: 2,
+                });
             },
-        );
+            onFinish: () => setSaving(false),
+        });
     };
 
     return (
         <>
-            <Head>
-                <title>Tambah Produk - ZenPOS</title>
-            </Head>
+            <Head title="Tambah Produk - ZenPOS" />
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <i className="fas fa-cube me-2"></i>
-                                    TAMBAH PRODUK
-                                </h5>
-
-                                <div>
-                                    <Link
-                                        href="/account/products"
-                                        className="btn btn-secondary shadow-sm rounded-sm"
-                                    >
-                                        <i className="fas fa-arrow-left me-2"></i>
-                                        KEMBALI
-                                    </Link>
-                                </div>
-                            </div>
-
-                            <div className="card-body">
-                                <form onSubmit={storeProduct}>
-                                    <div className="row">
-                                        <div className="col-md-6 mb-3">
-                                            <label className="fw-bold mb-2">
-                                                Barcode
-                                            </label>
-
-                                            <div className="input-group">
-                                                <input
-                                                    type="text"
-                                                    className={`form-control ${
-                                                        errors.barcode
-                                                            ? "is-invalid"
-                                                            : ""
-                                                    }`}
-                                                    value={barcode}
-                                                    onChange={(e) =>
-                                                        setBarcode(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Masukkan barcode atau scan"
-                                                />
-
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-primary"
-                                                    onClick={() => {
-                                                        const randomBarcode =
-                                                            Math.floor(
-                                                                1000000000000 +
-                                                                    Math.random() *
-                                                                        9000000000000,
-                                                            ).toString();
-
-                                                        setBarcode(
-                                                            randomBarcode,
-                                                        );
-                                                    }}
-                                                >
-                                                    <i className="fas fa-barcode me-1"></i>
-                                                    Generate
-                                                </button>
-                                            </div>
-
-                                            {errors.barcode && (
-                                                <div className="text-danger small mt-1">
-                                                    {errors.barcode}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="col-md-6 mb-3">
-                                            <label className="fw-bold mb-2">
-                                                Kategori
-                                            </label>
-
-                                            <select
-                                                className={`form-select ${
-                                                    errors.category_id
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={categoryId}
-                                                onChange={(e) =>
-                                                    setCategoryId(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            >
-                                                <option value="">
-                                                    -- Pilih Kategori --
-                                                </option>
-
-                                                {categories.map((category) => (
-                                                    <option
-                                                        key={category.id}
-                                                        value={category.id}
-                                                    >
-                                                        {category.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-
-                                            {errors.category_id && (
-                                                <div className="invalid-feedback">
-                                                    {errors.category_id}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="row">
-                                        <div className="col-md-6 mb-3">
-                                            <label className="fw-bold mb-2">
-                                                Nama Produk
-                                            </label>
-
-                                            <input
-                                                type="text"
-                                                className={`form-control ${
-                                                    errors.title
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={title}
-                                                onChange={(e) =>
-                                                    setTitle(e.target.value)
-                                                }
-                                                placeholder="Masukkan nama produk"
-                                            />
-
-                                            {errors.title && (
-                                                <div className="invalid-feedback">
-                                                    {errors.title}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="col-md-6 mb-3">
-                                            <label className="fw-bold mb-2">
-                                                Gambar Produk
-                                                <span className="text-muted fw-normal"> (Opsional)</span>
-                                            </label>
-
-                                            <input
-                                                type="file"
-                                                className={`form-control ${
-                                                    errors.image
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                onChange={(e) =>
-                                                    setImage(e.target.files[0])
-                                                }
-                                                accept="image/*"
-                                            />
-
-                                            {errors.image && (
-                                                <div className="invalid-feedback">
-                                                    {errors.image}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="row">
-                                        <div className="col-md-6 mb-3">
-                                            <label className="fw-bold mb-2">Tipe Produk</label>
-                                            <select className="form-select" value={productType} onChange={(e) => setProductType(e.target.value)}>
-                                                <option value="physical">Fisik (Stok)</option>
-                                                <option value="service">Layanan (BOM)</option>
-                                                <option value="ppob">PPOB (Digital)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {isPhysical ? (
-                                        <>
-                                            <ProductUnitBuilder
-                                                units={units}
-                                                rows={productUnits}
-                                                onChange={setProductUnits}
-                                                errors={errors}
-                                            />
-
-                                            <div className="row">
-                                                <div className="col-md-6 mb-3">
-                                                    <label className="fw-bold mb-2">
-                                                        Harga Beli Awal
-                                                        <span className="text-muted fw-normal"> (satuan dasar)</span>
-                                                    </label>
-
-                                                    <div className="input-group">
-                                                        <span className="input-group-text">
-                                                            Rp
-                                                        </span>
-
-                                                        <input
-                                                            type="number"
-                                                            className={`form-control ${
-                                                                errors.buy_price
-                                                                    ? "is-invalid"
-                                                                    : ""
-                                                            }`}
-                                                            value={openingBuyPrice}
-                                                            onChange={(e) =>
-                                                                setOpeningBuyPrice(
-                                                                    e.target.value,
-                                                                )
-                                                            }
-                                                            placeholder="0"
-                                                        />
-                                                    </div>
-
-                                                    <small className="d-block mt-1 text-muted">
-                                                        Modal per satuan dasar untuk stok awal. Setelah ada pembelian, HPP mengikuti rata-rata tertimbang (WAC).
-                                                    </small>
-
-                                                    {errors.buy_price && (
-                                                        <div className="text-danger small mt-1">
-                                                            {errors.buy_price}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="row">
-                                                <div className="col-md-6 mb-3">
-                                                    <label className="fw-bold mb-2">Stok Awal</label>
-                                                    <input type="number" min="0" className={`form-control ${errors.stock ? "is-invalid" : ""}`} value={stock} onChange={(e) => setStock(e.target.value)} placeholder="0" />
-                                                    <small className="d-block mt-1">Stok awal akan otomatis tercatat ke histori mutasi stok.</small>
-                                                    {errors.stock && <div className="invalid-feedback">{errors.stock}</div>}
-                                                </div>
-                                            </div>
-                                        </>
-                                    ) : isService ? (
-                                        <>
-                                            <div className="alert alert-info mb-4">
-                                                Produk layanan dijual dengan harga tetap. Stok bahan baku akan berkurang otomatis saat penjualan.
-                                            </div>
-
-                                            <div className="row">
-                                                <div className="col-md-4 mb-3">
-                                                    <label className="fw-bold mb-2">Harga Jual</label>
-                                                    <div className="input-group">
-                                                        <span className="input-group-text">Rp</span>
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            className={`form-control ${errors.sell_price ? "is-invalid" : ""}`}
-                                                            value={serviceSellPrice}
-                                                            onChange={(e) => setServiceSellPrice(e.target.value)}
-                                                            placeholder="0"
-                                                        />
-                                                    </div>
-                                                    {errors.sell_price && (
-                                                        <div className="text-danger small mt-1">{errors.sell_price}</div>
-                                                    )}
-                                                </div>
-
-                                                <div className="col-md-4 mb-3">
-                                                    <label className="fw-bold mb-2">Satuan Jual</label>
-                                                    <select
-                                                        className={`form-select ${errors.unit_id ? "is-invalid" : ""}`}
-                                                        value={serviceUnitId}
-                                                        onChange={(e) => setServiceUnitId(e.target.value)}
-                                                    >
-                                                        <option value="">-- Pilih Satuan --</option>
-                                                        {units.map((unit) => (
-                                                            <option key={unit.id} value={unit.id}>
-                                                                {unit.name} ({unit.abbreviation})
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    {errors.unit_id && (
-                                                        <div className="text-danger small mt-1">{errors.unit_id}</div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <ProductComponentBuilder
-                                                physicalProducts={physicalProducts}
-                                                rows={components}
-                                                onChange={setComponents}
-                                                errors={errors}
-                                            />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="alert alert-info mb-4">
-                                                Produk PPOB tidak memerlukan harga beli/jual di katalog. Harga modal dan admin fee diinput saat penjualan di POS.
-                                            </div>
-                                            <div className="alert alert-info">Produk PPOB tidak menggunakan stok.</div>
-                                        </>
-                                    )}
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Deskripsi{" "}
-                                            <span className="text-muted fw-normal">
-                                                (Opsional)
-                                            </span>
-                                        </label>
-
-                                        <textarea
-                                            className={`form-control ${
-                                                errors.description
-                                                    ? "is-invalid"
-                                                    : ""
-                                            }`}
-                                            value={description}
+                <Card
+                    title={
+                        <Title level={4} style={{ margin: 0 }}>
+                            <AppstoreAddOutlined style={{ marginRight: 8 }} />
+                            TAMBAH PRODUK
+                        </Title>
+                    }
+                    extra={
+                        <Link href="/account/products">
+                            <Button icon={<ArrowLeftOutlined />}>KEMBALI</Button>
+                        </Link>
+                    }
+                >
+                    <form onSubmit={storeProduct}>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Barcode"
+                                    validateStatus={errors.barcode ? "error" : ""}
+                                    help={errors.barcode}
+                                    required
+                                >
+                                    <Space.Compact style={{ width: "100%" }}>
+                                        <Input
+                                            value={barcode}
                                             onChange={(e) =>
-                                                setDescription(e.target.value)
+                                                setBarcode(e.target.value)
                                             }
-                                            rows="3"
-                                            placeholder="Masukkan deskripsi produk"
-                                        ></textarea>
-
-                                        {errors.description && (
-                                            <div className="invalid-feedback">
-                                                {errors.description}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <button
-                                            type="submit"
-                                            className="btn btn-success shadow-sm rounded-sm"
+                                            placeholder="Masukkan barcode atau scan"
+                                        />
+                                        <Button
+                                            type="primary"
+                                            icon={<BarcodeOutlined />}
+                                            onClick={generateBarcode}
                                         >
-                                            <i className="fas fa-save me-2"></i>
-                                            SIMPAN
-                                        </button>
+                                            Generate
+                                        </Button>
+                                    </Space.Compact>
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Kategori"
+                                    validateStatus={
+                                        errors.category_id ? "error" : ""
+                                    }
+                                    help={errors.category_id}
+                                    required
+                                >
+                                    <Select
+                                        placeholder="-- Pilih Kategori --"
+                                        value={categoryId}
+                                        options={categoryOptions}
+                                        onChange={setCategoryId}
+                                        style={{ width: "100%" }}
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                                        <button
-                                            type="reset"
-                                            className="btn btn-warning shadow-sm rounded-sm ms-2 text-white"
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Nama Produk"
+                                    validateStatus={errors.title ? "error" : ""}
+                                    help={errors.title}
+                                    required
+                                >
+                                    <Input
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        placeholder="Masukkan nama produk"
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label={
+                                        <>
+                                            Gambar Produk{" "}
+                                            <Text type="secondary">(Opsional)</Text>
+                                        </>
+                                    }
+                                    validateStatus={errors.image ? "error" : ""}
+                                    help={errors.image}
+                                >
+                                    <Upload
+                                        accept="image/*"
+                                        showUploadList={!!image}
+                                        maxCount={1}
+                                        beforeUpload={(file) => {
+                                            setImage(file);
+                                            return false;
+                                        }}
+                                        onRemove={() => setImage(null)}
+                                    >
+                                        <Button icon={<UploadOutlined />}>
+                                            Pilih Gambar
+                                        </Button>
+                                    </Upload>
+                                </Form.Item>
+                            </Col>
+                        </Row>
+
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item label="Tipe Produk">
+                                    <Select
+                                        value={productType}
+                                        options={productTypeOptions}
+                                        onChange={setProductType}
+                                        style={{ width: "100%" }}
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+
+                        {isPhysical ? (
+                            <>
+                                <ProductUnitBuilder
+                                    units={units}
+                                    rows={productUnits}
+                                    onChange={setProductUnits}
+                                    errors={errors}
+                                />
+                                <Row gutter={16}>
+                                    <Col xs={24} md={12}>
+                                        <Form.Item
+                                            label={
+                                                <>
+                                                    Harga Beli Awal{" "}
+                                                    <Text type="secondary">
+                                                        (satuan dasar)
+                                                    </Text>
+                                                </>
+                                            }
+                                            validateStatus={
+                                                errors.buy_price ? "error" : ""
+                                            }
+                                            help={
+                                                errors.buy_price ||
+                                                "Modal per satuan dasar untuk stok awal. Setelah ada pembelian, HPP mengikuti rata-rata tertimbang (WAC)."
+                                            }
                                         >
-                                            <i className="fas fa-redo me-2"></i>
-                                            ULANGI
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                            <InputNumber
+                                                min={0}
+                                                prefix="Rp"
+                                                style={{ width: "100%" }}
+                                                value={openingBuyPrice}
+                                                onChange={setOpeningBuyPrice}
+                                                placeholder="0"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} md={12}>
+                                        <Form.Item
+                                            label="Stok Awal"
+                                            validateStatus={
+                                                errors.stock ? "error" : ""
+                                            }
+                                            help={
+                                                errors.stock ||
+                                                "Stok awal akan otomatis tercatat ke histori mutasi stok."
+                                            }
+                                        >
+                                            <InputNumber
+                                                min={0}
+                                                style={{ width: "100%" }}
+                                                value={stock}
+                                                onChange={setStock}
+                                                placeholder="0"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                            </>
+                        ) : isService ? (
+                            <>
+                                <Alert
+                                    type="info"
+                                    showIcon
+                                    message="Produk layanan dijual dengan harga tetap. Stok bahan baku akan berkurang otomatis saat penjualan."
+                                    style={{ marginBottom: 16 }}
+                                />
+                                <Row gutter={16}>
+                                    <Col xs={24} md={8}>
+                                        <Form.Item
+                                            label="Harga Jual"
+                                            validateStatus={
+                                                errors.sell_price ? "error" : ""
+                                            }
+                                            help={errors.sell_price}
+                                        >
+                                            <InputNumber
+                                                min={1}
+                                                prefix="Rp"
+                                                style={{ width: "100%" }}
+                                                value={serviceSellPrice}
+                                                onChange={setServiceSellPrice}
+                                                placeholder="0"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} md={8}>
+                                        <Form.Item
+                                            label="Satuan Jual"
+                                            validateStatus={
+                                                errors.unit_id ? "error" : ""
+                                            }
+                                            help={errors.unit_id}
+                                        >
+                                            <Select
+                                                placeholder="-- Pilih Satuan --"
+                                                value={serviceUnitId}
+                                                options={unitOptions}
+                                                onChange={setServiceUnitId}
+                                                style={{ width: "100%" }}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <ProductComponentBuilder
+                                    physicalProducts={physicalProducts}
+                                    rows={components}
+                                    onChange={setComponents}
+                                    errors={errors}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <Alert
+                                    type="info"
+                                    showIcon
+                                    message="Produk PPOB tidak memerlukan harga beli/jual di katalog. Harga modal dan admin fee diinput saat penjualan di POS."
+                                    style={{ marginBottom: 8 }}
+                                />
+                                <Alert
+                                    type="info"
+                                    showIcon
+                                    message="Produk PPOB tidak menggunakan stok."
+                                />
+                            </>
+                        )}
+
+                        <Form.Item
+                            label={
+                                <>
+                                    Deskripsi{" "}
+                                    <Text type="secondary">(Opsional)</Text>
+                                </>
+                            }
+                            validateStatus={errors.description ? "error" : ""}
+                            help={errors.description}
+                        >
+                            <Input.TextArea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={3}
+                                placeholder="Masukkan deskripsi produk"
+                            />
+                        </Form.Item>
+
+                        <Space>
+                            <Button
+                                type="primary"
+                                htmlType="submit"
+                                icon={<SaveOutlined />}
+                                loading={saving}
+                            >
+                                SIMPAN
+                            </Button>
+                            <Button
+                                icon={<ReloadOutlined />}
+                                onClick={resetForm}
+                            >
+                                ULANGI
+                            </Button>
+                        </Space>
+                    </form>
+                </Card>
             </LayoutAccount>
         </>
     );
