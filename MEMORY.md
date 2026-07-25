@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings  
-**Last Updated**: 2026-07-23 (Bootstrap → Ant Design migration plan + previous session)
+**Last Updated**: 2026-07-25 (legacy inventory import from ExportFile.xls)
 
 ---
 
@@ -154,5 +154,11 @@
 **Root cause**: Migrasi Ant Design (`docs/migration-antd.md`, commit "Selesaikan Phase 5 migrasi Ant Design") menghapus Bootstrap CDN + `styles.css` dari `app.blade.php`, tapi halaman POS Kasir belum ikut dipindah ke AntD `Row/Col` — rencana migrasi sendiri sudah menandai ini (`docs/migration-antd.md:308`) tapi belum dieksekusi.  
 **Impact**: Halaman POS Kasir (`/account/transactions/create`) — paling kritis untuk kasir — kemungkinan tampil tanpa layout grid/spacing sama sekali di production sekarang.  
 **Solution (belum dikerjakan)**: Migrasi 4 file di atas ke AntD `Row`/`Col`/`Flex` murni, hapus `public/assets/css/styles.css`. Rencana detail + estimasi effort ada di `docs/plan-pwa-mobile.md` §0 dan §6 (digabung dengan pekerjaan mobile-responsive POS supaya tidak dikerjakan dua kali).  
-**Key Learning**: Verifikasi visual (buka halaman di browser) setelah migrasi CSS besar, jangan cuma cek grep referensi file — file CSS bisa "mati" (tidak pernah di-load) tanpa error apapun di build/runtime.
+**Key Learning**: Verifikasi visual (buka halaman di browser) setelah migrasi CSS besar, jangan cuma cek grep referensi file — file CSS bisa "mati" (tidak perlu di-load) tanpa error apapun di build/runtime.
+
+### POS-023 Legacy inventory import dari ExportFile.xls (2026-07-25) ✅ COMPLETE
+
+**Challenge/Decision**: Migrasi ~3200 produk ATK dari export Excel lama (.xls) ke `products` + `product_units`.  
+**Solution**: `php artisan inventory:import-legacy storage/app/imports/ExportFile.xls` — parser Python (`tools/parse_legacy_inventory_xls.py`, xlrd) + command `ImportLegacyInventory` + `LegacyInventoryCategoryDetector`. Harga kolom Harga1 dalam ribuan (9.0 → Rp 9.000). Barcode col2 fallback col0; skip jika barcode sudah ada.  
+**Key Learning**: Folder `/scripts` di `.gitignore` — parser diletakkan di `tools/`. Backup DB: `mysqldump pos_kasir > backup.sql` sebelum import. Hasil 2026-07-25: 3205 produk diimpor, 0 skipped.
 
