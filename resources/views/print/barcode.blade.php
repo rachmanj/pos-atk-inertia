@@ -30,7 +30,8 @@
         <div class="barcode-item">
             <img src="https://bwipjs-api.metafloor.com/?bcid=code128&text={{ urlencode($product->barcode) }}&scale=2&height=12&includetext&backgroundcolor=ffffff"
                  alt="{{ $product->barcode }}"
-                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22160%22 height=%2250%22><rect width=%22160%22 height=%2250%22 fill=%22%23f0f0f0%22/><text x=%2280%22 y=%2230%22 text-anchor=%22middle%22 font-size=%2210%22>{{ $product->barcode }}</text></svg>'">
+                 data-fallback="{{ $product->barcode }}"
+                 onerror="this.onerror=null;this.src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;160&quot; height=&quot;50&quot;><rect width=&quot;160&quot; height=&quot;50&quot; fill=&quot;#f0f0f0&quot;/><text x=&quot;80&quot; y=&quot;30&quot; text-anchor=&quot;middle&quot; font-size=&quot;10&quot;>'+this.dataset.fallback+'</text></svg>')">
             <div class="barcode-title">{{ $product->title }}</div>
             <div class="barcode-price">Rp {{ number_format($product->sell_price, 0, ',', '.') }}</div>
         </div>
