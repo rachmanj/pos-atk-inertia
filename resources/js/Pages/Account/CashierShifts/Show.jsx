@@ -4,23 +4,39 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    Descriptions,
+    Divider,
+    Form,
+    InputNumber,
+    Row,
+    Space,
+    Statistic,
+    Tag,
+    Typography,
+} from "antd";
+import {
     ArrowLeftOutlined,
     ClockCircleOutlined,
     CloseCircleOutlined,
+    DollarOutlined,
+    FallOutlined,
+    MoneyCollectOutlined,
+    RiseOutlined,
+    ShoppingCartOutlined,
+    SwapOutlined,
+    WalletOutlined,
+    CheckCircleOutlined,
 } from "@ant-design/icons";
 
-const statusLabels = {
-    open: "BUKA",
-    closed: "TUTUP",
-};
+const { Title, Text } = Typography;
 
 const dateTimeFormatOptions = {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
+    day: "2-digit", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false,
 };
 
 export default function CashierShiftShow() {
@@ -28,402 +44,202 @@ export default function CashierShiftShow() {
     const permissions = auth?.permissions || {};
 
     const [actualCash, setActualCash] = useState(
-        shift.status === "open"
-            ? shift.summary.expected_cash
-            : shift.actual_cash,
+        shift.status === "open" ? shift.summary?.expected_cash || 0 : shift.actual_cash,
     );
     const [note, setNote] = useState("");
 
     const estimatedDifference = useMemo(() => {
-        const value =
-            Number(actualCash || 0) - Number(shift.summary.expected_cash || 0);
-
+        const value = Number(actualCash || 0) - Number(shift.summary?.expected_cash || 0);
         return Number.isNaN(value) ? 0 : value;
-    }, [actualCash, shift.summary.expected_cash]);
+    }, [actualCash, shift.summary?.expected_cash]);
 
     const closeShift = (e) => {
         e.preventDefault();
-
-        router.put(`/account/cashier-shifts/${shift.id}/close`, {
-            actual_cash: actualCash,
-            note,
-        });
+        router.put(`/account/cashier-shifts/${shift.id}/close`, { actual_cash: actualCash, note });
     };
 
     return (
         <>
-            <Head>
-                <title>Detail Shift Kasir - ZenPOS</title>
-            </Head>
+            <Head><title>Detail Shift - ZenPOS</title></Head>
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <ClockCircleOutlined className="me-2" />{" "}
-                                    DETAIL SHIFT
-                                </h5>
-                                <Link
-                                    href="/account/cashier-shifts"
-                                    className="btn btn-secondary shadow-sm rounded-sm"
-                                >
-                                    <ArrowLeftOutlined className="me-2" />{" "}
-                                    KEMBALI
-                                </Link>
+                <Space direction="vertical" size="large" style={{ width: "100%" }}>
+                    <Space style={{ width: "100%", justifyContent: "space-between" }} wrap>
+                        <Space>
+                            <ClockCircleOutlined style={{ color: "#0d9488", fontSize: 20 }} />
+                            <div>
+                                <Title level={4} style={{ margin: 0 }}>DETAIL SHIFT #{shift.id}</Title>
+                                <Text type="secondary">
+                                    {shift.status === "open" ? "Shift sedang berjalan" : "Shift sudah ditutup"}
+                                </Text>
                             </div>
-                            <div className="card-body">
-                                {flash.success && (
-                                    <div className="alert alert-success shadow-sm">
-                                        {flash.success}
-                                    </div>
-                                )}
-                                {flash.error && (
-                                    <div className="alert alert-danger shadow-sm">
-                                        {flash.error}
-                                    </div>
-                                )}
+                        </Space>
+                        <Link href="/account/cashier-shifts">
+                            <Button icon={<ArrowLeftOutlined />}>KEMBALI</Button>
+                        </Link>
+                    </Space>
 
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-light h-100">
-                                            <small className=" d-block mb-1">
-                                                Kasir
-                                            </small>
-                                            <div className="fw-bold">
-                                                {shift.user?.name || "-"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-light h-100">
-                                            <small className=" d-block mb-1">
-                                                Waktu Buka
-                                            </small>
-                                            <div className="fw-bold">
-                                                {shift.opened_at
-                                                    ? new Date(
-                                                          shift.opened_at,
-                                                      ).toLocaleString(
-                                                          "id-ID",
-                                                          dateTimeFormatOptions,
-                                                      )
-                                                    : "-"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-light h-100">
-                                            <small className=" d-block mb-1">
-                                                Waktu Tutup
-                                            </small>
-                                            <div className="fw-bold">
-                                                {shift.closed_at
-                                                    ? new Date(
-                                                          shift.closed_at,
-                                                      ).toLocaleString(
-                                                          "id-ID",
-                                                          dateTimeFormatOptions,
-                                                      )
-                                                    : "-"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-light h-100">
-                                            <small className=" d-block mb-1">
-                                                Status
-                                            </small>
-                                            <div
-                                                className={`badge shadow-sm ${shift.status === "open" ? "bg-success" : "bg-secondary"}`}
-                                            >
-                                                {statusLabels[shift.status] ||
-                                                    shift.status.toUpperCase()}
-                                            </div>
-                                        </div>
-                                    </div>
+                    {flash.success && <Alert type="success" message={flash.success} showIcon />}
+                    {flash.error && <Alert type="error" message={flash.error} showIcon />}
+
+                    <Card>
+                        <Row gutter={[16, 16]}>
+                            <Col xs={12} sm={12} md={6}>
+                                <Statistic title="Kasir" value={shift.user?.name || "-"} prefix={<ClockCircleOutlined />} />
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Statistic
+                                    title="Waktu Buka"
+                                    value={shift.opened_at ? new Date(shift.opened_at).toLocaleString("id-ID", dateTimeFormatOptions) : "-"}
+                                    valueStyle={{ fontSize: 14 }}
+                                />
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Statistic
+                                    title="Waktu Tutup"
+                                    value={shift.closed_at ? new Date(shift.closed_at).toLocaleString("id-ID", dateTimeFormatOptions) : "-"}
+                                    valueStyle={{ fontSize: 14 }}
+                                />
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <div style={{ textAlign: "center" }}>
+                                    <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Status</Text>
+                                    <Tag color={shift.status === "open" ? "success" : "default"} style={{ fontSize: 13, padding: "2px 12px" }}>
+                                        {shift.status === "open" ? "BUKA" : "TUTUP"}
+                                    </Tag>
                                 </div>
+                            </Col>
+                        </Row>
+                    </Card>
 
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-white h-100">
-                                            <small className=" d-block mb-1">
-                                                Kas Awal
-                                            </small>
-                                            <div className="fw-bold">
-                                                {formatRupiah(
-                                                    shift.cash_in_hand,
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-white h-100">
-                                            <small className=" d-block mb-1">
-                                                Penjualan Tunai
-                                            </small>
-                                            <div className="fw-bold text-success">
-                                                {formatRupiah(
-                                                    shift.summary.cash_sales,
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-white h-100">
-                                            <small className=" d-block mb-1">
-                                                Penjualan Non Tunai
-                                            </small>
-                                            <div className="fw-bold text-primary">
-                                                {formatRupiah(
-                                                    shift.summary
-                                                        .non_cash_sales,
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-white h-100">
-                                            <small className=" d-block mb-1">
-                                                Kas Seharusnya
-                                            </small>
-                                            <div className="fw-bold">
-                                                {formatRupiah(
-                                                    shift.expected_cash,
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                    <Card title={<Space><DollarOutlined style={{ color: "#0d9488" }} />Ringkasan Keuangan</Space>}>
+                        <Row gutter={[16, 16]}>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Kas Awal" value={shift.cash_in_hand} prefix={<MoneyCollectOutlined />} formatter={v => formatRupiah(v)} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Penjualan Tunai" value={shift.summary?.cash_sales || 0} prefix={<RiseOutlined />} valueStyle={{ color: "#22c55e" }} formatter={v => formatRupiah(v)} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Non Tunai" value={shift.summary?.non_cash_sales || 0} prefix={<WalletOutlined />} valueStyle={{ color: "#3b82f6" }} formatter={v => formatRupiah(v)} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Kas Seharusnya" value={shift.summary?.expected_cash || 0} prefix={<DollarOutlined />} valueStyle={{ color: "#0d9488" }} formatter={v => formatRupiah(v)} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Refund Tunai" value={shift.summary?.cash_refunds || 0} prefix={<FallOutlined />} valueStyle={{ color: "#ef4444" }} formatter={v => formatRupiah(v)} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Refund Non Tunai" value={shift.summary?.non_cash_refunds || 0} prefix={<SwapOutlined />} valueStyle={{ color: "#f59e0b" }} formatter={v => formatRupiah(v)} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Transaksi" value={shift.summary?.total_transactions || 0} prefix={<ShoppingCartOutlined />} suffix={<Text type="secondary" style={{ fontSize: 12 }}>Lunas: {shift.summary?.paid_transactions || 0}</Text>} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Retur Disetujui" value={shift.summary?.total_returns || 0} prefix={<CheckCircleOutlined />} /></Card>
+                            </Col>
+                        </Row>
+                    </Card>
 
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-white h-100">
-                                            <small className=" d-block mb-1">
-                                                Refund Tunai
-                                            </small>
-                                            <div className="fw-bold text-danger">
-                                                {formatRupiah(
-                                                    shift.summary.cash_refunds,
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-white h-100">
-                                            <small className=" d-block mb-1">
-                                                Refund Non Tunai
-                                            </small>
-                                            <div className="fw-bold text-danger">
-                                                {formatRupiah(
-                                                    shift.summary
-                                                        .non_cash_refunds,
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-white h-100">
-                                            <small className=" d-block mb-1">
-                                                Transaksi
-                                            </small>
-                                            <div className="fw-bold">
-                                                {
-                                                    shift.summary
-                                                        .total_transactions
-                                                }
-                                            </div>
-                                            <small className="">
-                                                Lunas:{" "}
-                                                {
-                                                    shift.summary
-                                                        .paid_transactions
-                                                }
-                                            </small>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded-3 p-3 bg-white h-100">
-                                            <small className=" d-block mb-1">
-                                                Retur Disetujui
-                                            </small>
-                                            <div className="fw-bold">
-                                                {shift.summary.total_returns}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                    {shift.summary?.ppob_expected_balance != null && (
+                        <Card
+                            title="Ringkasan PPOB Shift"
+                            style={{ background: "linear-gradient(135deg, #0d9488, #115e59)" }}
+                            headStyle={{ color: "#fff", borderBottom: "1px solid rgba(255,255,255,0.15)" }}
+                        >
+                            <Row gutter={[16, 16]}>
+                                <Col xs={12} sm={6}>
+                                    <Statistic title="Saldo Awal" value={shift.summary.ppob_opening_balance || shift.ppob_opening_balance || 0} formatter={v => formatRupiah(v)} />
+                                </Col>
+                                <Col xs={12} sm={6}>
+                                    <Statistic title="Top Up" value={shift.summary.ppob_top_ups || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: "#22c55e" }} />
+                                </Col>
+                                <Col xs={12} sm={6}>
+                                    <Statistic title="Biaya Penjualan" value={shift.summary.ppob_sales_cost || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: "#ef4444" }} />
+                                </Col>
+                                <Col xs={12} sm={6}>
+                                    <Statistic title="Kontribusi Shift" value={shift.summary.ppob_expected_balance || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: "#fff" }} />
+                                </Col>
+                            </Row>
+                            <Alert
+                                type="info"
+                                showIcon
+                                style={{ marginTop: 16 }}
+                                message="Akun PPOB dapat dipakai bersamaan oleh kasir lain. Saldo di atas hanya kontribusi shift ini. Verifikasi di menu Riwayat Saldo PPOB."
+                            />
+                        </Card>
+                    )}
 
-                                {shift.summary?.ppob_expected_balance != null && (
-                                    <div className="border rounded-3 p-3 bg-light mb-4 text-white">
-                                        <h6 className="fw-bold mb-3">Ringkasan PPOB Shift</h6>
-                                        <div className="row g-3">
-                                            <div className="col-md-3"><small className="text-white d-block">Saldo Awal</small><strong>{formatRupiah(shift.summary.ppob_opening_balance || shift.ppob_opening_balance || 0)}</strong></div>
-                                            <div className="col-md-3"><small className="text-white d-block">Top Up</small><strong>{formatRupiah(shift.summary.ppob_top_ups || 0)}</strong></div>
-                                            <div className="col-md-3"><small className="text-white d-block">Biaya Penjualan</small><strong>{formatRupiah(shift.summary.ppob_sales_cost || 0)}</strong></div>
-                                            <div className="col-md-3"><small className="text-white d-block">Kontribusi Shift Ini</small><strong>{formatRupiah(shift.summary.ppob_expected_balance || 0)}</strong></div>
-                                        </div>
-                                        <small className="text-white d-block mt-3">
-                                            Akun PPOB ini dapat dipakai bersamaan oleh kasir lain, sehingga saldo di atas hanya mencerminkan kontribusi shift ini, bukan saldo fisik akun.
-                                            Verifikasi saldo fisik di app provider dilakukan di menu{" "}
-                                            <Link href="/account/ppob-balance-logs" className="link-light">Riwayat Saldo PPOB</Link>, bukan per shift.
-                                        </small>
-                                    </div>
-                                )}
+                    {shift.note && (
+                        <Card title="Catatan Shift" size="small">
+                            <Text style={{ whiteSpace: "pre-line" }}>{shift.note}</Text>
+                        </Card>
+                    )}
 
-                                {shift.note && (
-                                    <div className="border rounded-3 p-3 bg-light mb-4">
-                                        <small className=" d-block mb-1">
-                                            Catatan Shift
-                                        </small>
-                                        <div style={{ whiteSpace: "pre-line" }}>
-                                            {shift.note}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {shift.status === "open" &&
-                                hasAnyPermission(
-                                    ["cashier_shifts.close"],
-                                    permissions,
-                                ) ? (
-                                    <div className="card border-0 bg-light shadow-sm rounded-3">
-                                        <div className="card-body">
-                                            <h6 className="fw-bold mb-3">
-                                                <CloseCircleOutlined className="me-2" />{" "}
-                                                TUTUP SHIFT
-                                            </h6>
-                                            <form onSubmit={closeShift}>
-                                                <div className="row g-3">
-                                                    <div className="col-md-4">
-                                                        <label className="fw-bold mb-2">
-                                                            Kas Aktual
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            className={`form-control ${errors.actual_cash ? "is-invalid" : ""}`}
-                                                            value={actualCash}
-                                                            onChange={(e) =>
-                                                                setActualCash(
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                        />
-                                                        {errors.actual_cash && (
-                                                            <div className="invalid-feedback">
-                                                                {
-                                                                    errors.actual_cash
-                                                                }
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="col-md-4">
-                                                        <label className="fw-bold mb-2">
-                                                            Kas Seharusnya
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className="form-control"
-                                                            value={formatRupiah(
-                                                                shift.summary
-                                                                    .expected_cash,
-                                                            )}
-                                                            readOnly
-                                                        />
-                                                    </div>
-                                                    <div className="col-md-4">
-                                                        <label className="fw-bold mb-2">
-                                                            Perkiraan Selisih
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-control ${estimatedDifference < 0 ? "text-danger" : "text-success"}`}
-                                                            value={formatRupiah(
-                                                                estimatedDifference,
-                                                            )}
-                                                            readOnly
-                                                        />
-                                                    </div>
-                                                    <div className="col-12">
-                                                        <label className="fw-bold mb-2">
-                                                            Catatan Penutupan
-                                                        </label>
-                                                        <textarea
-                                                            rows="4"
-                                                            className={`form-control ${errors.note ? "is-invalid" : ""}`}
-                                                            value={note}
-                                                            onChange={(e) =>
-                                                                setNote(
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="Contoh: ada selisih kas karena pembulatan atau koreksi manual."
-                                                        />
-                                                        {errors.note && (
-                                                            <div className="invalid-feedback">
-                                                                {errors.note}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <button
-                                                    type="submit"
-                                                    className="btn btn-danger shadow-sm rounded-sm mt-3"
-                                                >
-                                                    <CloseCircleOutlined className="me-2" />{" "}
-                                                    TUTUP SHIFT
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                ) : shift.status === "closed" ? (
-                                    <div className="row g-3">
-                                        <div className="col-md-4">
-                                            <div className="border rounded-3 p-3 bg-light h-100">
-                                                <small className=" d-block mb-1">
-                                                    Kas Aktual
-                                                </small>
-                                                <div className="fw-bold">
-                                                    {formatRupiah(
-                                                        shift.actual_cash,
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="col-md-4">
-                                            <div className="border rounded-3 p-3 bg-light h-100">
-                                                <small className=" d-block mb-1">
-                                                    Selisih
-                                                </small>
-                                                <div
-                                                    className={`fw-bold ${shift.difference < 0 ? "text-danger" : "text-white"}`}
-                                                >
-                                                    {formatRupiah(
-                                                        shift.difference,
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="col-md-4">
-                                            <div className="border rounded-3 p-3 bg-light h-100">
-                                                <small className=" d-block mb-1">
-                                                    Total Transaksi
-                                                </small>
-                                                <div className="fw-bold">
-                                                    {shift.total_transactions}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : null}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    {shift.status === "open" && hasAnyPermission(["cashier_shifts.close"], permissions) ? (
+                        <Card
+                            title={<Space><CloseCircleOutlined style={{ color: "#ef4444" }} />TUTUP SHIFT</Space>}
+                            style={{ borderColor: "#ef4444" }}
+                        >
+                            <Form layout="vertical" onFinish={closeShift}>
+                                <Row gutter={[16, 16]}>
+                                    <Col xs={24} md={8}>
+                                        <Form.Item
+                                            label="Kas Aktual"
+                                            validateStatus={errors.actual_cash ? "error" : ""}
+                                            help={errors.actual_cash}
+                                        >
+                                            <InputNumber
+                                                min={0}
+                                                style={{ width: "100%" }}
+                                                value={actualCash}
+                                                onChange={v => setActualCash(v || 0)}
+                                                formatter={v => formatRupiah(v)}
+                                                parser={v => v?.replace(/\D/g, "")}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} md={8}>
+                                        <Form.Item label="Kas Seharusnya">
+                                            <InputNumber style={{ width: "100%" }} value={shift.summary?.expected_cash || 0} disabled formatter={v => formatRupiah(v)} />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} md={8}>
+                                        <Form.Item label="Perkiraan Selisih">
+                                            <InputNumber
+                                                style={{ width: "100%", color: estimatedDifference < 0 ? "#ef4444" : "#22c55e" }}
+                                                value={estimatedDifference}
+                                                disabled
+                                                formatter={v => formatRupiah(v)}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24}>
+                                        <Form.Item label="Catatan Penutupan" validateStatus={errors.note ? "error" : ""} help={errors.note}>
+                                            <Input.TextArea rows={4} value={note} onChange={e => setNote(e.target.value)} placeholder="Contoh: ada selisih kas karena pembulatan atau koreksi manual." />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <Button type="primary" danger size="large" htmlType="submit" icon={<CloseCircleOutlined />}>
+                                    TUTUP SHIFT
+                                </Button>
+                            </Form>
+                        </Card>
+                    ) : shift.status === "closed" ? (
+                        <Card title="Hasil Penutupan">
+                            <Row gutter={[16, 16]}>
+                                <Col xs={24} sm={8}>
+                                    <Statistic title="Kas Aktual" value={shift.actual_cash} formatter={v => formatRupiah(v)} prefix={<MoneyCollectOutlined />} />
+                                </Col>
+                                <Col xs={24} sm={8}>
+                                    <Statistic title="Selisih" value={shift.difference} formatter={v => formatRupiah(v)} valueStyle={{ color: shift.difference < 0 ? "#ef4444" : "#22c55e" }} prefix={<SwapOutlined />} />
+                                </Col>
+                                <Col xs={24} sm={8}>
+                                    <Statistic title="Total Transaksi" value={shift.total_transactions} prefix={<ShoppingCartOutlined />} />
+                                </Col>
+                            </Row>
+                        </Card>
+                    ) : null}
+                </Space>
             </LayoutAccount>
         </>
     );
