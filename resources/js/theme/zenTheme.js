@@ -26,12 +26,16 @@ export function getZenTheme(mode) {
             Card: {
                 borderRadiusLG: 12,
             },
-            Table: isDark
-                ? {}
-                : {
-                      headerBg: "#f8fafc",
-                      headerColor: "#0f172a",
-                  },
+            Table: {
+                headerBg: isDark ? "#1e293b" : "#f8fafc",
+                headerColor: isDark ? "#f1f5f9" : "#0f172a",
+                borderColor: isDark ? "#334155" : "#e2e8f0",
+                rowHoverBg: isDark ? "rgba(255, 255, 255, 0.04)" : "#f8fafc",
+                rowSelectedBg: isDark ? "rgba(13, 148, 136, 0.15)" : "#e0f2f1",
+                rowSelectedHoverBg: isDark
+                    ? "rgba(13, 148, 136, 0.22)"
+                    : "#ccfbf1",
+            },
         },
     };
 }

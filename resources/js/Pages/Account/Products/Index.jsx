@@ -13,6 +13,7 @@ import {
     Typography,
     Upload,
     notification,
+    theme,
 } from "antd";
 import {
     BoxPlotOutlined,
@@ -36,6 +37,7 @@ const { Title, Text } = Typography;
 export default function ProductIndex() {
     const { products, auth = {} } = usePage().props;
     const allPermissions = auth.permissions || {};
+    const { token } = theme.useToken();
 
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [showImportModal, setShowImportModal] = useState(false);
@@ -94,16 +96,37 @@ export default function ProductIndex() {
         },
         {
             title: "Barcode",
-            width: 140,
+            width: 160,
             align: "center",
-            render: (_, product) => (
-                <Image
-                    src={`https://bwipjs-api.metafloor.com/?bcid=code128&text=${product.barcode}&scale=2&height=10&includetext`}
-                    alt={product.barcode}
-                    height={40}
-                    preview={false}
-                />
-            ),
+            onCell: () => ({
+                style: {
+                    background: token.colorBgElevated,
+                },
+            }),
+            render: (_, product) =>
+                product.barcode ? (
+                    <div
+                        style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: token.paddingXXS,
+                            background: token.colorWhite,
+                            border: `1px solid ${token.colorBorderSecondary}`,
+                            borderRadius: token.borderRadiusSM,
+                        }}
+                    >
+                        <Image
+                            src={`https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(product.barcode)}&scale=2&height=10&includetext&backgroundcolor=ffffff&barcolor=000000`}
+                            alt={product.barcode}
+                            height={40}
+                            preview={false}
+                            style={{ display: "block" }}
+                        />
+                    </div>
+                ) : (
+                    <Text type="secondary">—</Text>
+                ),
         },
         {
             title: "Nama Produk",
@@ -278,6 +301,7 @@ export default function ProductIndex() {
                     </div>
 
                     <Table
+                        bordered
                         rowKey="id"
                         columns={columns}
                         dataSource={products.data}
@@ -287,7 +311,8 @@ export default function ProductIndex() {
                             selectedRowKeys,
                             onChange: setSelectedRowKeys,
                         }}
-                        scroll={{ x: 900 }}
+                        scroll={{ x: "max-content" }}
+                        style={{ width: "100%" }}
                     />
 
                     <Pagination
