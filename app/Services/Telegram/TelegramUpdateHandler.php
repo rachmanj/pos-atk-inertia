@@ -18,6 +18,7 @@ class TelegramUpdateHandler
         protected TelegramCommandParser $commandParser,
         protected PpobProductMatcher $productMatcher,
         protected TelegramPpobSaleService $saleService,
+        protected TelegramPosQueryService $posQueryService,
     ) {}
 
     public function handle(array $update): void
@@ -99,6 +100,12 @@ class TelegramUpdateHandler
                 $chatId,
                 $this->userResolver->getStatusMessage(null, $telegramId)
             );
+            $this->markUpdateProcessed($updateId);
+
+            return;
+        }
+
+        if ($this->handlePosCommand($chatId, $user, $command, $text)) {
             $this->markUpdateProcessed($updateId);
 
             return;
@@ -339,10 +346,46 @@ beli &lt;produk&gt; &lt;qty&gt; [di &lt;ref&gt;] @&lt;biaya per unit&gt;
 /start — sapaan & status
 /help — bantuan format
 /status — shift & akun PPOB
+/cari &lt;nama&gt; — cari produk
+/stok &lt;nama&gt; — cek stok produk
+/produk — daftar produk acak
+/transaksi — transaksi terakhir hari ini
+/saldo — cek saldo PPOB
+/shift — status shift saat ini
+/laporan — ringkasan penjualan hari ini
 /batal — batalkan pending
 
 Gunakan <b>total</b> untuk biaya keseluruhan atau <b>@</b> untuk biaya per unit.
 HTML;
+    }
+
+    protected function handlePosCommand(int|string $chatId, User $user, string $command, string $text): bool
+    {
+        $message = match ($command) {
+            '/cari' => $this->posQueryService->handleCari($this->commandArgument($text)),
+            '/stok' => $this->posQueryService->handleStok($this->commandArgument($text)),
+            '/produk' => $this->posQueryService->handleProduk(),
+            '/transaksi' => $this->posQueryService->handleTransaksi($user),
+            '/saldo' => $this->posQueryService->handleSaldo(),
+            '/shift' => $this->posQueryService->handleShift($user),
+            '/laporan' => $this->posQueryService->handleLaporan($user),
+            default => null,
+        };
+
+        if ($message === null) {
+            return false;
+        }
+
+        $this->botClient->sendMessage($chatId, $message);
+
+        return true;
+    }
+
+    protected function commandArgument(string $text): string
+    {
+        $parts = preg_split('/\s+/', trim($text), 2);
+
+        return isset($parts[1]) ? trim($parts[1]) : '';
     }
 
     protected function formatProductChoices($matches): string
