@@ -73,7 +73,8 @@ class TelegramBotClient
         }
 
         try {
-            $response = Http::timeout(10)->post("{$this->baseUrl}/{$method}", $payload);
+            $timeout = $method === 'getUpdates' ? 35 : 10;
+            $response = Http::timeout($timeout)->post("{$this->baseUrl}/{$method}", $payload);
 
             if (! $response->successful()) {
                 Log::warning('Telegram API request gagal', [

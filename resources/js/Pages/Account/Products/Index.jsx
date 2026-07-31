@@ -131,17 +131,7 @@ export default function ProductIndex() {
         {
             title: "Nama Produk",
             render: (_, product) => (
-                <Flex align="center" gap={12} justify="center">
-                    <Image
-                        src={product.image}
-                        width={40}
-                        height={40}
-                        style={{ objectFit: "cover", borderRadius: 8 }}
-                        alt={product.title}
-                        preview={false}
-                    />
-                    <Text strong>{product.title}</Text>
-                </Flex>
+                <Text strong>{product.title}</Text>
             ),
         },
         {
@@ -151,7 +141,7 @@ export default function ProductIndex() {
         },
         {
             title: "Harga Jual (default)",
-            align: "center",
+            align: "right",
             render: (_, product) =>
                 product.product_type === "ppob" ? (
                     <Text type="secondary">—</Text>
