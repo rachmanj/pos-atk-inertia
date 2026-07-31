@@ -45,7 +45,21 @@ class CashierShiftController extends Controller
 
         $activeShift = $user->activeCashierShift;
 
+        $shiftBaseQuery = CashierShift::query()
+            ->when(!$canViewAll, fn ($query) => $query->where('user_id', $user->id));
+
+        $summary = [
+            'total_shifts' => (clone $shiftBaseQuery)->count(),
+            'open_shifts'  => (clone $shiftBaseQuery)->where('status', 'open')->count(),
+            'total_sales'  => (int) Transaction::query()
+                ->where('status', '!=', 'voided')
+                ->where('payment_status', 'paid')
+                ->when(!$canViewAll, fn ($query) => $query->where('cashier_id', $user->id))
+                ->sum('grand_total'),
+        ];
+
         return Inertia::render('Account/CashierShifts/Index', [
+            'summary' => $summary,
             'activeShift' => $activeShift ? [
                 'id'                 => $activeShift->id,
                 'opened_at'          => $activeShift->opened_at,
