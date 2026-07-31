@@ -10,6 +10,8 @@ import {
     Card,
     Col,
     Row,
+    Space,
+    Statistic,
     Table,
     Tag,
     Typography,
@@ -19,27 +21,19 @@ import {
     DollarOutlined,
     EyeOutlined,
     LoginOutlined,
+    MoneyCollectOutlined,
+    RiseOutlined,
+    FallOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
-const statusColors = {
-    open: "success",
-    closed: "default",
-};
-
-const statusLabels = {
-    open: "BUKA",
-    closed: "TUTUP",
-};
+const statusColors = { open: "success", closed: "default" };
+const statusLabels = { open: "BUKA", closed: "TUTUP" };
 
 const dateTimeFormatOptions = {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
+    day: "2-digit", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false,
 };
 
 export default function CashierShiftIndex() {
@@ -49,7 +43,7 @@ export default function CashierShiftIndex() {
     const columns = [
         {
             title: "No.",
-            width: 60,
+            width: 50,
             align: "center",
             render: (_, __, index) =>
                 index + 1 + (shifts.current_page - 1) * shifts.per_page,
@@ -62,62 +56,51 @@ export default function CashierShiftIndex() {
             title: "Waktu Buka",
             dataIndex: "opened_at",
             render: (value) =>
-                value
-                    ? new Date(value).toLocaleString(
-                          "id-ID",
-                          dateTimeFormatOptions,
-                      )
-                    : "-",
+                value ? new Date(value).toLocaleString("id-ID", dateTimeFormatOptions) : "-",
         },
         {
             title: "Waktu Tutup",
             dataIndex: "closed_at",
             render: (value) =>
-                value
-                    ? new Date(value).toLocaleString(
-                          "id-ID",
-                          dateTimeFormatOptions,
-                      )
-                    : "-",
+                value ? new Date(value).toLocaleString("id-ID", dateTimeFormatOptions) : "-",
         },
         {
             title: "Kas Awal",
             dataIndex: "cash_in_hand",
-            render: (value) => <strong>{formatRupiah(value)}</strong>,
+            align: "right",
+            render: (value) => <Text strong>{formatRupiah(value)}</Text>,
         },
         {
             title: "Kas Seharusnya",
+            align: "right",
             render: (_, record) =>
                 formatRupiah(
                     record.status === "open"
-                        ? record.summary.expected_cash
+                        ? record.summary?.expected_cash
                         : record.expected_cash,
                 ),
         },
         {
             title: "Kas Aktual",
+            align: "right",
             render: (_, record) =>
-                record.status === "closed"
-                    ? formatRupiah(record.actual_cash)
-                    : "-",
+                record.status === "closed" ? formatRupiah(record.actual_cash) : "-",
         },
         {
             title: "Selisih",
+            align: "right",
             render: (_, record) =>
                 record.status === "closed" ? (
-                    <Text
-                        strong
-                        type={record.difference < 0 ? "danger" : undefined}
-                    >
+                    <Text strong type={record.difference < 0 ? "danger" : "success"}>
                         {formatRupiah(record.difference)}
                     </Text>
-                ) : (
-                    "-"
-                ),
+                ) : ("-"),
         },
         {
             title: "Status",
             dataIndex: "status",
+            width: 80,
+            align: "center",
             render: (status) => (
                 <Tag color={statusColors[status] || "default"}>
                     {statusLabels[status] || status?.toUpperCase()}
@@ -126,13 +109,11 @@ export default function CashierShiftIndex() {
         },
         {
             title: "Aksi",
-            width: 100,
+            width: 80,
             align: "center",
             render: (_, record) => (
                 <Link href={`/account/cashier-shifts/${record.id}`}>
-                    <Button size="small" icon={<EyeOutlined />}>
-                        Detail
-                    </Button>
+                    <Button size="small" icon={<EyeOutlined />} />
                 </Link>
             ),
         },
@@ -140,141 +121,91 @@ export default function CashierShiftIndex() {
 
     return (
         <>
-            <Head>
-                <title>Shift Kasir - ZenPOS</title>
-            </Head>
+            <Head><title>Shift Kasir - ZenPOS</title></Head>
             <LayoutAccount>
                 <Card
-                    className="border-0 shadow-sm rounded-3 mt-4"
                     title={
-                        <Title level={5} className="mb-0">
-                            <ClockCircleOutlined className="me-2" />
-                            SHIFT KASIR
-                        </Title>
+                        <Space>
+                            <ClockCircleOutlined style={{ color: "#0d9488" }} />
+                            <span>SHIFT KASIR</span>
+                        </Space>
                     }
                     extra={
-                        <div>
-                            {!activeShift &&
-                                hasAnyPermission(
-                                    ["cashier_shifts.open"],
-                                    permissions,
-                                ) && (
-                                    <Link href="/account/cashier-shifts/create">
-                                        <Button
-                                            type="primary"
-                                            icon={<LoginOutlined />}
-                                        >
-                                            BUKA SHIFT
-                                        </Button>
-                                    </Link>
-                                )}
-                            {activeShift && (
-                                <Link
-                                    href={`/account/cashier-shifts/${activeShift.id}`}
-                                >
-                                    <Button
-                                        type="primary"
-                                        icon={<DollarOutlined />}
-                                    >
-                                        SHIFT AKTIF
-                                    </Button>
-                                </Link>
-                            )}
-                        </div>
+                        !activeShift && hasAnyPermission(["cashier_shifts.open"], permissions) ? (
+                            <Link href="/account/cashier-shifts/create">
+                                <Button type="primary" icon={<LoginOutlined />}>BUKA SHIFT</Button>
+                            </Link>
+                        ) : activeShift ? (
+                            <Link href={`/account/cashier-shifts/${activeShift.id}`}>
+                                <Button type="primary" icon={<DollarOutlined />}>SHIFT AKTIF</Button>
+                            </Link>
+                        ) : null
                     }
                 >
                     {flash.success && (
-                        <Alert
-                            type="success"
-                            message={flash.success}
-                            showIcon
-                            className="mb-4"
-                        />
+                        <Alert type="success" message={flash.success} showIcon style={{ marginBottom: 16 }} />
                     )}
                     {flash.error && (
-                        <Alert
-                            type="error"
-                            message={flash.error}
-                            showIcon
-                            className="mb-4"
-                        />
+                        <Alert type="error" message={flash.error} showIcon style={{ marginBottom: 16 }} />
                     )}
 
                     {activeShift ? (
-                        <Card
-                            className="border-0 bg-light shadow-sm rounded-3 mb-4"
-                        >
-                            <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                        <Card style={{ marginBottom: 16, background: "#f8fafc" }}>
+                            <Space style={{ width: "100%", justifyContent: "space-between", marginBottom: 16 }} wrap>
                                 <div>
-                                    <Text type="secondary" className="d-block mb-1">
-                                        Shift aktif
-                                    </Text>
-                                    <Title level={4} className="mb-0">
+                                    <Text type="secondary">Shift aktif</Text>
+                                    <Title level={4} style={{ margin: 0 }}>
                                         Dibuka{" "}
                                         {activeShift.opened_at
-                                            ? new Date(
-                                                  activeShift.opened_at,
-                                              ).toLocaleString(
-                                                  "id-ID",
-                                                  dateTimeFormatOptions,
-                                              )
+                                            ? new Date(activeShift.opened_at).toLocaleString("id-ID", dateTimeFormatOptions)
                                             : "-"}
                                     </Title>
                                 </div>
-                                <Tag color="success" className="px-3 py-1">
-                                    BUKA
-                                </Tag>
-                            </div>
+                                <Tag color="success" style={{ fontSize: 14, padding: "2px 12px" }}>BUKA</Tag>
+                            </Space>
                             <Row gutter={[12, 12]}>
-                                <Col xs={24} sm={12} md={6}>
-                                    <div className="border rounded-3 bg-white p-3 h-100">
-                                        <Text type="secondary" className="small">
-                                            Kas Awal
-                                        </Text>
-                                        <div className="fw-bold">
-                                            {formatRupiah(
-                                                activeShift.cash_in_hand,
-                                            )}
-                                        </div>
-                                    </div>
+                                <Col xs={12} sm={12} md={6}>
+                                    <Card size="small">
+                                        <Statistic
+                                            title="Kas Awal"
+                                            value={activeShift.cash_in_hand}
+                                            prefix={<MoneyCollectOutlined />}
+                                            formatter={(v) => formatRupiah(v)}
+                                        />
+                                    </Card>
                                 </Col>
-                                <Col xs={24} sm={12} md={6}>
-                                    <div className="border rounded-3 bg-white p-3 h-100">
-                                        <Text type="secondary" className="small">
-                                            Penjualan Tunai
-                                        </Text>
-                                        <div className="fw-bold text-success">
-                                            {formatRupiah(
-                                                activeShift.summary.cash_sales,
-                                            )}
-                                        </div>
-                                    </div>
+                                <Col xs={12} sm={12} md={6}>
+                                    <Card size="small">
+                                        <Statistic
+                                            title="Penjualan Tunai"
+                                            value={activeShift.summary?.cash_sales || 0}
+                                            prefix={<RiseOutlined />}
+                                            valueStyle={{ color: "#22c55e" }}
+                                            formatter={(v) => formatRupiah(v)}
+                                        />
+                                    </Card>
                                 </Col>
-                                <Col xs={24} sm={12} md={6}>
-                                    <div className="border rounded-3 bg-white p-3 h-100">
-                                        <Text type="secondary" className="small">
-                                            Refund Tunai
-                                        </Text>
-                                        <div className="fw-bold text-danger">
-                                            {formatRupiah(
-                                                activeShift.summary
-                                                    .cash_refunds,
-                                            )}
-                                        </div>
-                                    </div>
+                                <Col xs={12} sm={12} md={6}>
+                                    <Card size="small">
+                                        <Statistic
+                                            title="Refund Tunai"
+                                            value={activeShift.summary?.cash_refunds || 0}
+                                            prefix={<FallOutlined />}
+                                            valueStyle={{ color: "#ef4444" }}
+                                            formatter={(v) => formatRupiah(v)}
+                                        />
+                                    </Card>
                                 </Col>
-                                <Col xs={24} sm={12} md={6}>
-                                    <div className="border rounded-3 bg-white p-3 h-100">
-                                        <Text type="secondary" className="small">
-                                            Kas Seharusnya
-                                        </Text>
-                                        <div className="fw-bold text-primary">
-                                            {formatRupiah(
-                                                activeShift.summary
-                                                    .expected_cash,
-                                            )}
-                                        </div>
-                                    </div>
+                                <Col xs={12} sm={12} md={6}>
+                                    <Card size="small">
+                                        <Statistic
+                                            title="Kas Seharusnya"
+                                            value={activeShift.summary?.expected_cash || 0}
+                                            prefix={<DollarOutlined />}
+                                            valueStyle={{ color: "#0d9488" }}
+                                            formatter={(v) => formatRupiah(v)}
+                                        />
+                                    </Card>
                                 </Col>
                             </Row>
                         </Card>
@@ -282,7 +213,7 @@ export default function CashierShiftIndex() {
                         <Alert
                             type="warning"
                             showIcon
-                            className="mb-4"
+                            style={{ marginBottom: 16 }}
                             message="Belum ada shift aktif. Buka shift sebelum mulai transaksi kasir."
                         />
                     )}
@@ -293,21 +224,22 @@ export default function CashierShiftIndex() {
                         columns={columns}
                         dataSource={shifts.data}
                         pagination={false}
-                        locale={{
-                            emptyText: "Belum ada histori shift kasir.",
-                        }}
-                        scroll={{ x: 1100 }}
+                        size="small"
+                        scroll={{ x: 900 }}
+                        locale={{ emptyText: "Belum ada histori shift kasir." }}
                     />
 
-                    <Pagination
-                        links={shifts.links}
-                        align="end"
-                        meta={{
-                            current_page: shifts.current_page,
-                            per_page: shifts.per_page,
-                            total: shifts.total,
-                        }}
-                    />
+                    <div style={{ marginTop: 16, textAlign: "right" }}>
+                        <Pagination
+                            links={shifts.links}
+                            align="end"
+                            meta={{
+                                current_page: shifts.current_page,
+                                per_page: shifts.per_page,
+                                total: shifts.total,
+                            }}
+                        />
+                    </div>
                 </Card>
             </LayoutAccount>
         </>
