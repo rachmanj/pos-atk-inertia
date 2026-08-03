@@ -23,27 +23,42 @@ export default function PosProductGrid({
     onSearch,
     onCategoryClick,
     onAddToCart,
+    onOpenScanner,
+    showScannerButton = false,
 }) {
     const isMobile = useMobile();
 
     return (
         <section className="pos-sale-panel">
             <form className="pos-search-bar" onSubmit={onSearch}>
-                <Input
-                    ref={searchInputRef}
-                    className="pos-search-input"
-                    size="large"
-                    prefix={<SearchOutlined />}
-                    placeholder="Scan barcode atau cari produk"
-                    value={searchQuery}
-                    onChange={(e) => onSearchQueryChange(e.target.value)}
-                    autoFocus
-                    addonAfter={
-                        <Button type="primary" htmlType="submit">
-                            Cari
+                <div className="pos-search-with-scanner">
+                    <Input
+                        ref={searchInputRef}
+                        className="pos-search-input"
+                        size="large"
+                        prefix={<SearchOutlined />}
+                        placeholder="Scan barcode atau cari produk"
+                        value={searchQuery}
+                        onChange={(e) => onSearchQueryChange(e.target.value)}
+                        autoFocus
+                        addonAfter={
+                            <Button type="primary" htmlType="submit">
+                                Cari
+                            </Button>
+                        }
+                    />
+                    {showScannerButton && isMobile && (
+                        <Button
+                            type="default"
+                            size="large"
+                            className="barcode-scan-trigger"
+                            aria-label="Buka scanner barcode"
+                            onClick={onOpenScanner}
+                        >
+                            📷
                         </Button>
-                    }
-                />
+                    )}
+                </div>
             </form>
 
             <div className="pos-category-strip">

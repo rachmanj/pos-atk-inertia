@@ -26,6 +26,8 @@ import {
 } from "@ant-design/icons";
 import ProductUnitBuilder from "../../../Components/ProductUnitBuilder";
 import ProductComponentBuilder from "../../../Components/ProductComponentBuilder";
+import BarcodeScanner from "../../../Components/BarcodeScanner";
+import useMobile from "../../../Hooks/useMobile";
 
 const { Title, Text } = Typography;
 
@@ -62,6 +64,9 @@ export default function ProductCreate() {
         { component_product_id: "", qty_per_unit: 1, note: "" },
     ]);
     const [saving, setSaving] = useState(false);
+    const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+
+    const isMobile = useMobile();
 
     const isPhysical = productType === "physical";
     const isService = productType === "service";
@@ -200,6 +205,16 @@ export default function ProductCreate() {
                                             }
                                             placeholder="Masukkan barcode atau scan"
                                         />
+                                        {isMobile && (
+                                            <Button
+                                                aria-label="Scan barcode"
+                                                onClick={() =>
+                                                    setShowBarcodeScanner(true)
+                                                }
+                                            >
+                                                📷
+                                            </Button>
+                                        )}
                                         <Button
                                             type="primary"
                                             icon={<BarcodeOutlined />}
@@ -450,6 +465,16 @@ export default function ProductCreate() {
                         </Space>
                     </form>
                 </Card>
+
+                {showBarcodeScanner && (
+                    <BarcodeScanner
+                        onScan={(value) => {
+                            setBarcode(value);
+                            setShowBarcodeScanner(false);
+                        }}
+                        onClose={() => setShowBarcodeScanner(false)}
+                    />
+                )}
             </LayoutAccount>
         </>
     );

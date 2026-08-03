@@ -19,6 +19,7 @@
         "@ant-design/icons": "^6.3.2",
         "@inertiajs/react": "^3.0.3",
         "antd": "^6.5.1",
+        "html5-qrcode": "^2.3.8",
         "react": "^19.2.5",
         "react-dom": "^19.2.5",
         "recharts": "^3.9.2"

@@ -12,6 +12,7 @@ import PosPaymentSummary from "../../../Components/Pos/PosPaymentSummary";
 import PosPpobModal from "../../../Components/Pos/PosPpobModal";
 import PosUnitModal from "../../../Components/Pos/PosUnitModal";
 import PosQuickCustomerModal from "../../../Components/Pos/PosQuickCustomerModal";
+import BarcodeScanner from "../../../Components/BarcodeScanner";
 import { lineNet } from "../../../Components/Pos/posUtils";
 
 export default function TransactionCreate() {
@@ -53,6 +54,7 @@ export default function TransactionCreate() {
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const [showQuickCreateModal, setShowQuickCreateModal] = useState(false);
     const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+    const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
     const [quickCustomerName, setQuickCustomerName] = useState("");
     const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
     const customerSearchTimer = useRef(null);
@@ -181,6 +183,53 @@ export default function TransactionCreate() {
     const handleCategoryClick = (id) => {
         setCategoryId(id);
         visitProductList(id, searchQuery);
+    };
+
+    const handleBarcodeScan = (barcode) => {
+        setShowBarcodeScanner(false);
+        setSearchQuery(barcode);
+
+        const query = new URLSearchParams({ q: barcode });
+        if (categoryId) {
+            query.set("category_id", categoryId);
+        }
+
+        router.get(
+            `/account/transactions/create?${query.toString()}`,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ["products"],
+                onSuccess: (page) => {
+                    const found = page.props.products?.data ?? [];
+                    const match = found.find(
+                        (product) => product.barcode === barcode,
+                    );
+
+                    if (match) {
+                        addToCart(match);
+                        setSearchQuery("");
+                        router.get(
+                            "/account/transactions/create",
+                            {},
+                            {
+                                preserveState: true,
+                                preserveScroll: true,
+                                replace: true,
+                            },
+                        );
+                        return;
+                    }
+
+                    notification.warning({
+                        message: "Produk tidak ditemukan",
+                        description: `Barcode ${barcode} tidak terdaftar.`,
+                        duration: 2,
+                    });
+                },
+            },
+        );
     };
 
     const handleCustomerSearch = (value) => {
@@ -880,6 +929,8 @@ export default function TransactionCreate() {
                                 onSearch={handleSearch}
                                 onCategoryClick={handleCategoryClick}
                                 onAddToCart={addToCart}
+                                showScannerButton
+                                onOpenScanner={() => setShowBarcodeScanner(true)}
                             />
                         </Col>
 
@@ -955,6 +1006,13 @@ export default function TransactionCreate() {
                     }}
                     onSubmit={submitQuickCreateCustomer}
                 />
+
+                {showBarcodeScanner && (
+                    <BarcodeScanner
+                        onScan={handleBarcodeScan}
+                        onClose={() => setShowBarcodeScanner(false)}
+                    />
+                )}
             </LayoutAccount>
         </>
     );
