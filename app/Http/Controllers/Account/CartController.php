@@ -102,10 +102,7 @@ class CartController extends Controller
 
     protected function storePhysicalCart(Request $request, $user, Product $product)
     {
-        if ((int) $product->stock < 1) {
-            return back()->with('error', 'Stok produk habis.');
-        }
-
+        // NOTE: Stok kosong tetap bisa masuk cart (user minta sementara)
         $unitId = (int) ($request->unit_id ?: $product->defaultSellUnit?->unit_id);
 
         $productUnit = $product->productUnits->first(function ($row) use ($unitId) {
