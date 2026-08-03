@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState } from "react";
+import {
+    useCallback,
+    useEffect,
+    useId,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from "react";
 import { Button } from "antd";
 import { CloseOutlined } from "@ant-design/icons";
 import {
@@ -14,22 +21,59 @@ const BARCODE_FORMATS = [
     Html5QrcodeSupportedFormats.UPC_E,
 ];
 
-function isCameraSupported() {
-    if (typeof Html5Qrcode.isSupported === "function") {
-        return Html5Qrcode.isSupported();
-    }
+const SCAN_CONFIG = {
+    fps: 10,
+    qrbox: (viewfinderWidth, viewfinderHeight) => {
+        const width = Math.floor(Math.min(viewfinderWidth * 0.9, 300));
+        const height = Math.floor(
+            Math.min(width * 0.45, viewfinderHeight * 0.6, 160),
+        );
 
+        return {
+            width: Math.max(width, 200),
+            height: Math.max(height, 80),
+        };
+    },
+    aspectRatio: 1.777778,
+};
+
+function isCameraSupported() {
     return !!(
         typeof navigator !== "undefined" &&
-        navigator.mediaDevices &&
-        navigator.mediaDevices.getUserMedia
+        navigator.mediaDevices?.getUserMedia
     );
+}
+
+function isSecureContext() {
+    return typeof window !== "undefined" && window.isSecureContext;
+}
+
+async function stopScannerInstance(instance) {
+    if (!instance) {
+        return;
+    }
+
+    try {
+        if (instance.isScanning) {
+            await instance.stop();
+        }
+    } catch {
+        // ignore stop errors during teardown
+    }
+
+    try {
+        instance.clear();
+    } catch {
+        // ignore clear errors during teardown
+    }
 }
 
 export default function BarcodeScanner({ onScan, onClose }) {
     const elementId = useId().replace(/:/g, "");
     const scannerRef = useRef(null);
     const scannedRef = useRef(false);
+    const startingRef = useRef(false);
+    const mountedRef = useRef(true);
     const onScanRef = useRef(onScan);
     const [status, setStatus] = useState("loading");
     const [errorMessage, setErrorMessage] = useState("");
@@ -39,12 +83,39 @@ export default function BarcodeScanner({ onScan, onClose }) {
     }, [onScan]);
 
     useEffect(() => {
-        if (!isCameraSupported()) {
-            setStatus("unsupported");
+        mountedRef.current = true;
+
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
+
+    const startScanner = useCallback(async () => {
+        if (startingRef.current) {
             return;
         }
 
-        let active = true;
+        if (!isCameraSupported()) {
+            setStatus("unsupported");
+            setErrorMessage("Browser ini tidak mendukung akses kamera.");
+            return;
+        }
+
+        if (!isSecureContext()) {
+            setStatus("error");
+            setErrorMessage(
+                "Kamera hanya tersedia di HTTPS. Buka situs melalui https://.",
+            );
+            return;
+        }
+
+        startingRef.current = true;
+        setStatus("loading");
+        setErrorMessage("");
+
+        await stopScannerInstance(scannerRef.current);
+        scannerRef.current = null;
+
         const scanner = new Html5Qrcode(elementId, {
             formatsToSupport: BARCODE_FORMATS,
             verbose: false,
@@ -63,17 +134,27 @@ export default function BarcodeScanner({ onScan, onClose }) {
             }
         };
 
-        const startScanner = async () => {
+        const tryStart = async (cameraConfig) => {
+            await scanner.start(
+                cameraConfig,
+                SCAN_CONFIG,
+                handleScan,
+                () => {},
+            );
+        };
+
+        try {
+            await tryStart({ facingMode: "environment" });
+
+            if (mountedRef.current) {
+                setStatus("scanning");
+            }
+        } catch (environmentError) {
             try {
                 const cameras = await Html5Qrcode.getCameras();
-                if (!active) {
-                    return;
-                }
 
                 if (!cameras.length) {
-                    setStatus("unsupported");
-                    setErrorMessage("Kamera tidak ditemukan di perangkat ini.");
-                    return;
+                    throw environmentError;
                 }
 
                 const rearCamera =
@@ -83,51 +164,52 @@ export default function BarcodeScanner({ onScan, onClose }) {
                         ),
                     ) || cameras[cameras.length - 1];
 
-                await scanner.start(
-                    rearCamera.id,
-                    {
-                        fps: 10,
-                        qrbox: { width: 280, height: 140 },
-                        aspectRatio: 1.777778,
-                    },
-                    handleScan,
-                    () => {},
-                );
+                await tryStart(rearCamera.id);
 
-                if (active) {
+                if (mountedRef.current) {
                     setStatus("scanning");
                 }
-            } catch (error) {
-                if (!active) {
-                    return;
+            } catch (cameraListError) {
+                try {
+                    await tryStart({ facingMode: "user" });
+
+                    if (mountedRef.current) {
+                        setStatus("scanning");
+                    }
+                } catch (fallbackError) {
+                    if (!mountedRef.current) {
+                        return;
+                    }
+
+                    const message =
+                        fallbackError?.message ||
+                        cameraListError?.message ||
+                        environmentError?.message ||
+                        "Gagal mengakses kamera. Pastikan izin kamera sudah diberikan.";
+
+                    setStatus("permission");
+                    setErrorMessage(message);
                 }
-
-                setStatus("error");
-                setErrorMessage(
-                    error?.message ||
-                        "Gagal mengakses kamera. Pastikan izin kamera sudah diberikan.",
-                );
             }
-        };
+        } finally {
+            startingRef.current = false;
+        }
+    }, [elementId]);
 
+    useLayoutEffect(() => {
         startScanner();
 
         return () => {
-            active = false;
             const instance = scannerRef.current;
             scannerRef.current = null;
-
-            if (!instance) {
-                return;
-            }
-
-            if (instance.isScanning) {
-                instance.stop().catch(() => {});
-            } else {
-                instance.clear();
-            }
+            stopScannerInstance(instance);
         };
-    }, [elementId]);
+    }, [startScanner]);
+
+    const handleRetry = () => {
+        scannedRef.current = false;
+        startScanner();
+    };
 
     return (
         <div className="barcode-scanner-overlay">
@@ -145,12 +227,6 @@ export default function BarcodeScanner({ onScan, onClose }) {
                     />
                 </div>
 
-                {status === "loading" && (
-                    <div className="barcode-scanner-message">
-                        Membuka kamera...
-                    </div>
-                )}
-
                 {status === "unsupported" && (
                     <div className="barcode-scanner-message">
                         {errorMessage ||
@@ -164,12 +240,32 @@ export default function BarcodeScanner({ onScan, onClose }) {
                     </div>
                 )}
 
-                <div
-                    id={elementId}
-                    className={`barcode-scanner-viewfinder${
-                        status === "scanning" ? "" : " is-hidden"
-                    }`}
-                />
+                {status !== "unsupported" && status !== "error" && (
+                    <div className="barcode-scanner-viewfinder-wrap">
+                        <div
+                            id={elementId}
+                            className="barcode-scanner-viewfinder"
+                        />
+
+                        {status === "loading" && (
+                            <div className="barcode-scanner-viewfinder-overlay">
+                                Membuka kamera...
+                            </div>
+                        )}
+
+                        {status === "permission" && (
+                            <div className="barcode-scanner-viewfinder-overlay barcode-scanner-viewfinder-overlay--permission">
+                                <p>{errorMessage}</p>
+                                <Button
+                                    type="primary"
+                                    onClick={handleRetry}
+                                >
+                                    Aktifkan Kamera
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="barcode-scanner-footer">
                     <Button block onClick={onClose}>

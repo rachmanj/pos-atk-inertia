@@ -162,3 +162,9 @@
 **Solution**: `php artisan inventory:import-legacy storage/app/imports/ExportFile.xls` — parser Python (`tools/parse_legacy_inventory_xls.py`, xlrd) + command `ImportLegacyInventory` + `LegacyInventoryCategoryDetector`. Harga kolom Harga1 dalam ribuan (9.0 → Rp 9.000). Barcode col2 fallback col0; skip jika barcode sudah ada.  
 **Key Learning**: Folder `/scripts` di `.gitignore` — parser diletakkan di `tools/`. Backup DB: `mysqldump pos_kasir > backup.sql` sebelum import. Hasil 2026-07-25: 3205 produk diimpor, 0 skipped.
 
+### POS-024 Barcode scanner kamera HP (2026-08-03) ✅ COMPLETE
+
+**Challenge/Decision**: Scanner barcode via kamera tidak jalan di HP (iOS/Android).  
+**Solution**: `BarcodeScanner.jsx` — viewfinder tidak boleh `display:none` saat init (html5-qrcode butuh elemen visible); start dengan `{ facingMode: "environment" }` dulu (hindari `getCameras()` ganda); fallback kamera + tombol "Aktifkan Kamera" untuk retry dengan user gesture (wajib iOS); `useLayoutEffect` + cleanup `stop()`+`clear()`; qrbox responsif. `useMobile` tambah `(hover: none) and (pointer: coarse)`.  
+**Key Learning**: Kamera hanya di secure context (HTTPS); iOS menolak `getUserMedia` tanpa user gesture — tombol retry di dalam modal jika auto-start gagal.
+

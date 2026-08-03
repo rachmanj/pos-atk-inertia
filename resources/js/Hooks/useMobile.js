@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
+const MOBILE_MEDIA_QUERY =
+    "(max-width: 767px), ((hover: none) and (pointer: coarse))";
 
 function getIsMobile() {
     if (typeof window === "undefined") {

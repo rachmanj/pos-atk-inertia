@@ -886,13 +886,37 @@ html {
     font-size: 13px;
 }
 
-.barcode-scanner-viewfinder {
+.barcode-scanner-viewfinder-wrap {
+    position: relative;
     min-height: 280px;
     background: #111;
 }
 
-.barcode-scanner-viewfinder.is-hidden {
-    display: none;
+.barcode-scanner-viewfinder {
+    min-height: 280px;
+}
+
+.barcode-scanner-viewfinder-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    text-align: center;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.barcode-scanner-viewfinder-overlay--permission {
+    flex-direction: column;
+    gap: 12px;
+}
+
+.barcode-scanner-viewfinder-overlay--permission p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 .barcode-scanner-message {
