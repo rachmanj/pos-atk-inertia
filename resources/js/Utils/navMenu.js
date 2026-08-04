@@ -12,6 +12,11 @@
 
 export const NAV_MENUS = [
     { id: 'dashboard',     label: 'Dashboard',           group: null,                   permission: 'dashboard.index',          href: '/account/dashboard' },
+    { id: 'shifts',        label: 'Shift Kasir',         group: 'Penjualan',            permission: 'cashier_shifts.index',     href: '/account/cashier-shifts' },
+    { id: 'pos',           label: 'POS Kasir',           group: 'Penjualan',            permission: 'transactions.create',      href: '/account/transactions/create' },
+    { id: 'transactions',  label: 'Riwayat Transaksi',   group: 'Penjualan',            permission: 'transactions.index',       href: '/account/transactions' },
+    { id: 'returns',       label: 'Retur Customer',      group: 'Penjualan',            permission: 'returns.index',            href: '/account/returns' },
+    { id: 'expenses',      label: 'Pengeluaran',         group: 'Penjualan',            permission: 'expenses.index',           href: '/account/expenses' },
     { id: 'roles',         label: 'Role',                group: 'Pengaturan Sistem',    permission: 'roles.index',              href: '/account/roles' },
     { id: 'users',         label: 'User',                group: 'Pengaturan Sistem',    permission: 'users.index',              href: '/account/users' },
     { id: 'settings',      label: 'Store Settings',      group: 'Pengaturan Sistem',    permission: 'settings.index',           href: '/account/settings' },
@@ -26,11 +31,6 @@ export const NAV_MENUS = [
     { id: 'stock-opname',  label: 'Stock Opname',        group: 'Inventory',            permission: 'stock_opnames.index',      href: '/account/stock-opnames' },
     { id: 'purchases',     label: 'Pembelian Supplier',  group: 'Transaksi Supplier',   permission: 'purchases.index',          href: '/account/purchases' },
     { id: 'supplier-ret',  label: 'Retur Supplier',      group: 'Transaksi Supplier',   permission: 'supplier_returns.index',   href: '/account/supplier-returns' },
-    { id: 'shifts',        label: 'Shift Kasir',         group: 'Penjualan',            permission: 'cashier_shifts.index',     href: '/account/cashier-shifts' },
-    { id: 'pos',           label: 'POS Kasir',           group: 'Penjualan',            permission: 'transactions.create',      href: '/account/transactions/create' },
-    { id: 'transactions',  label: 'Riwayat Transaksi',   group: 'Penjualan',            permission: 'transactions.index',       href: '/account/transactions' },
-    { id: 'returns',       label: 'Retur Customer',      group: 'Penjualan',            permission: 'returns.index',            href: '/account/returns' },
-    { id: 'expenses',      label: 'Pengeluaran',         group: 'Penjualan',            permission: 'expenses.index',           href: '/account/expenses' },
     { id: 'report-sales',    label: 'Laporan Penjualan',   group: 'Laporan',              permission: 'reports.sales',            href: '/account/reports/sales' },
     { id: 'report-product',  label: 'Produk Terlaris',     group: 'Laporan',              permission: 'reports.product_sales',    href: '/account/reports/product-sales' },
     { id: 'report-ppob',     label: 'Laporan PPOB',        group: 'Laporan',              permission: 'reports.ppob',             href: '/account/reports/ppob' },
