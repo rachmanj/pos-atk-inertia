@@ -17,9 +17,6 @@ export const NAV_MENUS = [
     { id: 'transactions',  label: 'Riwayat Transaksi',   group: 'Penjualan',            permission: 'transactions.index',       href: '/account/transactions' },
     { id: 'returns',       label: 'Retur Customer',      group: 'Penjualan',            permission: 'returns.index',            href: '/account/returns' },
     { id: 'expenses',      label: 'Pengeluaran',         group: 'Penjualan',            permission: 'expenses.index',           href: '/account/expenses' },
-    { id: 'roles',         label: 'Role',                group: 'Pengaturan Sistem',    permission: 'roles.index',              href: '/account/roles' },
-    { id: 'users',         label: 'User',                group: 'Pengaturan Sistem',    permission: 'users.index',              href: '/account/users' },
-    { id: 'settings',      label: 'Store Settings',      group: 'Pengaturan Sistem',    permission: 'settings.index',           href: '/account/settings' },
     { id: 'categories',    label: 'Category',            group: 'Master Data',          permission: 'categories.index',         href: '/account/categories' },
     { id: 'suppliers',     label: 'Suppliers',           group: 'Master Data',          permission: 'suppliers.index',          href: '/account/suppliers' },
     { id: 'customers',     label: 'Customers',           group: 'Master Data',          permission: 'customers.index',          href: '/account/customers' },
@@ -38,4 +35,7 @@ export const NAV_MENUS = [
     { id: 'report-expense',  label: 'Laporan Biaya',       group: 'Laporan',              permission: 'reports.expense',          href: '/account/reports/expense' },
     { id: 'report-customers', label: 'Laporan Pelanggan',  group: 'Laporan',              permission: 'reports.customers',        href: '/account/reports/customers' },
     { id: 'report-stock',    label: 'Laporan Stok',        group: 'Laporan',              permission: 'reports.stock',            href: '/account/reports/stock' },
+    { id: 'roles',         label: 'Role',                group: 'Pengaturan Sistem',    permission: 'roles.index',              href: '/account/roles' },
+    { id: 'users',         label: 'User',                group: 'Pengaturan Sistem',    permission: 'users.index',              href: '/account/users' },
+    { id: 'settings',      label: 'Store Settings',      group: 'Pengaturan Sistem',    permission: 'settings.index',           href: '/account/settings' },
 ];
