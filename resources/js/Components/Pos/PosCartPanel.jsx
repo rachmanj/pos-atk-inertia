@@ -271,7 +271,7 @@ export default function PosCartPanel({
             </div>
 
             <div className="px-3 pb-2">
-                <label className="mb-1.5 block text-[0.82rem] font-extrabold text-[#7a6b67]">
+                <label className="mb-1.5 block text-[0.82rem] font-extrabold text-[#64748b]">
                     Pelanggan
                 </label>
                 {selectedCustomer ? (
