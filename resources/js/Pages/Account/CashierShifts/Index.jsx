@@ -272,7 +272,7 @@ export default function CashierShiftIndex() {
                         <Card
                             style={{
                                 background: `linear-gradient(135deg, ${TEAL[50]} 0%, ${TEAL[100]} 100%)`,
-                                border: "1px solid #6ee7b7",
+                                border: "1px solid #5eead4",
                             }}
                         >
                             <Space

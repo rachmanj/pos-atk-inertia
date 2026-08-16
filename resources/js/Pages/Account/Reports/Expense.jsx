@@ -29,6 +29,7 @@ import {
     UnorderedListOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { SEMANTIC } from "../../../theme/colors";
 import {
     BarChart,
     Bar,
@@ -124,7 +125,7 @@ export default function ExpenseReport() {
         {
             title: "Kode",
             dataIndex: "code",
-            render: (code) => <Text style={{ color: "#1677ff" }}>{code}</Text>,
+            render: (code) => <Text style={{ color: SEMANTIC.info }}>{code}</Text>,
         },
         {
             title: "Tanggal",
@@ -276,7 +277,7 @@ export default function ExpenseReport() {
                                 <Statistic
                                     title="Total Pengeluaran"
                                     value={formatRupiah(summary.total_amount)}
-                                    valueStyle={{ color: "#ff4d4f", fontSize: 18 }}
+                                    valueStyle={{ color: SEMANTIC.error, fontSize: 18 }}
                                 />
                             </Card>
                         </Col>
@@ -339,7 +340,7 @@ export default function ExpenseReport() {
                                             />
                                             <Bar
                                                 dataKey="total_amount"
-                                                fill="#ff4d4f"
+                                                fill={SEMANTIC.error}
                                                 name="Total"
                                                 radius={[0, 4, 4, 0]}
                                             />
@@ -391,7 +392,7 @@ export default function ExpenseReport() {
                                             />
                                             <Bar
                                                 dataKey="total_amount"
-                                                fill="#fa8c16"
+                                                fill={SEMANTIC.warning}
                                                 name="Total"
                                                 radius={[4, 4, 0, 0]}
                                             />

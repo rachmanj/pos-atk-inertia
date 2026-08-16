@@ -25,6 +25,7 @@ import {
     ReloadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { SEMANTIC } from "../../../theme/colors";
 
 const { Title, Text } = Typography;
 
@@ -122,7 +123,7 @@ export default function PpobReport() {
             title: "Omzet",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: "#52c41a" }}>
+                <Text style={{ color: SEMANTIC.success }}>
                     {formatRupiah(item.total_omzet)}
                 </Text>
             ),
@@ -131,7 +132,7 @@ export default function PpobReport() {
             title: "Admin Fee",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: "#1677ff" }}>
+                <Text style={{ color: SEMANTIC.info }}>
                     {formatRupiah(item.total_admin_fee)}
                 </Text>
             ),
@@ -140,7 +141,7 @@ export default function PpobReport() {
             title: "Modal (Cost)",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: "#faad14" }}>
+                <Text style={{ color: SEMANTIC.warning }}>
                     {formatRupiah(item.total_cost)}
                 </Text>
             ),
@@ -149,7 +150,7 @@ export default function PpobReport() {
             title: "Laba",
             align: "right",
             render: (_, item) => (
-                <Text strong style={{ color: "#52c41a" }}>
+                <Text strong style={{ color: SEMANTIC.success }}>
                     {formatRupiah(item.total_laba)}
                 </Text>
             ),
@@ -281,7 +282,7 @@ export default function PpobReport() {
                                 <Statistic
                                     title="Total Omzet PPOB"
                                     value={formatRupiah(summary.total_omzet)}
-                                    valueStyle={{ color: "#52c41a", fontSize: 18 }}
+                                    valueStyle={{ color: SEMANTIC.success, fontSize: 18 }}
                                 />
                             </Card>
                         </Col>
@@ -290,7 +291,7 @@ export default function PpobReport() {
                                 <Statistic
                                     title="Total Admin Fee"
                                     value={formatRupiah(summary.total_admin_fee)}
-                                    valueStyle={{ color: "#1677ff", fontSize: 18 }}
+                                    valueStyle={{ color: SEMANTIC.info, fontSize: 18 }}
                                 />
                             </Card>
                         </Col>
@@ -299,7 +300,7 @@ export default function PpobReport() {
                                 <Statistic
                                     title="Total Modal (Cost)"
                                     value={formatRupiah(summary.total_cost)}
-                                    valueStyle={{ color: "#faad14", fontSize: 18 }}
+                                    valueStyle={{ color: SEMANTIC.warning, fontSize: 18 }}
                                 />
                             </Card>
                         </Col>

@@ -27,6 +27,7 @@ import {
     ReloadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { SEMANTIC } from "../../../theme/colors";
 import {
     LineChart,
     Line,
@@ -141,7 +142,7 @@ export default function SalesReport() {
         {
             title: "Invoice",
             dataIndex: "invoice",
-            render: (invoice) => <Text strong style={{ color: "#1677ff" }}>{invoice}</Text>,
+            render: (invoice) => <Text strong style={{ color: SEMANTIC.info }}>{invoice}</Text>,
         },
         {
             title: "Tanggal Lunas",
@@ -185,7 +186,7 @@ export default function SalesReport() {
             title: "Total",
             align: "right",
             render: (_, sale) => (
-                <Text strong style={{ color: "#52c41a" }}>
+                <Text strong style={{ color: SEMANTIC.success }}>
                     {formatRupiah(sale.grand_total)}
                 </Text>
             ),
@@ -334,7 +335,7 @@ export default function SalesReport() {
                                         title="Penjualan Bersih"
                                         value={formatRupiah(summary.net_sales)}
                                         valueStyle={{
-                                            color: "#52c41a",
+                                            color: SEMANTIC.success,
                                             fontSize: 18,
                                         }}
                                     />
@@ -349,7 +350,7 @@ export default function SalesReport() {
                                 <Statistic
                                     title="Penjualan Kotor"
                                     value={formatRupiah(summary.total_sales)}
-                                    valueStyle={{ color: "#1677ff", fontSize: 18 }}
+                                    valueStyle={{ color: SEMANTIC.info, fontSize: 18 }}
                                 />
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                     Diskon: {formatRupiah(summary.total_discount)} ·
@@ -366,7 +367,7 @@ export default function SalesReport() {
                                         title="Tunai Bersih"
                                         value={formatRupiah(summary.cash_sales)}
                                         valueStyle={{
-                                            color: "#52c41a",
+                                            color: SEMANTIC.success,
                                             fontSize: 18,
                                         }}
                                     />
@@ -423,7 +424,7 @@ export default function SalesReport() {
                                             <Line
                                                 type="monotone"
                                                 dataKey="total"
-                                                stroke="#1677ff"
+                                                stroke={SEMANTIC.info}
                                                 strokeWidth={2}
                                                 dot={{ r: 3 }}
                                                 name="Omzet (Rp)"
@@ -468,7 +469,7 @@ export default function SalesReport() {
                                             />
                                             <Bar
                                                 dataKey="total"
-                                                fill="#52c41a"
+                                                fill={SEMANTIC.success}
                                                 name="Omzet (Rp)"
                                                 radius={[4, 4, 0, 0]}
                                             />
