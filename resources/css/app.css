@@ -199,7 +199,7 @@
 }
 
 .pos-login-input input::placeholder {
-    color: #94a3b8;
+    color: #64748b;
 }
 
 .pos-login-error {
@@ -269,7 +269,7 @@
 
 .menu-search-empty {
     text-align: center;
-    color: #94a3b8;
+    color: #64748b;
     padding: 1.5rem 1rem;
 }
 
@@ -279,7 +279,7 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #94a3b8;
+    color: #64748b;
 }
 
 .menu-search-item {
@@ -952,4 +952,148 @@ html {
     height: auto;
     font-size: 20px;
     line-height: 1;
+}
+
+.pos-field-label {
+    margin-bottom: 0.375rem;
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #64748b;
+}
+
+[data-theme="dark"] .pos-cashier-page {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .pos-cashier-heading span,
+[data-theme="dark"] .pos-checkout-header span {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .pos-sale-panel,
+[data-theme="dark"] .pos-checkout-panel {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme="dark"] .pos-search-bar {
+    border-bottom-color: rgba(148, 163, 184, 0.08);
+}
+
+[data-theme="dark"] .pos-category-strip {
+    background: #0f172a;
+    border-bottom-color: rgba(148, 163, 184, 0.08);
+}
+
+[data-theme="dark"] .pos-category-pill {
+    color: #cbd5e1;
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.16);
+}
+
+[data-theme="dark"] .pos-product-grid {
+    background: #1e293b;
+}
+
+[data-theme="dark"] .pos-product-tile {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme="dark"] .pos-product-image {
+    background: #0f172a;
+    border-color: rgba(148, 163, 184, 0.08);
+}
+
+[data-theme="dark"] .pos-product-name {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .pos-product-meta span {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .pos-pagination {
+    border-top-color: rgba(148, 163, 184, 0.08);
+}
+
+[data-theme="dark"] .pos-checkout-header {
+    border-bottom-color: rgba(148, 163, 184, 0.08);
+}
+
+[data-theme="dark"] .pos-cart-row {
+    border-bottom-color: rgba(148, 163, 184, 0.08);
+}
+
+[data-theme="dark"] .pos-cart-main strong {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .pos-cart-main span {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .pos-qty-stepper {
+    background: #0f172a;
+    border-color: rgba(148, 163, 184, 0.16);
+}
+
+[data-theme="dark"] .pos-payment-form {
+    background: #0f172a;
+    border-top-color: rgba(148, 163, 184, 0.08);
+}
+
+[data-theme="dark"] .pos-cash-input {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .pos-cash-shortcuts button {
+    color: #cbd5e1;
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.16);
+}
+
+[data-theme="dark"] .pos-summary-box {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme="dark"] .pos-summary-box span {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .pos-summary-box strong {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .pos-summary-total {
+    border-top-color: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme="dark"] .pos-empty-state,
+[data-theme="dark"] .pos-empty-cart {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .pos-mobile-cart-bar {
+    background: #1e293b;
+    border-top-color: rgba(148, 163, 184, 0.12);
+}
+
+[data-theme="dark"] .pos-field-label {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .barcode-scanner-panel {
+    background: #1e293b;
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .barcode-scanner-header p {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .barcode-scanner-message {
+    color: #cbd5e1;
 }

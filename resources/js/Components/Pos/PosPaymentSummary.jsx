@@ -15,8 +15,7 @@ import { numericMobileInputProps } from "../../Utils/responsive";
 
 const { Text } = Typography;
 
-const fieldLabelClassName =
-    "mb-1.5 block text-[0.82rem] font-extrabold text-[#64748b]";
+const fieldLabelClassName = "pos-field-label";
 
 export default function PosPaymentSummary({
     paymentMethod,
