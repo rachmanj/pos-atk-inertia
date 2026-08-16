@@ -25,7 +25,7 @@ export default function UnitCreate() {
 
     return (
         <>
-            <Head title="Tambah Satuan - ZenPOS" />
+            <Head title="Tambah Satuan - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

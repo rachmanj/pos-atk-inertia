@@ -64,7 +64,7 @@ export default function CategoryCreate() {
 
     return (
         <>
-            <Head title="Tambah Kategori - ZenPOS" />
+            <Head title="Tambah Kategori - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

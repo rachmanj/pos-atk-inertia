@@ -67,7 +67,7 @@ export default function StockOpnameIndex() {
     return (
         <>
             <Head>
-                <title>Stock Opname - ZenPOS</title>
+                <title>Stock Opname - VASIA Stationery</title>
             </Head>
 
             <LayoutAccount>

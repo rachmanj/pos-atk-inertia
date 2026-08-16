@@ -219,7 +219,7 @@ export default function TransactionShow() {
     return (
         <>
             <Head>
-                <title>Struk Transaksi - ZenPOS</title>
+                <title>Struk Transaksi - VASIA Stationery</title>
             </Head>
 
             <div className="transaction-show-page">

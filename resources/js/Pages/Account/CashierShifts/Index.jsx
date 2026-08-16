@@ -204,7 +204,7 @@ export default function CashierShiftIndex() {
     return (
         <>
             <Head>
-                <title>Shift Kasir - ZenPOS</title>
+                <title>Shift Kasir - VASIA Stationery</title>
             </Head>
             <LayoutAccount>
                 <Space direction="vertical" size="middle" style={{ width: "100%" }}>

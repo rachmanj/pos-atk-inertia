@@ -59,7 +59,7 @@ export default function RoleCreate() {
 
     return (
         <>
-            <Head title="Tambah Role - ZenPOS" />
+            <Head title="Tambah Role - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

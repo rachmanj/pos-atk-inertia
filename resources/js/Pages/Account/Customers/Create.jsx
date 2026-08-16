@@ -65,7 +65,7 @@ export default function CustomerCreate() {
 
     return (
         <>
-            <Head title="Tambah Pelanggan - ZenPOS" />
+            <Head title="Tambah Pelanggan - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

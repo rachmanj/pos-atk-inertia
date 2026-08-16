@@ -18,7 +18,7 @@ export default function PurchaseShow() {
     return (
         <>
             <Head>
-                <title>{`Pembelian ${purchase.invoice} - ZenPOS`}</title>
+                <title>{`Pembelian ${purchase.invoice} - VASIA Stationery`}</title>
             </Head>
 
             <LayoutAccount>

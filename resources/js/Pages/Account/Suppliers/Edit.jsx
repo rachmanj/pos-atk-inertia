@@ -61,7 +61,7 @@ export default function SupplierEdit() {
 
     return (
         <>
-            <Head title="Edit Supplier - ZenPOS" />
+            <Head title="Edit Supplier - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

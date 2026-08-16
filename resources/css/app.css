@@ -373,7 +373,7 @@ html {
 .pos-cashier-page {
     min-height: calc(100vh - 64px);
     padding: 18px 8px 24px;
-    color: #2f1f1c;
+    color: #0f172a;
 }
 
 .pos-cashier-page--mobile {
@@ -396,7 +396,7 @@ html {
 
 .pos-cashier-heading span,
 .pos-checkout-header span {
-    color: #7a6b67;
+    color: #64748b;
     font-weight: 700;
     font-size: 0.88rem;
 }
@@ -404,9 +404,9 @@ html {
 .pos-sale-panel,
 .pos-checkout-panel {
     background: #fff;
-    border: 1px solid rgba(66, 57, 55, 0.1);
+    border: 1px solid rgba(15, 23, 42, 0.1);
     border-radius: 8px;
-    box-shadow: 0 10px 28px rgba(66, 57, 55, 0.08);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
     overflow: hidden;
 }
 
@@ -418,7 +418,7 @@ html {
 
 .pos-search-bar {
     padding: 14px;
-    border-bottom: 1px solid rgba(66, 57, 55, 0.08);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .pos-category-strip {
@@ -426,8 +426,8 @@ html {
     gap: 8px;
     padding: 12px 14px;
     overflow-x: auto;
-    border-bottom: 1px solid rgba(66, 57, 55, 0.08);
-    background: #fffaf8;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background: #f8fafc;
     scrollbar-width: none;
 }
 
@@ -438,9 +438,9 @@ html {
 .pos-category-pill {
     min-height: 36px;
     padding: 7px 14px;
-    color: #423937;
+    color: #334155;
     background: #fff;
-    border: 1px solid rgba(66, 57, 55, 0.16);
+    border: 1px solid rgba(15, 23, 42, 0.16);
     border-radius: 8px;
     font-weight: 800;
     white-space: nowrap;
@@ -450,8 +450,8 @@ html {
 .pos-category-pill.active,
 .pos-category-pill:hover {
     color: #fff;
-    background: #8f4030;
-    border-color: #8f4030;
+    background: #0d9488;
+    border-color: #0d9488;
 }
 
 .pos-product-grid {
@@ -482,9 +482,9 @@ html {
     gap: 10px;
     text-align: left;
     background: #fff;
-    border: 1px solid rgba(66, 57, 55, 0.1);
+    border: 1px solid rgba(15, 23, 42, 0.1);
     border-radius: 8px;
-    box-shadow: 0 6px 16px rgba(66, 57, 55, 0.06);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
     transition:
         transform 0.15s ease,
         border-color 0.15s ease,
@@ -494,8 +494,8 @@ html {
 
 .pos-product-tile:hover:not(:disabled) {
     transform: translateY(-2px);
-    border-color: rgba(143, 64, 48, 0.4);
-    box-shadow: 0 10px 20px rgba(66, 57, 55, 0.1);
+    border-color: rgba(13, 148, 136, 0.4);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
 }
 
 .pos-product-tile.is-disabled {
@@ -508,8 +508,8 @@ html {
     height: 98px;
     display: grid;
     place-items: center;
-    background: #fffaf8;
-    border: 1px solid rgba(66, 57, 55, 0.08);
+    background: #f8fafc;
+    border: 1px solid rgba(15, 23, 42, 0.08);
     border-radius: 8px;
 }
 
@@ -524,7 +524,7 @@ html {
     inset: auto 10px 10px;
     padding: 4px 8px;
     color: #fff;
-    background: #dc3545;
+    background: #ef4444;
     border-radius: 6px;
     font-size: 0.76rem;
     font-weight: 800;
@@ -533,7 +533,7 @@ html {
 
 .pos-product-name {
     min-height: 42px;
-    color: #2f1f1c;
+    color: #0f172a;
     font-weight: 800;
     line-height: 1.35;
     display: -webkit-box;
@@ -551,13 +551,13 @@ html {
 }
 
 .pos-product-meta span {
-    color: #7a6b67;
+    color: #64748b;
     font-size: 0.78rem;
     font-weight: 800;
 }
 
 .pos-product-meta strong {
-    color: #8f4030;
+    color: #0d9488;
     font-size: 0.92rem;
     white-space: nowrap;
 }
@@ -567,7 +567,7 @@ html {
     padding: 12px 14px;
     display: flex;
     justify-content: center;
-    border-top: 1px solid rgba(66, 57, 55, 0.08);
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .pos-checkout-panel {
@@ -591,7 +591,7 @@ html {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid rgba(66, 57, 55, 0.08);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .pos-checkout-header h5 {
@@ -606,7 +606,7 @@ html {
     display: inline-grid;
     place-items: center;
     color: #fff !important;
-    background: #8f4030;
+    background: #0d9488;
     border-radius: 8px;
 }
 
@@ -626,7 +626,7 @@ html {
     padding: 12px 16px;
     display: grid;
     gap: 10px;
-    border-bottom: 1px solid rgba(66, 57, 55, 0.08);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .pos-cart-main {
@@ -639,7 +639,7 @@ html {
 
 .pos-cart-main strong {
     min-width: 0;
-    color: #2f1f1c;
+    color: #0f172a;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -647,7 +647,7 @@ html {
 }
 
 .pos-cart-main span {
-    color: #7a6b67;
+    color: #64748b;
     font-weight: 800;
     font-size: 0.82rem;
 }
@@ -665,9 +665,9 @@ html {
     grid-template-columns: 44px 1fr 44px;
     align-items: center;
     overflow: hidden;
-    border: 1px solid rgba(66, 57, 55, 0.16);
+    border: 1px solid rgba(15, 23, 42, 0.16);
     border-radius: 8px;
-    background: #fffaf8;
+    background: #f8fafc;
 }
 
 .pos-qty-stepper .ant-btn {
@@ -682,15 +682,15 @@ html {
 .pos-cart-delete {
     min-width: 44px;
     min-height: 44px;
-    color: #dc3545;
-    border: 1px solid rgba(220, 53, 69, 0.22);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.22);
     border-radius: 8px;
 }
 
 .pos-payment-form {
     padding: 14px 16px 16px;
-    background: #fffaf8;
-    border-top: 1px solid rgba(66, 57, 55, 0.08);
+    background: #f8fafc;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .pos-method-toggle {
@@ -709,7 +709,7 @@ html {
 
 .pos-cash-input {
     font-size: 1.25rem;
-    color: #2f1f1c;
+    color: #0f172a;
 }
 
 .pos-cash-shortcuts {
@@ -722,9 +722,9 @@ html {
 .pos-cash-shortcuts button {
     min-height: 44px;
     padding: 4px 6px;
-    color: #423937;
+    color: #334155;
     background: #fff;
-    border: 1px solid rgba(66, 57, 55, 0.16);
+    border: 1px solid rgba(15, 23, 42, 0.16);
     border-radius: 8px;
     font-size: 0.78rem;
     font-weight: 800;
@@ -736,7 +736,7 @@ html {
     display: grid;
     gap: 8px;
     background: #fff;
-    border: 1px solid rgba(66, 57, 55, 0.1);
+    border: 1px solid rgba(15, 23, 42, 0.1);
     border-radius: 8px;
 }
 
@@ -748,22 +748,22 @@ html {
 }
 
 .pos-summary-box span {
-    color: #7a6b67;
+    color: #64748b;
     font-weight: 800;
 }
 
 .pos-summary-box strong {
-    color: #2f1f1c;
+    color: #0f172a;
     white-space: nowrap;
 }
 
 .pos-summary-total {
     padding-top: 10px;
-    border-top: 1px solid rgba(66, 57, 55, 0.1);
+    border-top: 1px solid rgba(15, 23, 42, 0.1);
 }
 
 .pos-summary-total strong {
-    color: #8f4030;
+    color: #0d9488;
     font-size: 1.55rem;
 }
 
@@ -781,7 +781,7 @@ html {
     place-items: center;
     align-content: center;
     gap: 10px;
-    color: #7a6b67;
+    color: #64748b;
     text-align: center;
 }
 
@@ -793,8 +793,8 @@ html {
     z-index: 100;
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
     background: #fff;
-    border-top: 1px solid rgba(66, 57, 55, 0.12);
-    box-shadow: 0 -4px 16px rgba(66, 57, 55, 0.1);
+    border-top: 1px solid rgba(15, 23, 42, 0.12);
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.1);
 }
 
 .pos-mobile-cart-drawer .ant-drawer-body {

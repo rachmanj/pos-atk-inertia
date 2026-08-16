@@ -153,7 +153,7 @@ export default function PpobBalanceLogIndex() {
 
     return (
         <>
-            <Head title="Riwayat Saldo PPOB - ZenPOS" />
+            <Head title="Riwayat Saldo PPOB - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

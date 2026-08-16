@@ -62,7 +62,7 @@ export default function SupplierCreate() {
 
     return (
         <>
-            <Head title="Tambah Supplier - ZenPOS" />
+            <Head title="Tambah Supplier - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

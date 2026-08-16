@@ -45,7 +45,7 @@ export default function PpobAccountCreate() {
 
     return (
         <>
-            <Head title="Tambah Akun PPOB - ZenPOS" />
+            <Head title="Tambah Akun PPOB - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

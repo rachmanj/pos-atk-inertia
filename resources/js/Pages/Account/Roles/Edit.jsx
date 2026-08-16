@@ -61,7 +61,7 @@ export default function RoleEdit() {
 
     return (
         <>
-            <Head title="Edit Role - ZenPOS" />
+            <Head title="Edit Role - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

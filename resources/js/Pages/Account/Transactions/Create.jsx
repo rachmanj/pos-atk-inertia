@@ -894,7 +894,7 @@ export default function TransactionCreate() {
     return (
         <>
             <Head>
-                <title>POS Kasir - ZenPOS</title>
+                <title>POS Kasir - VASIA Stationery</title>
             </Head>
 
             <LayoutAccount>

@@ -39,7 +39,7 @@ export default function ChangePassword() {
 
     return (
         <>
-            <Head title="Ubah Kata Sandi - ZenPOS" />
+            <Head title="Ubah Kata Sandi - VASIA Stationery" />
 
             <LayoutAccount>
                 <div className="row mt-4">

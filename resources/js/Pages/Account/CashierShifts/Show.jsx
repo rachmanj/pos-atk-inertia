@@ -60,7 +60,7 @@ export default function CashierShiftShow() {
 
     return (
         <>
-            <Head><title>Detail Shift - ZenPOS</title></Head>
+            <Head><title>Detail Shift - VASIA Stationery</title></Head>
             <LayoutAccount>
                 <Space direction="vertical" size="large" style={{ width: "100%" }}>
                     <Space style={{ width: "100%", justifyContent: "space-between" }} wrap>

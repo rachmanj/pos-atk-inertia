@@ -162,7 +162,7 @@ export default function ProductEdit() {
 
     return (
         <>
-            <Head title="Edit Produk - ZenPOS" />
+            <Head title="Edit Produk - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

@@ -64,7 +64,7 @@ export default function PpobAccountIndex() {
 
     return (
         <>
-            <Head title="Akun PPOB - ZenPOS" />
+            <Head title="Akun PPOB - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

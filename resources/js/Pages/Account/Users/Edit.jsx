@@ -67,7 +67,7 @@ export default function UserEdit() {
 
     return (
         <>
-            <Head title="Edit Pengguna - ZenPOS" />
+            <Head title="Edit Pengguna - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

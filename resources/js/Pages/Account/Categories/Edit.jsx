@@ -66,7 +66,7 @@ export default function CategoryEdit() {
 
     return (
         <>
-            <Head title="Edit Kategori - ZenPOS" />
+            <Head title="Edit Kategori - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

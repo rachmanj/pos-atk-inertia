@@ -21,7 +21,7 @@ export default function SupplierReturnShow() {
     return (
         <>
             <Head>
-                <title>{`Retur Supplier ${supplierReturn.invoice} - ZenPOS`}</title>
+                <title>{`Retur Supplier ${supplierReturn.invoice} - VASIA Stationery`}</title>
             </Head>
 
             <LayoutAccount>

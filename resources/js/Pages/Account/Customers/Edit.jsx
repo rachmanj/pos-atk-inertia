@@ -56,7 +56,7 @@ export default function CustomerEdit() {
 
     return (
         <>
-            <Head title="Edit Pelanggan - ZenPOS" />
+            <Head title="Edit Pelanggan - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

@@ -137,7 +137,7 @@ export default function PurchaseIndex() {
     return (
         <>
             <Head>
-                <title>Pembelian - ZenPOS</title>
+                <title>Pembelian - VASIA Stationery</title>
             </Head>
 
             <LayoutAccount>

@@ -32,7 +32,7 @@ export default function CashierShiftCreate() {
     return (
         <>
             <Head>
-                <title>Buka Shift Kasir - ZenPOS</title>
+                <title>Buka Shift Kasir - VASIA Stationery</title>
             </Head>
 
             <LayoutAccount>

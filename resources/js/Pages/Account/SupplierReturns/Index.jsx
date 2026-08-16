@@ -50,7 +50,7 @@ export default function SupplierReturnIndex() {
     return (
         <>
             <Head>
-                <title>Retur Supplier - ZenPOS</title>
+                <title>Retur Supplier - VASIA Stationery</title>
             </Head>
 
             <LayoutAccount>

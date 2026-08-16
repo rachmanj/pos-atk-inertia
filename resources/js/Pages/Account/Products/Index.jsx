@@ -214,7 +214,7 @@ export default function ProductIndex() {
 
     return (
         <>
-            <Head title="Produk - ZenPOS" />
+            <Head title="Produk - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

@@ -314,7 +314,7 @@ export default function PurchaseCreate() {
     return (
         <>
             <Head>
-                <title>Tambah Pembelian - ZenPOS</title>
+                <title>Tambah Pembelian - VASIA Stationery</title>
             </Head>
 
             <LayoutAccount>

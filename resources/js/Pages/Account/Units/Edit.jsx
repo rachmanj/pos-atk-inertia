@@ -25,7 +25,7 @@ export default function UnitEdit() {
 
     return (
         <>
-            <Head title="Edit Satuan - ZenPOS" />
+            <Head title="Edit Satuan - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

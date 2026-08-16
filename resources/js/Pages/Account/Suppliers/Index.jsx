@@ -102,7 +102,7 @@ export default function SupplierIndex() {
 
     return (
         <>
-            <Head title="Supplier - ZenPOS" />
+            <Head title="Supplier - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

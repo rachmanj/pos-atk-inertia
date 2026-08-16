@@ -72,7 +72,7 @@ export default function UserCreate() {
 
     return (
         <>
-            <Head title="Tambah Pengguna - ZenPOS" />
+            <Head title="Tambah Pengguna - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

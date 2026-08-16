@@ -172,7 +172,7 @@ export default function ProductCreate() {
 
     return (
         <>
-            <Head title="Tambah Produk - ZenPOS" />
+            <Head title="Tambah Produk - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

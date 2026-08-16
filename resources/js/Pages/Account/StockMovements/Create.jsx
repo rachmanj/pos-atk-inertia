@@ -75,7 +75,7 @@ export default function StockMovementCreate() {
     return (
         <>
             <Head>
-                <title>Koreksi Stok - ZenPOS</title>
+                <title>Koreksi Stok - VASIA Stationery</title>
             </Head>
 
             <LayoutAccount>

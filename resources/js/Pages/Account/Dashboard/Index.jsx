@@ -60,8 +60,8 @@ const formatDateTime = (value) => {
 };
 
 const statIconColors = {
-    primary: "#3b82f6",
-    info: "#0ea5e9",
+    primary: "#0d9488",
+    info: "#0d9488",
     success: "#22c55e",
     danger: "#ef4444",
     secondary: "#94a3b8",
@@ -198,7 +198,7 @@ export default function Dashboard() {
     return (
         <>
             <Head>
-                <title>Dashboard - ZenPOS</title>
+                <title>Dashboard - VASIA Stationery</title>
             </Head>
             <LayoutAccount>
                 <Space

@@ -28,7 +28,7 @@ export default function StockOpnameShow() {
     return (
         <>
             <Head>
-                <title>{`${stockOpname.code} - ZenPOS`}</title>
+                <title>{`${stockOpname.code} - VASIA Stationery`}</title>
             </Head>
 
             <LayoutAccount>

@@ -78,7 +78,7 @@ export default function CategoryIndex() {
 
     return (
         <>
-            <Head title="Kategori - ZenPOS" />
+            <Head title="Kategori - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

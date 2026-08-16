@@ -244,7 +244,7 @@ export default function StockOpnameCreate() {
     return (
         <>
             <Head>
-                <title>Stock Opname Baru - ZenPOS</title>
+                <title>Stock Opname Baru - VASIA Stationery</title>
             </Head>
 
             <LayoutAccount>

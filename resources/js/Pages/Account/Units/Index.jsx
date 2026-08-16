@@ -54,7 +54,7 @@ export default function UnitIndex() {
 
     return (
         <>
-            <Head title="Satuan - ZenPOS" />
+            <Head title="Satuan - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

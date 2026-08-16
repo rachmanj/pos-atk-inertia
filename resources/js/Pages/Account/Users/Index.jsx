@@ -80,7 +80,7 @@ export default function UserIndex() {
 
     return (
         <>
-            <Head title="Pengguna - ZenPOS" />
+            <Head title="Pengguna - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

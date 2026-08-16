@@ -77,7 +77,7 @@ export default function RoleIndex() {
 
     return (
         <>
-            <Head title="Role - ZenPOS" />
+            <Head title="Role - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

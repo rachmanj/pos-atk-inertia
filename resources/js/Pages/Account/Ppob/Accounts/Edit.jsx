@@ -44,7 +44,7 @@ export default function PpobAccountEdit() {
 
     return (
         <>
-            <Head title="Edit Akun PPOB - ZenPOS" />
+            <Head title="Edit Akun PPOB - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

@@ -73,7 +73,7 @@ export default function CustomerIndex() {
 
     return (
         <>
-            <Head title="Pelanggan - ZenPOS" />
+            <Head title="Pelanggan - VASIA Stationery" />
 
             <LayoutAccount>
                 <Card

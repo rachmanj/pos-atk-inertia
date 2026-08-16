@@ -166,7 +166,7 @@ export default function StockMovementIndex() {
     return (
         <>
             <Head>
-                <title>Mutasi Stok - ZenPOS</title>
+                <title>Mutasi Stok - VASIA Stationery</title>
             </Head>
 
             <LayoutAccount>
