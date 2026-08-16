@@ -4,6 +4,8 @@ import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, SEMANTIC } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -13,6 +15,7 @@ import {
     Row,
     Select,
     Space,
+    Spin,
     Table,
     Tag,
     Typography,
@@ -25,7 +28,7 @@ import {
     UndoOutlined,
 } from "@ant-design/icons";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const statusLabels = {
     pending: "Menunggu",
@@ -43,6 +46,7 @@ export default function Index() {
     const { returns, filters = {}, flash = {}, auth = {} } = usePage().props;
 
     const permissions = auth.permissions || {};
+    const loading = useInertiaLoading();
 
     const [search, setSearch] = useState(filters.q || "");
     const [status, setStatus] = useState(filters.status || undefined);
@@ -76,7 +80,11 @@ export default function Index() {
         {
             title: "Invoice Retur",
             dataIndex: "invoice",
-            render: (value) => <strong className="text-primary">{value}</strong>,
+            render: (value) => (
+                <Text strong style={{ color: BRAND.primary }}>
+                    {value}
+                </Text>
+            ),
         },
         {
             title: "Invoice Transaksi",
@@ -106,14 +114,16 @@ export default function Index() {
             title: "Qty",
             align: "center",
             dataIndex: "total_qty",
-            render: (value) => <strong>{value || 0}</strong>,
+            render: (value) => <Text strong>{value || 0}</Text>,
         },
         {
             title: "Refund",
             align: "right",
             dataIndex: "total_refund",
             render: (value) => (
-                <strong className="text-success">{formatRupiah(value)}</strong>
+                <Text strong style={{ color: SEMANTIC.success }}>
+                    {formatRupiah(value)}
+                </Text>
             ),
         },
         {
@@ -133,122 +143,135 @@ export default function Index() {
 
     return (
         <>
-            <Head title="Retur Penjualan" />
+            <Head>
+                <title>Retur Penjualan - VASIA Stationery</title>
+            </Head>
 
             <LayoutAccount>
-                <Card
-                    className="border-0 shadow-sm rounded-3 mt-4"
-                    title={
-                        <Title level={5} className="mb-0">
-                            <UndoOutlined className="me-2" />
-                            RETUR PENJUALAN
-                        </Title>
-                    }
-                    extra={
-                        hasAnyPermission(
-                            ["transactions.index"],
-                            permissions,
-                        ) && (
-                            <Link href="/account/transactions">
-                                <Button icon={<FileTextOutlined />}>
-                                    LIHAT TRANSAKSI
-                                </Button>
-                            </Link>
-                        )
-                    }
-                >
-                    {flash.success && (
-                        <Alert
-                            type="success"
-                            message={flash.success}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-                    {flash.error && (
-                        <Alert
-                            type="error"
-                            message={flash.error}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-
-                    <form onSubmit={handleFilter} className="mb-4">
-                        <Row gutter={[12, 12]}>
-                            <Col xs={24} lg={12}>
-                                <Input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Cari invoice retur, invoice transaksi, atau kasir..."
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Space>
+                                <UndoOutlined
+                                    style={{ color: BRAND.primary }}
                                 />
-                            </Col>
-                            <Col xs={24} lg={6}>
-                                <Select
-                                    allowClear
-                                    placeholder="Semua Status"
-                                    className="w-100"
-                                    value={status}
-                                    onChange={setStatus}
-                                    options={[
-                                        {
-                                            value: "pending",
-                                            label: "Menunggu",
-                                        },
-                                        {
-                                            value: "approved",
-                                            label: "Disetujui",
-                                        },
-                                        {
-                                            value: "rejected",
-                                            label: "Ditolak",
-                                        },
-                                    ]}
-                                />
-                            </Col>
-                            <Col xs={24} lg={6}>
-                                <Space>
-                                    <Button
-                                        type="primary"
-                                        htmlType="submit"
-                                        icon={<FilterOutlined />}
-                                    >
-                                        Filter
+                                <Title level={4} style={{ margin: 0 }}>
+                                    RETUR PENJUALAN
+                                </Title>
+                            </Space>
+                        }
+                        extra={
+                            hasAnyPermission(
+                                ["transactions.index"],
+                                permissions,
+                            ) && (
+                                <Link href="/account/transactions">
+                                    <Button icon={<FileTextOutlined />}>
+                                        LIHAT TRANSAKSI
                                     </Button>
-                                    <Button
-                                        icon={<ReloadOutlined />}
-                                        onClick={handleReset}
-                                    >
-                                        Reset
-                                    </Button>
-                                </Space>
-                            </Col>
-                        </Row>
-                    </form>
+                                </Link>
+                            )
+                        }
+                    >
+                        {flash.success && (
+                            <Alert
+                                type="success"
+                                message={flash.success}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+                        {flash.error && (
+                            <Alert
+                                type="error"
+                                message={flash.error}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
 
-                    <Table
-                        bordered
-                        rowKey="id"
-                        columns={columns}
-                        dataSource={returns.data}
-                        pagination={false}
-                        locale={{
-                            emptyText:
-                                "Belum ada retur penjualan. Retur dibuat dari detail transaksi yang sudah lunas.",
-                        }}
-                        scroll={{ x: 900 }}
-                    />
+                        <form
+                            onSubmit={handleFilter}
+                            style={{ marginBottom: 16 }}
+                        >
+                            <Row gutter={[12, 12]}>
+                                <Col xs={24} lg={12}>
+                                    <Input
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                        placeholder="Cari invoice retur, invoice transaksi, atau kasir..."
+                                    />
+                                </Col>
+                                <Col xs={24} lg={6}>
+                                    <Select
+                                        allowClear
+                                        placeholder="Semua Status"
+                                        style={{ width: "100%" }}
+                                        value={status}
+                                        onChange={setStatus}
+                                        options={[
+                                            {
+                                                value: "pending",
+                                                label: "Menunggu",
+                                            },
+                                            {
+                                                value: "approved",
+                                                label: "Disetujui",
+                                            },
+                                            {
+                                                value: "rejected",
+                                                label: "Ditolak",
+                                            },
+                                        ]}
+                                    />
+                                </Col>
+                                <Col xs={24} lg={6}>
+                                    <Space>
+                                        <Button
+                                            type="primary"
+                                            htmlType="submit"
+                                            icon={<FilterOutlined />}
+                                        >
+                                            Filter
+                                        </Button>
+                                        <Button
+                                            icon={<ReloadOutlined />}
+                                            onClick={handleReset}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </Space>
+                                </Col>
+                            </Row>
+                        </form>
 
-                    <Pagination
-                        links={returns.links}
-                        align="end"
-                        meta={{
-                            current_page: returns.current_page,
-                            per_page: returns.per_page,
-                            total: returns.total,
-                        }}
-                    />
-                </Card>
+                        <Table
+                            rowKey="id"
+                            columns={columns}
+                            dataSource={returns.data}
+                            pagination={false}
+                            scroll={{ x: "max-content" }}
+                            locale={{
+                                emptyText:
+                                    "Belum ada retur penjualan. Retur dibuat dari detail transaksi yang sudah lunas.",
+                            }}
+                        />
+
+                        <div style={{ marginTop: 16, textAlign: "right" }}>
+                            <Pagination
+                                links={returns.links}
+                                align="end"
+                                meta={{
+                                    current_page: returns.current_page,
+                                    per_page: returns.per_page,
+                                    total: returns.total,
+                                }}
+                            />
+                        </div>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );

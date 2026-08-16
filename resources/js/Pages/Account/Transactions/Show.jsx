@@ -157,9 +157,9 @@ export default function TransactionShow() {
                         Transaksi akan dibatalkan, stok produk dikembalikan,
                         dan profit transaksi dinolkan.
                     </p>
-                    <label className="d-block mb-1 fw-semibold">
+                    <Text strong style={{ display: "block", marginBottom: 4 }}>
                         Alasan pembatalan (wajib)
-                    </label>
+                    </Text>
                     <Input.TextArea
                         rows={3}
                         placeholder="Tulis alasan void transaksi..."
@@ -265,8 +265,9 @@ export default function TransactionShow() {
 
                                 <Space
                                     direction="vertical"
-                                    className="transaction-action-list w-100"
+                                    className="transaction-action-list"
                                     size="middle"
+                                    style={{ width: "100%" }}
                                 >
                                     <Link href="/account/transactions/create">
                                         <Button
@@ -334,7 +335,11 @@ export default function TransactionShow() {
                                             <Button
                                                 block
                                                 icon={<UndoOutlined />}
-                                                className="btn-warning text-dark"
+                                                style={{
+                                                    background: "#f59e0b",
+                                                    borderColor: "#f59e0b",
+                                                    color: "#0f172a",
+                                                }}
                                             >
                                                 Ajukan Retur
                                             </Button>

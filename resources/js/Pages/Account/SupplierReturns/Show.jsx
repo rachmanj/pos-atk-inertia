@@ -2,11 +2,26 @@ import React from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { formatRupiah } from "../../../Utils/format";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, SEMANTIC } from "../../../theme/colors";
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    Row,
+    Space,
+    Spin,
+    Table,
+    Typography,
+} from "antd";
 import {
     ArrowLeftOutlined,
     ExportOutlined,
     ShoppingOutlined,
 } from "@ant-design/icons";
+
+const { Title, Text } = Typography;
 
 const reasonLabels = {
     defect: "Barang Rusak",
@@ -15,8 +30,64 @@ const reasonLabels = {
     other: "Lainnya",
 };
 
+function InfoCard({ label, children }) {
+    return (
+        <Card size="small" style={{ height: "100%" }}>
+            <Text
+                type="secondary"
+                style={{ fontSize: 12, display: "block", marginBottom: 4 }}
+            >
+                {label}
+            </Text>
+            {children}
+        </Card>
+    );
+}
+
 export default function SupplierReturnShow() {
     const { supplierReturn, flash } = usePage().props;
+    const loading = useInertiaLoading();
+
+    const columns = [
+        {
+            title: "Produk",
+            render: (_, detail) => (
+                <div>
+                    <Text strong>{detail.product?.title || "-"}</Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                        {detail.product?.unit || "-"}
+                    </Text>
+                </div>
+            ),
+        },
+        {
+            title: "Barcode",
+            render: (_, detail) => detail.product?.barcode || "-",
+        },
+        {
+            title: "Qty",
+            align: "center",
+            dataIndex: "qty",
+            render: (value) => <Text strong>{value}</Text>,
+        },
+        {
+            title: "Harga Beli",
+            align: "right",
+            dataIndex: "buy_price",
+            render: (value) => formatRupiah(value),
+        },
+        {
+            title: "Subtotal",
+            align: "right",
+            dataIndex: "subtotal",
+            render: (value) => (
+                <Text strong style={{ color: SEMANTIC.error }}>
+                    {formatRupiah(value)}
+                </Text>
+            ),
+        },
+    ];
 
     return (
         <>
@@ -25,222 +96,202 @@ export default function SupplierReturnShow() {
             </Head>
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <ExportOutlined className="me-2" />
+                <Spin spinning={loading}>
+                    <Space
+                        direction="vertical"
+                        size="large"
+                        style={{ width: "100%" }}
+                    >
+                        <Space
+                            style={{
+                                width: "100%",
+                                justifyContent: "space-between",
+                            }}
+                            wrap
+                        >
+                            <Space>
+                                <ExportOutlined
+                                    style={{ fontSize: 20, color: BRAND.primary }}
+                                />
+                                <Title level={4} style={{ margin: 0 }}>
                                     DETAIL RETUR SUPPLIER
-                                </h5>
-
-                                <div className="d-flex gap-2">
-                                    <Link
-                                        href="/account/supplier-returns"
-                                        className="btn btn-secondary shadow-sm rounded-sm"
-                                    >
-                                        <ArrowLeftOutlined className="me-2" />
+                                </Title>
+                            </Space>
+                            <Space wrap>
+                                <Link href="/account/supplier-returns">
+                                    <Button icon={<ArrowLeftOutlined />}>
                                         KEMBALI
-                                    </Link>
-
-                                    <Link
-                                        href={`/account/purchases/${supplierReturn.purchase?.invoice}`}
-                                        className="btn btn-primary shadow-sm rounded-sm"
+                                    </Button>
+                                </Link>
+                                <Link
+                                    href={`/account/purchases/${supplierReturn.purchase?.invoice}`}
+                                >
+                                    <Button
+                                        type="primary"
+                                        icon={<ShoppingOutlined />}
                                     >
-                                        <ShoppingOutlined className="me-2" />
                                         PEMBELIAN ASAL
-                                    </Link>
-                                </div>
-                            </div>
+                                    </Button>
+                                </Link>
+                            </Space>
+                        </Space>
 
-                            <div className="card-body">
-                                {flash.success && (
-                                    <div className="alert alert-success shadow-sm">
-                                        {flash.success}
-                                    </div>
-                                )}
+                        {flash.success && (
+                            <Alert
+                                type="success"
+                                message={flash.success}
+                                showIcon
+                            />
+                        )}
+                        {flash.error && (
+                            <Alert
+                                type="error"
+                                message={flash.error}
+                                showIcon
+                            />
+                        )}
 
-                                {flash.error && (
-                                    <div className="alert alert-danger shadow-sm">
-                                        {flash.error}
-                                    </div>
-                                )}
+                        <Row gutter={[16, 16]}>
+                            <Col xs={24} lg={8}>
+                                <InfoCard label="Invoice Retur">
+                                    <Text
+                                        strong
+                                        style={{
+                                            color: SEMANTIC.error,
+                                            fontSize: 16,
+                                            display: "block",
+                                            marginBottom: 12,
+                                        }}
+                                    >
+                                        {supplierReturn.invoice}
+                                    </Text>
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            fontSize: 12,
+                                            display: "block",
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        Tanggal Retur
+                                    </Text>
+                                    <Text strong>
+                                        {new Date(
+                                            supplierReturn.return_date,
+                                        ).toLocaleDateString("id-ID")}
+                                    </Text>
+                                </InfoCard>
+                            </Col>
+                            <Col xs={24} lg={8}>
+                                <InfoCard label="Supplier">
+                                    <Text
+                                        strong
+                                        style={{
+                                            display: "block",
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        {supplierReturn.supplier?.name || "-"}
+                                    </Text>
+                                    <Text
+                                        type="secondary"
+                                        style={{ fontSize: 12, display: "block" }}
+                                    >
+                                        {supplierReturn.supplier?.no_telp ||
+                                            "-"}
+                                    </Text>
+                                    <Text
+                                        type="secondary"
+                                        style={{ fontSize: 12, display: "block" }}
+                                    >
+                                        {supplierReturn.supplier?.email || "-"}
+                                    </Text>
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            fontSize: 12,
+                                            display: "block",
+                                            marginTop: 8,
+                                        }}
+                                    >
+                                        {supplierReturn.supplier?.address ||
+                                            "-"}
+                                    </Text>
+                                </InfoCard>
+                            </Col>
+                            <Col xs={24} lg={8}>
+                                <InfoCard label="Ringkasan">
+                                    <Text
+                                        strong
+                                        style={{
+                                            display: "block",
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        Invoice Pembelian:{" "}
+                                        {supplierReturn.purchase?.invoice || "-"}
+                                    </Text>
+                                    <Text
+                                        strong
+                                        style={{
+                                            display: "block",
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        Total Qty: {supplierReturn.total_qty}
+                                    </Text>
+                                    <Text
+                                        strong
+                                        style={{
+                                            color: SEMANTIC.error,
+                                            fontSize: 16,
+                                            display: "block",
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        {formatRupiah(
+                                            supplierReturn.total_amount,
+                                        )}
+                                    </Text>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Dibuat oleh:{" "}
+                                        {supplierReturn.user?.name || "-"}
+                                    </Text>
+                                </InfoCard>
+                            </Col>
+                        </Row>
 
-                                <div className="row g-4 mb-4">
-                                    <div className="col-lg-4">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <div className="small text-muted mb-1">
-                                                Invoice Retur
-                                            </div>
+                        <Row gutter={[16, 16]}>
+                            <Col xs={24} md={12}>
+                                <Card size="small" title="Alasan Retur">
+                                    <Text>
+                                        {reasonLabels[supplierReturn.reason] ||
+                                            supplierReturn.reason}
+                                    </Text>
+                                </Card>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Card size="small" title="Catatan">
+                                    <Text>{supplierReturn.note || "-"}</Text>
+                                </Card>
+                            </Col>
+                        </Row>
 
-                                            <div className="fw-bold text-danger mb-3">
-                                                {supplierReturn.invoice}
-                                            </div>
-
-                                            <div className="small text-muted mb-1">
-                                                Tanggal Retur
-                                            </div>
-
-                                            <div className="fw-bold">
-                                                {new Date(
-                                                    supplierReturn.return_date,
-                                                ).toLocaleDateString("id-ID")}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-lg-4">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <div className="small text-muted mb-1">
-                                                Supplier
-                                            </div>
-
-                                            <div className="fw-bold mb-2">
-                                                {supplierReturn.supplier
-                                                    ?.name || "-"}
-                                            </div>
-
-                                            <div className="small text-muted">
-                                                {supplierReturn.supplier
-                                                    ?.no_telp || "-"}
-                                            </div>
-
-                                            <div className="small text-muted">
-                                                {supplierReturn.supplier
-                                                    ?.email || "-"}
-                                            </div>
-
-                                            <div className="small text-muted mt-2">
-                                                {supplierReturn.supplier
-                                                    ?.address || "-"}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-lg-4">
-                                        <div className="border rounded-3 p-3 h-100">
-                                            <div className="small text-muted mb-1">
-                                                Ringkasan
-                                            </div>
-
-                                            <div className="fw-bold mb-2">
-                                                Invoice Pembelian:{" "}
-                                                {supplierReturn.purchase
-                                                    ?.invoice || "-"}
-                                            </div>
-
-                                            <div className="fw-bold mb-2">
-                                                Total Qty:{" "}
-                                                {supplierReturn.total_qty}
-                                            </div>
-
-                                            <div className="fw-bold text-danger">
-                                                {formatRupiah(
-                                                    supplierReturn.total_amount,
-                                                )}
-                                            </div>
-
-                                            <div className="small text-muted mt-2">
-                                                Dibuat oleh:{" "}
-                                                {supplierReturn.user?.name ||
-                                                    "-"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="row g-3 mb-4">
-                                    <div className="col-lg-6">
-                                        <div className="alert alert-light border shadow-sm mb-0">
-                                            <div className="fw-bold mb-1">
-                                                Alasan Retur
-                                            </div>
-
-                                            <div>
-                                                {reasonLabels[
-                                                    supplierReturn.reason
-                                                ] || supplierReturn.reason}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="col-lg-6">
-                                        <div className="alert alert-light border shadow-sm mb-0">
-                                            <div className="fw-bold mb-1">
-                                                Catatan
-                                            </div>
-
-                                            <div>
-                                                {supplierReturn.note || "-"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="table-responsive">
-                                    <table className="table table-bordered align-middle mb-0">
-                                        <thead className="table-dark">
-                                            <tr>
-                                                <th>Produk</th>
-                                                <th>Barcode</th>
-                                                <th className="text-center">
-                                                    Qty
-                                                </th>
-                                                <th className="text-end">
-                                                    Harga Beli
-                                                </th>
-                                                <th className="text-end">
-                                                    Subtotal
-                                                </th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {supplierReturn.details.map(
-                                                (detail) => (
-                                                    <tr key={detail.id}>
-                                                        <td className="fw-bold">
-                                                            {detail.product
-                                                                ?.title || "-"}
-
-                                                            <div className="small text-muted">
-                                                                {detail.product
-                                                                    ?.unit ||
-                                                                    "-"}
-                                                            </div>
-                                                        </td>
-
-                                                        <td>
-                                                            {detail.product
-                                                                ?.barcode ||
-                                                                "-"}
-                                                        </td>
-
-                                                        <td className="text-center fw-bold">
-                                                            {detail.qty}
-                                                        </td>
-
-                                                        <td className="text-end">
-                                                            {formatRupiah(
-                                                                detail.buy_price,
-                                                            )}
-                                                        </td>
-
-                                                        <td className="text-end fw-bold text-danger">
-                                                            {formatRupiah(
-                                                                detail.subtotal,
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ),
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        <Card title="Detail Item Retur">
+                            <Table
+                                rowKey="id"
+                                columns={columns}
+                                dataSource={supplierReturn.details}
+                                pagination={false}
+                                scroll={{ x: "max-content" }}
+                                locale={{
+                                    emptyText:
+                                        "Belum ada item pada retur supplier ini.",
+                                }}
+                            />
+                        </Card>
+                    </Space>
+                </Spin>
             </LayoutAccount>
         </>
     );

@@ -113,7 +113,10 @@ export default function CategoryEdit() {
                                         alt={category.name}
                                         width={100}
                                         height={100}
-                                        className="rounded-3 object-fit-cover"
+                                        style={{
+                                            borderRadius: 8,
+                                            objectFit: "cover",
+                                        }}
                                         preview={false}
                                     />
                                 </div>

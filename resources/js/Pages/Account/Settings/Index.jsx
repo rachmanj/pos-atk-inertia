@@ -22,6 +22,7 @@ import {
     ShopOutlined,
     UploadOutlined,
 } from "@ant-design/icons";
+import { NEUTRAL } from "../../../theme/colors";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -114,7 +115,9 @@ export default function SettingIndex() {
 
     return (
         <>
-            <Head title="Pengaturan Toko" />
+            <Head>
+                <title>Pengaturan Toko - VASIA Stationery</title>
+            </Head>
 
             <LayoutAccount>
                 <Card>
@@ -240,18 +243,26 @@ export default function SettingIndex() {
                                             <img
                                                 src={logoPreview}
                                                 alt={name}
-                                                className="rounded-3 shadow-sm border object-fit-cover"
                                                 style={{
                                                     width: 120,
                                                     height: 120,
+                                                    borderRadius: 8,
+                                                    border: `1px solid ${NEUTRAL.slate200}`,
+                                                    objectFit: "cover",
                                                 }}
                                             />
                                         ) : (
                                             <div
-                                                className="d-inline-flex align-items-center justify-content-center rounded-3 bg-light text-muted border"
                                                 style={{
                                                     width: 120,
                                                     height: 120,
+                                                    borderRadius: 8,
+                                                    background: NEUTRAL.slate50,
+                                                    border: `1px solid ${NEUTRAL.slate200}`,
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    color: NEUTRAL.slate400,
                                                 }}
                                             >
                                                 <ShopOutlined

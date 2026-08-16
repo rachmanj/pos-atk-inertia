@@ -5,6 +5,8 @@ import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useMemo, useState } from "react";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, SEMANTIC } from "../../../theme/colors";
 import {
     Button,
     Card,
@@ -14,6 +16,7 @@ import {
     Row,
     Select,
     Space,
+    Spin,
     Statistic,
     Table,
     Typography,
@@ -26,7 +29,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function ExpenseIndex() {
     const {
@@ -40,6 +43,7 @@ export default function ExpenseIndex() {
     } = usePage().props;
 
     const permissions = auth.permissions || {};
+    const loading = useInertiaLoading();
 
     const [search, setSearch] = useState(filters.q || "");
     const [category, setCategory] = useState(filters.category || undefined);
@@ -95,7 +99,11 @@ export default function ExpenseIndex() {
         {
             title: "Kode",
             dataIndex: "code",
-            render: (value) => <strong className="text-primary">{value}</strong>,
+            render: (value) => (
+                <Text strong style={{ color: BRAND.primary }}>
+                    {value}
+                </Text>
+            ),
         },
         {
             title: "Tanggal",
@@ -110,7 +118,7 @@ export default function ExpenseIndex() {
         {
             title: "Judul",
             dataIndex: "title",
-            render: (value) => <strong>{value}</strong>,
+            render: (value) => <Text strong>{value}</Text>,
         },
         {
             title: "User",
@@ -121,7 +129,9 @@ export default function ExpenseIndex() {
             align: "right",
             dataIndex: "amount",
             render: (value) => (
-                <strong className="text-danger">{formatRupiah(value)}</strong>
+                <Text strong style={{ color: SEMANTIC.error }}>
+                    {formatRupiah(value)}
+                </Text>
             ),
         },
         {
@@ -154,150 +164,168 @@ export default function ExpenseIndex() {
 
     return (
         <>
-            <Head title="Pengeluaran" />
+            <Head>
+                <title>Pengeluaran - VASIA Stationery</title>
+            </Head>
 
             <LayoutAccount>
-                <Card
-                    className="border-0 shadow-sm rounded-3 mt-4"
-                    title={
-                        <Title level={5} className="mb-0">
-                            PENGELUARAN
-                        </Title>
-                    }
-                    extra={
-                        hasAnyPermission(["expenses.create"], permissions) && (
-                            <Link href="/account/expenses/create">
-                                <Button
-                                    type="primary"
-                                    icon={<PlusOutlined />}
-                                >
-                                    TAMBAH PENGELUARAN
-                                </Button>
-                            </Link>
-                        )
-                    }
-                >
-                    <form onSubmit={handleFilter} className="mb-4">
-                        <Row gutter={[12, 12]}>
-                            <Col xs={24} lg={6}>
-                                <Input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Cari kode, judul, atau catatan..."
-                                />
-                            </Col>
-                            <Col xs={24} sm={12} lg={4}>
-                                <Select
-                                    allowClear
-                                    placeholder="Semua Kategori"
-                                    className="w-100"
-                                    value={category}
-                                    onChange={setCategory}
-                                    options={categories.map((item) => ({
-                                        value: item.value,
-                                        label: item.label,
-                                    }))}
-                                />
-                            </Col>
-                            <Col xs={24} sm={12} lg={4}>
-                                <DatePicker
-                                    className="w-100"
-                                    placeholder="Dari tanggal"
-                                    format="YYYY-MM-DD"
-                                    value={startDate ? dayjs(startDate) : null}
-                                    onChange={(_, dateString) =>
-                                        setStartDate(dateString)
-                                    }
-                                />
-                            </Col>
-                            <Col xs={24} sm={12} lg={4}>
-                                <DatePicker
-                                    className="w-100"
-                                    placeholder="Sampai tanggal"
-                                    format="YYYY-MM-DD"
-                                    value={endDate ? dayjs(endDate) : null}
-                                    onChange={(_, dateString) =>
-                                        setEndDate(dateString)
-                                    }
-                                />
-                            </Col>
-                            {isAdmin && (
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Title level={4} style={{ margin: 0 }}>
+                                PENGELUARAN
+                            </Title>
+                        }
+                        extra={
+                            hasAnyPermission(
+                                ["expenses.create"],
+                                permissions,
+                            ) && (
+                                <Link href="/account/expenses/create">
+                                    <Button
+                                        type="primary"
+                                        icon={<PlusOutlined />}
+                                    >
+                                        TAMBAH PENGELUARAN
+                                    </Button>
+                                </Link>
+                            )
+                        }
+                    >
+                        <form
+                            onSubmit={handleFilter}
+                            style={{ marginBottom: 16 }}
+                        >
+                            <Row gutter={[12, 12]}>
+                                <Col xs={24} lg={6}>
+                                    <Input
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                        placeholder="Cari kode, judul, atau catatan..."
+                                    />
+                                </Col>
                                 <Col xs={24} sm={12} lg={4}>
                                     <Select
                                         allowClear
-                                        placeholder="Semua User"
-                                        className="w-100"
-                                        value={userId}
-                                        onChange={setUserId}
-                                        options={users.map((user) => ({
-                                            value: String(user.id),
-                                            label: user.name,
+                                        placeholder="Semua Kategori"
+                                        style={{ width: "100%" }}
+                                        value={category}
+                                        onChange={setCategory}
+                                        options={categories.map((item) => ({
+                                            value: item.value,
+                                            label: item.label,
                                         }))}
                                     />
                                 </Col>
-                            )}
-                            <Col xs={24} lg={isAdmin ? 2 : 6}>
-                                <Space>
-                                    <Button
-                                        type="primary"
-                                        htmlType="submit"
-                                        icon={<FilterOutlined />}
+                                <Col xs={24} sm={12} lg={4}>
+                                    <DatePicker
+                                        style={{ width: "100%" }}
+                                        placeholder="Dari tanggal"
+                                        format="YYYY-MM-DD"
+                                        value={
+                                            startDate
+                                                ? dayjs(startDate)
+                                                : null
+                                        }
+                                        onChange={(_, dateString) =>
+                                            setStartDate(dateString)
+                                        }
                                     />
-                                    <Button
-                                        icon={<ReloadOutlined />}
-                                        onClick={handleReset}
+                                </Col>
+                                <Col xs={24} sm={12} lg={4}>
+                                    <DatePicker
+                                        style={{ width: "100%" }}
+                                        placeholder="Sampai tanggal"
+                                        format="YYYY-MM-DD"
+                                        value={
+                                            endDate ? dayjs(endDate) : null
+                                        }
+                                        onChange={(_, dateString) =>
+                                            setEndDate(dateString)
+                                        }
                                     />
-                                </Space>
+                                </Col>
+                                {isAdmin && (
+                                    <Col xs={24} sm={12} lg={4}>
+                                        <Select
+                                            allowClear
+                                            placeholder="Semua User"
+                                            style={{ width: "100%" }}
+                                            value={userId}
+                                            onChange={setUserId}
+                                            options={users.map((user) => ({
+                                                value: String(user.id),
+                                                label: user.name,
+                                            }))}
+                                        />
+                                    </Col>
+                                )}
+                                <Col xs={24} lg={isAdmin ? 2 : 6}>
+                                    <Space>
+                                        <Button
+                                            type="primary"
+                                            htmlType="submit"
+                                            icon={<FilterOutlined />}
+                                        />
+                                        <Button
+                                            icon={<ReloadOutlined />}
+                                            onClick={handleReset}
+                                        />
+                                    </Space>
+                                </Col>
+                            </Row>
+                        </form>
+
+                        <Row gutter={16} style={{ marginBottom: 16 }}>
+                            <Col xs={24} md={12}>
+                                <Card size="small">
+                                    <Statistic
+                                        title="Total Pengeluaran"
+                                        value={summary.total_amount || 0}
+                                        formatter={(value) =>
+                                            formatRupiah(value)
+                                        }
+                                        valueStyle={{ color: SEMANTIC.error }}
+                                    />
+                                </Card>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Card size="small">
+                                    <Statistic
+                                        title="Jumlah Data"
+                                        value={summary.total_expenses || 0}
+                                    />
+                                </Card>
                             </Col>
                         </Row>
-                    </form>
 
-                    <Row gutter={16} className="mb-4">
-                        <Col xs={24} md={12}>
-                            <Card size="small">
-                                <Statistic
-                                    title="Total Pengeluaran"
-                                    value={summary.total_amount || 0}
-                                    formatter={(value) =>
-                                        formatRupiah(value)
-                                    }
-                                    valueStyle={{ color: "#cf1322" }}
-                                />
-                            </Card>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Card size="small">
-                                <Statistic
-                                    title="Jumlah Data"
-                                    value={summary.total_expenses || 0}
-                                />
-                            </Card>
-                        </Col>
-                    </Row>
+                        <Table
+                            rowKey="id"
+                            columns={columns}
+                            dataSource={expenses.data}
+                            pagination={false}
+                            scroll={{ x: "max-content" }}
+                            locale={{
+                                emptyText:
+                                    "Data pengeluaran belum tersedia. Catat pengeluaran pertama untuk mulai melacak biaya.",
+                            }}
+                        />
 
-                    <Table
-                        bordered
-                        rowKey="id"
-                        columns={columns}
-                        dataSource={expenses.data}
-                        pagination={false}
-                        locale={{
-                            emptyText:
-                                "Data pengeluaran belum tersedia. Catat pengeluaran pertama untuk mulai melacak biaya.",
-                        }}
-                        scroll={{ x: 1000 }}
-                    />
-
-                    <Pagination
-                        links={expenses.links}
-                        align="end"
-                        meta={{
-                            current_page: expenses.current_page,
-                            per_page: expenses.per_page,
-                            total: expenses.total,
-                        }}
-                    />
-                </Card>
+                        <div style={{ marginTop: 16, textAlign: "right" }}>
+                            <Pagination
+                                links={expenses.links}
+                                align="end"
+                                meta={{
+                                    current_page: expenses.current_page,
+                                    per_page: expenses.per_page,
+                                    total: expenses.total,
+                                }}
+                            />
+                        </div>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );

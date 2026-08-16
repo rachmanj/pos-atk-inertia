@@ -3,6 +3,8 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, NEUTRAL, SEMANTIC } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -15,6 +17,7 @@ import {
     Row,
     Select,
     Space,
+    Spin,
     Table,
     Typography,
 } from "antd";
@@ -40,6 +43,7 @@ const createEmptyItem = () => ({
 export default function PurchaseCreate() {
     const { errors, suppliers, products, defaultPurchaseDate } =
         usePage().props;
+    const loading = useInertiaLoading();
 
     const [supplierId, setSupplierId] = useState(
         suppliers[0]?.id ? String(suppliers[0].id) : "",
@@ -166,7 +170,7 @@ export default function PurchaseCreate() {
                 <Select
                     showSearch
                     optionFilterProp="label"
-                    className="w-100"
+                    style={{ width: "100%" }}
                     placeholder="Pilih Produk"
                     value={item.product_id || undefined}
                     onChange={(value) =>
@@ -190,7 +194,7 @@ export default function PurchaseCreate() {
                 const selectedProduct = productMap[item.product_id];
                 return (
                     <Select
-                        className="w-100"
+                        style={{ width: "100%" }}
                         value={item.unit_id || undefined}
                         onChange={(value) =>
                             handleItemChange(index, "unit_id", value)
@@ -245,7 +249,7 @@ export default function PurchaseCreate() {
                     <>
                         <InputNumber
                             min={0}
-                            className="w-100"
+                            style={{ width: "100%" }}
                             value={item.buy_price}
                             onChange={(value) =>
                                 handleItemChange(
@@ -264,7 +268,10 @@ export default function PurchaseCreate() {
                             }
                         />
                         {warn && (
-                            <Text type="warning" className="small d-block">
+                            <Text
+                                type="warning"
+                                style={{ fontSize: 12, display: "block" }}
+                            >
                                 Harga beli lebih tinggi dari harga jual produk.
                             </Text>
                         )}
@@ -288,7 +295,7 @@ export default function PurchaseCreate() {
             align: "right",
             width: 120,
             render: (_, item) => (
-                <Text strong type="success">
+                <Text strong style={{ color: SEMANTIC.success }}>
                     {formatRupiah(
                         Number(item.qty || 0) * Number(item.buy_price || 0),
                     )}
@@ -318,186 +325,220 @@ export default function PurchaseCreate() {
             </Head>
 
             <LayoutAccount>
-                <Card
-                    className="border-0 shadow-sm rounded-3 mt-4"
-                    title={
-                        <Title level={5} className="mb-0">
-                            <ShoppingCartOutlined className="me-2" />
-                            TAMBAH PEMBELIAN
-                        </Title>
-                    }
-                    extra={
-                        <Link href="/account/purchases">
-                            <Button icon={<ArrowLeftOutlined />}>
-                                KEMBALI
-                            </Button>
-                        </Link>
-                    }
-                >
-                    {!canSubmit && (
-                        <Alert
-                            type="warning"
-                            showIcon
-                            className="mb-4"
-                            message={
-                                <>
-                                    {suppliers.length === 0 && (
-                                        <div className="mb-2">
-                                            Supplier belum tersedia. Tambahkan
-                                            supplier terlebih dahulu.
-                                            {hasAnyPermission([
-                                                "suppliers.create",
-                                            ]) && (
-                                                <Link
-                                                    href="/account/suppliers/create"
-                                                    className="ms-2 fw-bold"
-                                                >
-                                                    Tambah Supplier
-                                                </Link>
-                                            )}
-                                        </div>
-                                    )}
-                                    {products.length === 0 && (
-                                        <div>
-                                            Produk belum tersedia. Tambahkan
-                                            produk terlebih dahulu.
-                                            {hasAnyPermission([
-                                                "products.create",
-                                            ]) && (
-                                                <Link
-                                                    href="/account/products/create"
-                                                    className="ms-2 fw-bold"
-                                                >
-                                                    Tambah Produk
-                                                </Link>
-                                            )}
-                                        </div>
-                                    )}
-                                </>
-                            }
-                        />
-                    )}
-
-                    {errors.items && (
-                        <Alert
-                            type="error"
-                            message={errors.items}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-
-                    <form onSubmit={storePurchase}>
-                        <Row gutter={16} className="mb-4">
-                            <Col xs={24} md={8}>
-                                <Form.Item
-                                    label="Supplier"
-                                    validateStatus={
-                                        errors.supplier_id ? "error" : ""
-                                    }
-                                    help={errors.supplier_id}
-                                    required
-                                >
-                                    <Select
-                                        placeholder="Pilih Supplier"
-                                        value={supplierId || undefined}
-                                        onChange={setSupplierId}
-                                        disabled={!canSubmit}
-                                        options={suppliers.map((supplier) => ({
-                                            value: String(supplier.id),
-                                            label: `${supplier.name}${supplier.no_telp ? ` - ${supplier.no_telp}` : ""}`,
-                                        }))}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} md={8}>
-                                <Form.Item
-                                    label="Tanggal Pembelian"
-                                    validateStatus={
-                                        errors.purchase_date ? "error" : ""
-                                    }
-                                    help={errors.purchase_date}
-                                    required
-                                >
-                                    <DatePicker
-                                        className="w-100"
-                                        format="YYYY-MM-DD"
-                                        value={
-                                            purchaseDate
-                                                ? dayjs(purchaseDate)
-                                                : null
-                                        }
-                                        onChange={(_, dateString) =>
-                                            setPurchaseDate(dateString)
-                                        }
-                                        disabled={!canSubmit}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} md={8}>
-                                <Form.Item label="Ringkasan">
-                                    <div className="border rounded-3 p-3 bg-light">
-                                        <Text type="secondary" className="small">
-                                            Total Qty
-                                        </Text>
-                                        <div className="fw-bold mb-2">
-                                            {totalQty}
-                                        </div>
-                                        <Text type="secondary" className="small">
-                                            Total Pembelian
-                                        </Text>
-                                        <div className="fw-bold text-success">
-                                            {formatRupiah(totalAmount)}
-                                        </div>
-                                    </div>
-                                </Form.Item>
-                            </Col>
-                        </Row>
-
-                        <Form.Item
-                            label="Catatan"
-                            validateStatus={errors.note ? "error" : ""}
-                            help={errors.note}
-                            className="mb-4"
-                        >
-                            <Input.TextArea
-                                rows={3}
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
-                                placeholder="Catatan pembelian"
-                                disabled={!canSubmit}
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Space>
+                                <ShoppingCartOutlined
+                                    style={{ color: BRAND.primary }}
+                                />
+                                <Title level={4} style={{ margin: 0 }}>
+                                    TAMBAH PEMBELIAN
+                                </Title>
+                            </Space>
+                        }
+                        extra={
+                            <Link href="/account/purchases">
+                                <Button icon={<ArrowLeftOutlined />}>
+                                    KEMBALI
+                                </Button>
+                            </Link>
+                        }
+                    >
+                        {!canSubmit && (
+                            <Alert
+                                type="warning"
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                                message={
+                                    <Space direction="vertical" size={4}>
+                                        {suppliers.length === 0 && (
+                                            <span>
+                                                Supplier belum tersedia.
+                                                Tambahkan supplier terlebih
+                                                dahulu.
+                                                {hasAnyPermission([
+                                                    "suppliers.create",
+                                                ]) && (
+                                                    <Link
+                                                        href="/account/suppliers/create"
+                                                        style={{
+                                                            marginLeft: 8,
+                                                            fontWeight: 600,
+                                                        }}
+                                                    >
+                                                        Tambah Supplier
+                                                    </Link>
+                                                )}
+                                            </span>
+                                        )}
+                                        {products.length === 0 && (
+                                            <span>
+                                                Produk belum tersedia.
+                                                Tambahkan produk terlebih
+                                                dahulu.
+                                                {hasAnyPermission([
+                                                    "products.create",
+                                                ]) && (
+                                                    <Link
+                                                        href="/account/products/create"
+                                                        style={{
+                                                            marginLeft: 8,
+                                                            fontWeight: 600,
+                                                        }}
+                                                    >
+                                                        Tambah Produk
+                                                    </Link>
+                                                )}
+                                            </span>
+                                        )}
+                                    </Space>
+                                }
                             />
-                        </Form.Item>
+                        )}
 
-                        <Table
-                            bordered
-                            rowKey={(_, index) => index}
-                            columns={columns}
-                            dataSource={items}
-                            pagination={false}
-                            scroll={{ x: 900 }}
-                            className="mb-4"
-                        />
+                        {errors.items && (
+                            <Alert
+                                type="error"
+                                message={errors.items}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
 
-                        <Space>
-                            <Button
-                                icon={<PlusOutlined />}
-                                onClick={addItem}
-                                disabled={!canSubmit}
+                        <form onSubmit={storePurchase}>
+                            <Row gutter={16} style={{ marginBottom: 16 }}>
+                                <Col xs={24} md={8}>
+                                    <Form.Item
+                                        label="Supplier"
+                                        validateStatus={
+                                            errors.supplier_id ? "error" : ""
+                                        }
+                                        help={errors.supplier_id}
+                                        required
+                                    >
+                                        <Select
+                                            placeholder="Pilih Supplier"
+                                            value={supplierId || undefined}
+                                            onChange={setSupplierId}
+                                            disabled={!canSubmit}
+                                            options={suppliers.map(
+                                                (supplier) => ({
+                                                    value: String(supplier.id),
+                                                    label: `${supplier.name}${supplier.no_telp ? ` - ${supplier.no_telp}` : ""}`,
+                                                }),
+                                            )}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} md={8}>
+                                    <Form.Item
+                                        label="Tanggal Pembelian"
+                                        validateStatus={
+                                            errors.purchase_date ? "error" : ""
+                                        }
+                                        help={errors.purchase_date}
+                                        required
+                                    >
+                                        <DatePicker
+                                            style={{ width: "100%" }}
+                                            format="YYYY-MM-DD"
+                                            value={
+                                                purchaseDate
+                                                    ? dayjs(purchaseDate)
+                                                    : null
+                                            }
+                                            onChange={(_, dateString) =>
+                                                setPurchaseDate(dateString)
+                                            }
+                                            disabled={!canSubmit}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} md={8}>
+                                    <Form.Item label="Ringkasan">
+                                        <Card
+                                            size="small"
+                                            style={{
+                                                background: NEUTRAL.slate50,
+                                            }}
+                                        >
+                                            <Text
+                                                type="secondary"
+                                                style={{ fontSize: 12 }}
+                                            >
+                                                Total Qty
+                                            </Text>
+                                            <div>
+                                                <Text strong>{totalQty}</Text>
+                                            </div>
+                                            <Text
+                                                type="secondary"
+                                                style={{
+                                                    fontSize: 12,
+                                                    marginTop: 8,
+                                                    display: "block",
+                                                }}
+                                            >
+                                                Total Pembelian
+                                            </Text>
+                                            <Text
+                                                strong
+                                                style={{
+                                                    color: SEMANTIC.success,
+                                                }}
+                                            >
+                                                {formatRupiah(totalAmount)}
+                                            </Text>
+                                        </Card>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Form.Item
+                                label="Catatan"
+                                validateStatus={errors.note ? "error" : ""}
+                                help={errors.note}
+                                style={{ marginBottom: 16 }}
                             >
-                                Tambah Baris
-                            </Button>
-                            <Button
-                                type="primary"
-                                htmlType="submit"
-                                icon={<SaveOutlined />}
-                                disabled={!canSubmit}
-                            >
-                                Simpan Pembelian
-                            </Button>
-                        </Space>
-                    </form>
-                </Card>
+                                <Input.TextArea
+                                    rows={3}
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    placeholder="Catatan pembelian"
+                                    disabled={!canSubmit}
+                                />
+                            </Form.Item>
+
+                            <Table
+                                rowKey={(_, index) => index}
+                                columns={columns}
+                                dataSource={items}
+                                pagination={false}
+                                scroll={{ x: "max-content" }}
+                                style={{ marginBottom: 16 }}
+                            />
+
+                            <Space>
+                                <Button
+                                    icon={<PlusOutlined />}
+                                    onClick={addItem}
+                                    disabled={!canSubmit}
+                                >
+                                    Tambah Baris
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    icon={<SaveOutlined />}
+                                    disabled={!canSubmit}
+                                >
+                                    Simpan Pembelian
+                                </Button>
+                            </Space>
+                        </form>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );

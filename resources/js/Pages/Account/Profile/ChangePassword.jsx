@@ -1,11 +1,26 @@
 import React, { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router } from "@inertiajs/react";
-import { notification } from "antd";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND } from "../../../theme/colors";
+import {
+    Button,
+    Card,
+    Col,
+    Form,
+    Input,
+    Row,
+    Spin,
+    Typography,
+    notification,
+} from "antd";
 import { KeyOutlined, SaveOutlined } from "@ant-design/icons";
+
+const { Title } = Typography;
 
 export default function ChangePassword() {
     const { errors = {} } = usePage().props;
+    const loading = useInertiaLoading();
 
     const [currentPassword, setCurrentPassword] = useState("");
     const [password, setPassword] = useState("");
@@ -28,7 +43,7 @@ export default function ChangePassword() {
                     setPasswordConfirmation("");
 
                     notification.success({
-                        message: "Berhasil!",
+                        message: "Berhasil",
                         description: "Kata sandi berhasil diperbarui.",
                         duration: 1.5,
                     });
@@ -39,33 +54,39 @@ export default function ChangePassword() {
 
     return (
         <>
-            <Head title="Ubah Kata Sandi - VASIA Stationery" />
+            <Head>
+                <title>Ubah Kata Sandi - VASIA Stationery</title>
+            </Head>
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 col-lg-6">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0">
-                                <h5 className="mb-0 fw-bold">
-                                    <KeyOutlined className="me-2" />
-                                    UBAH KATA SANDI
-                                </h5>
-                            </div>
-
-                            <div className="card-body">
+                <Spin spinning={loading}>
+                    <Row>
+                        <Col xs={24} lg={12}>
+                            <Card
+                                title={
+                                    <Title level={4} style={{ margin: 0 }}>
+                                        <KeyOutlined
+                                            style={{
+                                                marginRight: 8,
+                                                color: BRAND.primary,
+                                            }}
+                                        />
+                                        UBAH KATA SANDI
+                                    </Title>
+                                }
+                            >
                                 <form onSubmit={updatePassword}>
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Kata Sandi Saat Ini
-                                        </label>
-
-                                        <input
-                                            type="password"
-                                            className={`form-control ${
-                                                errors.current_password
-                                                    ? "is-invalid"
-                                                    : ""
-                                            }`}
+                                    <Form.Item
+                                        label="Kata Sandi Saat Ini"
+                                        validateStatus={
+                                            errors.current_password
+                                                ? "error"
+                                                : ""
+                                        }
+                                        help={errors.current_password}
+                                        required
+                                    >
+                                        <Input.Password
                                             value={currentPassword}
                                             onChange={(e) =>
                                                 setCurrentPassword(
@@ -75,26 +96,17 @@ export default function ChangePassword() {
                                             placeholder="Masukkan kata sandi saat ini"
                                             autoComplete="current-password"
                                         />
+                                    </Form.Item>
 
-                                        {errors.current_password && (
-                                            <div className="invalid-feedback">
-                                                {errors.current_password}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Kata Sandi Baru
-                                        </label>
-
-                                        <input
-                                            type="password"
-                                            className={`form-control ${
-                                                errors.password
-                                                    ? "is-invalid"
-                                                    : ""
-                                            }`}
+                                    <Form.Item
+                                        label="Kata Sandi Baru"
+                                        validateStatus={
+                                            errors.password ? "error" : ""
+                                        }
+                                        help={errors.password}
+                                        required
+                                    >
+                                        <Input.Password
                                             value={password}
                                             onChange={(e) =>
                                                 setPassword(e.target.value)
@@ -102,22 +114,13 @@ export default function ChangePassword() {
                                             placeholder="Masukkan kata sandi baru"
                                             autoComplete="new-password"
                                         />
+                                    </Form.Item>
 
-                                        {errors.password && (
-                                            <div className="invalid-feedback">
-                                                {errors.password}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Konfirmasi Kata Sandi Baru
-                                        </label>
-
-                                        <input
-                                            type="password"
-                                            className="form-control"
+                                    <Form.Item
+                                        label="Konfirmasi Kata Sandi Baru"
+                                        required
+                                    >
+                                        <Input.Password
                                             value={passwordConfirmation}
                                             onChange={(e) =>
                                                 setPasswordConfirmation(
@@ -127,20 +130,20 @@ export default function ChangePassword() {
                                             placeholder="Ulangi kata sandi baru"
                                             autoComplete="new-password"
                                         />
-                                    </div>
+                                    </Form.Item>
 
-                                    <button
-                                        type="submit"
-                                        className="btn btn-success shadow-sm rounded-sm"
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        icon={<SaveOutlined />}
                                     >
-                                        <SaveOutlined className="me-2" />
                                         SIMPAN KATA SANDI
-                                    </button>
+                                    </Button>
                                 </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                            </Card>
+                        </Col>
+                    </Row>
+                </Spin>
             </LayoutAccount>
         </>
     );

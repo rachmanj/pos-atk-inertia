@@ -4,6 +4,8 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, SEMANTIC } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -14,6 +16,7 @@ import {
     Row,
     Select,
     Space,
+    Spin,
     Table,
     Typography,
 } from "antd";
@@ -26,7 +29,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function PurchaseIndex() {
     const {
@@ -38,6 +41,7 @@ export default function PurchaseIndex() {
     } = usePage().props;
 
     const permissions = auth.permissions || {};
+    const loading = useInertiaLoading();
 
     const [search, setSearch] = useState(filters.q || "");
     const [supplierId, setSupplierId] = useState(
@@ -83,7 +87,11 @@ export default function PurchaseIndex() {
         {
             title: "Invoice",
             dataIndex: "invoice",
-            render: (value) => <strong className="text-primary">{value}</strong>,
+            render: (value) => (
+                <Text strong style={{ color: BRAND.primary }}>
+                    {value}
+                </Text>
+            ),
         },
         {
             title: "Tanggal",
@@ -103,20 +111,22 @@ export default function PurchaseIndex() {
             title: "Item",
             align: "center",
             dataIndex: "total_items",
-            render: (value) => <strong>{value}</strong>,
+            render: (value) => <Text strong>{value}</Text>,
         },
         {
             title: "Qty",
             align: "center",
             dataIndex: "total_qty",
-            render: (value) => <strong>{value}</strong>,
+            render: (value) => <Text strong>{value}</Text>,
         },
         {
             title: "Total",
             align: "right",
             dataIndex: "total_amount",
             render: (value) => (
-                <strong className="text-success">{formatRupiah(value)}</strong>
+                <Text strong style={{ color: SEMANTIC.success }}>
+                    {formatRupiah(value)}
+                </Text>
             ),
         },
         {
@@ -141,131 +151,151 @@ export default function PurchaseIndex() {
             </Head>
 
             <LayoutAccount>
-                <Card
-                    className="border-0 shadow-sm rounded-3 mt-4"
-                    title={
-                        <Title level={5} className="mb-0">
-                            <ShoppingOutlined className="me-2" />
-                            PEMBELIAN
-                        </Title>
-                    }
-                    extra={
-                        hasAnyPermission(["purchases.create"], permissions) && (
-                            <Link href="/account/purchases/create">
-                                <Button
-                                    type="primary"
-                                    icon={<PlusOutlined />}
-                                >
-                                    TAMBAH PEMBELIAN
-                                </Button>
-                            </Link>
-                        )
-                    }
-                >
-                    {flash.success && (
-                        <Alert
-                            type="success"
-                            message={flash.success}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-                    {flash.error && (
-                        <Alert
-                            type="error"
-                            message={flash.error}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-
-                    <form onSubmit={handleFilter} className="mb-4">
-                        <Row gutter={[12, 12]}>
-                            <Col xs={24} lg={8}>
-                                <Input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Cari invoice, supplier, atau pembuat..."
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Space>
+                                <ShoppingOutlined
+                                    style={{ color: BRAND.primary }}
                                 />
-                            </Col>
-                            <Col xs={24} sm={8} lg={4}>
-                                <Select
-                                    allowClear
-                                    placeholder="Semua Supplier"
-                                    className="w-100"
-                                    value={supplierId}
-                                    onChange={setSupplierId}
-                                    options={suppliers.map((supplier) => ({
-                                        value: String(supplier.id),
-                                        label: supplier.name,
-                                    }))}
-                                />
-                            </Col>
-                            <Col xs={24} sm={8} lg={4}>
-                                <DatePicker
-                                    className="w-100"
-                                    placeholder="Dari tanggal"
-                                    format="YYYY-MM-DD"
-                                    value={startDate ? dayjs(startDate) : null}
-                                    onChange={(_, dateString) =>
-                                        setStartDate(dateString)
-                                    }
-                                />
-                            </Col>
-                            <Col xs={24} sm={8} lg={4}>
-                                <DatePicker
-                                    className="w-100"
-                                    placeholder="Sampai tanggal"
-                                    format="YYYY-MM-DD"
-                                    value={endDate ? dayjs(endDate) : null}
-                                    onChange={(_, dateString) =>
-                                        setEndDate(dateString)
-                                    }
-                                />
-                            </Col>
-                            <Col xs={24} lg={4}>
-                                <Space>
+                                <Title level={4} style={{ margin: 0 }}>
+                                    PEMBELIAN
+                                </Title>
+                            </Space>
+                        }
+                        extra={
+                            hasAnyPermission(
+                                ["purchases.create"],
+                                permissions,
+                            ) && (
+                                <Link href="/account/purchases/create">
                                     <Button
                                         type="primary"
-                                        htmlType="submit"
-                                        icon={<FilterOutlined />}
+                                        icon={<PlusOutlined />}
                                     >
-                                        Filter
+                                        TAMBAH PEMBELIAN
                                     </Button>
-                                    <Button
-                                        icon={<ReloadOutlined />}
-                                        onClick={handleReset}
-                                    >
-                                        Reset
-                                    </Button>
-                                </Space>
-                            </Col>
-                        </Row>
-                    </form>
+                                </Link>
+                            )
+                        }
+                    >
+                        {flash.success && (
+                            <Alert
+                                type="success"
+                                message={flash.success}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+                        {flash.error && (
+                            <Alert
+                                type="error"
+                                message={flash.error}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
 
-                    <Table
-                        bordered
-                        rowKey="id"
-                        columns={columns}
-                        dataSource={purchases.data}
-                        pagination={false}
-                        locale={{
-                            emptyText:
-                                "Belum ada data pembelian. Buat pembelian pertama dari menu Pembelian Supplier.",
-                        }}
-                        scroll={{ x: 900 }}
-                    />
+                        <form
+                            onSubmit={handleFilter}
+                            style={{ marginBottom: 16 }}
+                        >
+                            <Row gutter={[12, 12]}>
+                                <Col xs={24} lg={8}>
+                                    <Input
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                        placeholder="Cari invoice, supplier, atau pembuat..."
+                                    />
+                                </Col>
+                                <Col xs={24} sm={8} lg={4}>
+                                    <Select
+                                        allowClear
+                                        placeholder="Semua Supplier"
+                                        style={{ width: "100%" }}
+                                        value={supplierId}
+                                        onChange={setSupplierId}
+                                        options={suppliers.map((supplier) => ({
+                                            value: String(supplier.id),
+                                            label: supplier.name,
+                                        }))}
+                                    />
+                                </Col>
+                                <Col xs={24} sm={8} lg={4}>
+                                    <DatePicker
+                                        style={{ width: "100%" }}
+                                        placeholder="Dari tanggal"
+                                        format="YYYY-MM-DD"
+                                        value={
+                                            startDate
+                                                ? dayjs(startDate)
+                                                : null
+                                        }
+                                        onChange={(_, dateString) =>
+                                            setStartDate(dateString)
+                                        }
+                                    />
+                                </Col>
+                                <Col xs={24} sm={8} lg={4}>
+                                    <DatePicker
+                                        style={{ width: "100%" }}
+                                        placeholder="Sampai tanggal"
+                                        format="YYYY-MM-DD"
+                                        value={
+                                            endDate ? dayjs(endDate) : null
+                                        }
+                                        onChange={(_, dateString) =>
+                                            setEndDate(dateString)
+                                        }
+                                    />
+                                </Col>
+                                <Col xs={24} lg={4}>
+                                    <Space>
+                                        <Button
+                                            type="primary"
+                                            htmlType="submit"
+                                            icon={<FilterOutlined />}
+                                        >
+                                            Filter
+                                        </Button>
+                                        <Button
+                                            icon={<ReloadOutlined />}
+                                            onClick={handleReset}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </Space>
+                                </Col>
+                            </Row>
+                        </form>
 
-                    <Pagination
-                        links={purchases.links}
-                        align="end"
-                        meta={{
-                            current_page: purchases.current_page,
-                            per_page: purchases.per_page,
-                            total: purchases.total,
-                        }}
-                    />
-                </Card>
+                        <Table
+                            rowKey="id"
+                            columns={columns}
+                            dataSource={purchases.data}
+                            pagination={false}
+                            scroll={{ x: "max-content" }}
+                            locale={{
+                                emptyText:
+                                    "Belum ada data pembelian. Buat pembelian pertama dari menu Tambah Pembelian.",
+                            }}
+                        />
+
+                        <div style={{ marginTop: 16, textAlign: "right" }}>
+                            <Pagination
+                                links={purchases.links}
+                                align="end"
+                                meta={{
+                                    current_page: purchases.current_page,
+                                    per_page: purchases.per_page,
+                                    total: purchases.total,
+                                }}
+                            />
+                        </div>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );

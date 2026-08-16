@@ -19,6 +19,7 @@ import { formatRupiah } from "../../Utils/format";
 import { lineDiscountAmount, lineNet } from "./posUtils";
 import useMobile from "../../Hooks/useMobile";
 import { numericMobileInputProps } from "../../Utils/responsive";
+import { NEUTRAL } from "../../theme/colors";
 
 const { Text } = Typography;
 
@@ -35,10 +36,15 @@ function CartRow({
     const net = lineNet(cart);
 
     return (
-        <div className={`pos-cart-row ${held ? "opacity-75" : ""}`}>
+        <div
+            className="pos-cart-row"
+            style={held ? { opacity: 0.75 } : undefined}
+        >
             <div className="pos-cart-main">
                 <strong>{cart.product?.title || "Produk"}</strong>
-                {held && <Tag className="ml-1">Ditahan</Tag>}
+                {held && (
+                    <Tag style={{ marginLeft: 4 }}>Ditahan</Tag>
+                )}
                 <span>
                     {cart.ppob_cost != null ? (
                         <>
@@ -53,13 +59,23 @@ function CartRow({
                     )}
                 </span>
                 {cart.customer_ref && (
-                    <Text type="secondary" className="block">
+                    <Text
+                        type="secondary"
+                        style={{ display: "block" }}
+                    >
                         Ref: {cart.customer_ref}
                     </Text>
                 )}
                 {!held && (
-                    <div className="mt-1 flex items-center gap-1">
-                        <Text type="secondary" className="text-xs">
+                    <div
+                        style={{
+                            marginTop: 4,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                        }}
+                    >
+                        <Text type="secondary" style={{ fontSize: 12 }}>
                             Diskon
                         </Text>
                         <Space.Compact size="small" style={{ maxWidth: 160 }}>
@@ -127,10 +143,13 @@ function CartRow({
                     </Space.Compact>
                 )}
 
-                <div className="text-right">
+                <div style={{ textAlign: "right" }}>
                     <strong>{formatRupiah(net)}</strong>
                     {itemDiscount > 0 && (
-                        <Text type="danger" className="block text-xs">
+                        <Text
+                            type="danger"
+                            style={{ display: "block", fontSize: 12 }}
+                        >
                             -{formatRupiah(itemDiscount)}
                         </Text>
                     )}
@@ -201,20 +220,31 @@ export default function PosCartPanel({
             </div>
 
             {(errors?.error || flash?.error) && (
-                <div className="mx-3 mt-3 mb-0">
-                    <Tag color="error" className="!flex w-full p-2">
+                <div style={{ margin: "12px 12px 0" }}>
+                    <Tag
+                        color="error"
+                        style={{
+                            display: "flex",
+                            width: "100%",
+                            padding: 8,
+                        }}
+                    >
                         {errors?.error || flash?.error}
                     </Tag>
                 </div>
             )}
 
             {ppobAccount && (
-                <div className="mx-3 mt-3 mb-0">
+                <div style={{ margin: "12px 12px 0" }}>
                     <Tag
                         color={
                             ppobAccount.is_low_balance ? "error" : "default"
                         }
-                        className="!flex w-full p-2"
+                        style={{
+                            display: "flex",
+                            width: "100%",
+                            padding: 8,
+                        }}
                     >
                         Saldo PPOB ({ppobAccount.name}):{" "}
                         <strong>
@@ -239,10 +269,13 @@ export default function PosCartPanel({
                             />
                         ))}
                         {heldCarts.length > 0 && (
-                            <div className="px-3 pt-2">
+                            <div style={{ padding: "8px 12px 0" }}>
                                 <Text
                                     type="secondary"
-                                    className="text-xs font-semibold"
+                                    style={{
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                    }}
                                 >
                                     Item ditahan ({heldCarts.length})
                                 </Text>
@@ -265,15 +298,16 @@ export default function PosCartPanel({
                     <div className="pos-empty-cart">
                         <ShoppingOutlined style={{ fontSize: 32 }} />
                         <strong>Keranjang kosong</strong>
-                        <span>Item belanja akan tampil di bagian ini.</span>
+                        <span>
+                            Pindai barcode atau pilih produk untuk mulai
+                            transaksi.
+                        </span>
                     </div>
                 )}
             </div>
 
-            <div className="px-3 pb-2">
-                <label className="pos-field-label">
-                    Pelanggan
-                </label>
+            <div style={{ padding: "0 12px 8px" }}>
+                <label className="pos-field-label">Pelanggan</label>
                 {selectedCustomer ? (
                     <Space.Compact style={{ width: "100%" }}>
                         <Input value={selectedCustomer.name} readOnly />
@@ -294,7 +328,12 @@ export default function PosCartPanel({
                                     <div>
                                         <strong>{c.name}</strong>
                                         {c.no_telp && (
-                                            <div className="text-xs text-gray-500">
+                                            <div
+                                                style={{
+                                                    fontSize: 12,
+                                                    color: NEUTRAL.slate500,
+                                                }}
+                                            >
                                                 {c.no_telp}
                                             </div>
                                         )}
@@ -317,7 +356,7 @@ export default function PosCartPanel({
                                         <Button
                                             type="link"
                                             size="small"
-                                            className="!p-0"
+                                            style={{ padding: 0 }}
                                             onClick={onShowQuickCreate}
                                         >
                                             Tambah baru?
@@ -339,7 +378,7 @@ export default function PosCartPanel({
                         <Button
                             type="link"
                             size="small"
-                            className="!p-0 mt-1"
+                            style={{ padding: 0, marginTop: 4 }}
                             onClick={onClearCustomer}
                         >
                             Pilih Umum (tanpa pelanggan)

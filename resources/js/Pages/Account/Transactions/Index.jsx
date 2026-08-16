@@ -3,6 +3,9 @@ import LayoutAccount from "../../../Layouts/Account";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import hasAnyPermission from "../../../Utils/Permissions";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, NEUTRAL, SEMANTIC } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -12,6 +15,7 @@ import {
     Row,
     Select,
     Space,
+    Spin,
     Table,
     Tag,
     Typography,
@@ -22,9 +26,8 @@ import {
     ReloadOutlined,
     ShoppingCartOutlined,
 } from "@ant-design/icons";
-import hasAnyPermission from "../../../Utils/Permissions";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const paymentMethodLabel = (method) => {
     const labels = {
@@ -85,6 +88,7 @@ export default function Index() {
     } = usePage().props;
 
     const permissions = auth.permissions || {};
+    const loading = useInertiaLoading();
 
     const [search, setSearch] = useState(filters.search || "");
     const [paymentMethod, setPaymentMethod] = useState(
@@ -132,15 +136,17 @@ export default function Index() {
             dataIndex: "invoice",
             render: (invoice, record) => (
                 <Link href={`/account/transactions/${invoice}`}>
-                    <strong
-                        className={
-                            record.status === "voided"
-                                ? "text-danger"
-                                : "text-primary"
-                        }
+                    <Text
+                        strong
+                        style={{
+                            color:
+                                record.status === "voided"
+                                    ? SEMANTIC.error
+                                    : BRAND.primary,
+                        }}
                     >
                         {invoice}
-                    </strong>
+                    </Text>
                 </Link>
             ),
         },
@@ -188,7 +194,9 @@ export default function Index() {
             align: "right",
             dataIndex: "grand_total",
             render: (value) => (
-                <strong className="text-success">{formatRupiah(value)}</strong>
+                <Text strong style={{ color: SEMANTIC.success }}>
+                    {formatRupiah(value)}
+                </Text>
             ),
         },
         {
@@ -198,10 +206,7 @@ export default function Index() {
             render: (_, record) =>
                 hasAnyPermission(["transactions.show"], permissions) ? (
                     <Link href={`/account/transactions/${record.invoice}`}>
-                        <Button
-                            size="small"
-                            icon={<EyeOutlined />}
-                        >
+                        <Button size="small" icon={<EyeOutlined />}>
                             Detail
                         </Button>
                     </Link>
@@ -211,147 +216,168 @@ export default function Index() {
 
     return (
         <>
-            <Head title="Riwayat Transaksi" />
+            <Head>
+                <title>Riwayat Transaksi - VASIA Stationery</title>
+            </Head>
 
             <LayoutAccount>
-                <Card
-                    className="border-0 shadow-sm rounded-3 mt-4"
-                    title={
-                        <Title level={5} className="mb-0">
-                            RIWAYAT TRANSAKSI
-                        </Title>
-                    }
-                    extra={
-                        hasAnyPermission(
-                            ["transactions.create"],
-                            permissions,
-                        ) && (
-                            <Link href="/account/transactions/create">
-                                <Button
-                                    type="primary"
-                                    icon={<ShoppingCartOutlined />}
-                                >
-                                    POS KASIR
-                                </Button>
-                            </Link>
-                        )
-                    }
-                >
-                    {flash.success && (
-                        <Alert
-                            type="success"
-                            message={flash.success}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-                    {flash.error && (
-                        <Alert
-                            type="error"
-                            message={flash.error}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-
-                    <form onSubmit={handleFilter} className="mb-4">
-                        <Row gutter={[12, 12]}>
-                            <Col xs={24} lg={8}>
-                                <Input
-                                    placeholder="Cari invoice, kasir, atau customer..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
-                            </Col>
-                            <Col xs={24} sm={12} lg={5}>
-                                <Select
-                                    allowClear
-                                    placeholder="Semua Metode"
-                                    className="w-100"
-                                    value={paymentMethod}
-                                    onChange={setPaymentMethod}
-                                    options={[
-                                        { value: "cash", label: "Tunai" },
-                                        { value: "digital", label: "Digital" },
-                                        { value: "qris", label: "QRIS" },
-                                        {
-                                            value: "transfer",
-                                            label: "Transfer",
-                                        },
-                                    ]}
-                                />
-                            </Col>
-                            <Col xs={24} sm={12} lg={5}>
-                                <Select
-                                    allowClear
-                                    placeholder="Semua Pembayaran"
-                                    className="w-100"
-                                    value={paymentStatus}
-                                    onChange={setPaymentStatus}
-                                    options={[
-                                        {
-                                            value: "unpaid",
-                                            label: "Belum Bayar",
-                                        },
-                                        {
-                                            value: "pending",
-                                            label: "Pending",
-                                        },
-                                        { value: "paid", label: "Lunas" },
-                                        { value: "failed", label: "Gagal" },
-                                        {
-                                            value: "expired",
-                                            label: "Expired",
-                                        },
-                                    ]}
-                                />
-                            </Col>
-                            <Col xs={24} lg={6}>
-                                <Space>
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Title level={4} style={{ margin: 0 }}>
+                                RIWAYAT TRANSAKSI
+                            </Title>
+                        }
+                        extra={
+                            hasAnyPermission(
+                                ["transactions.create"],
+                                permissions,
+                            ) && (
+                                <Link href="/account/transactions/create">
                                     <Button
                                         type="primary"
-                                        htmlType="submit"
-                                        icon={<FilterOutlined />}
+                                        icon={<ShoppingCartOutlined />}
                                     >
-                                        Filter
+                                        POS KASIR
                                     </Button>
-                                    <Button
-                                        icon={<ReloadOutlined />}
-                                        onClick={handleReset}
-                                    >
-                                        Reset
-                                    </Button>
-                                </Space>
-                            </Col>
-                        </Row>
-                    </form>
-
-                    <Table
-                        bordered
-                        rowKey="id"
-                        columns={columns}
-                        dataSource={transactions.data}
-                        pagination={false}
-                        locale={{
-                            emptyText:
-                                "Belum ada transaksi. Buka POS Kasir untuk mencatat penjualan pertama.",
-                        }}
-                        rowClassName={(record) =>
-                            record.status === "voided" ? "table-light" : ""
+                                </Link>
+                            )
                         }
-                        scroll={{ x: 1000 }}
-                    />
+                    >
+                        {flash.success && (
+                            <Alert
+                                type="success"
+                                message={flash.success}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+                        {flash.error && (
+                            <Alert
+                                type="error"
+                                message={flash.error}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
 
-                    <Pagination
-                        links={transactions.links}
-                        align="end"
-                        meta={{
-                            current_page: transactions.current_page,
-                            per_page: transactions.per_page,
-                            total: transactions.total,
-                        }}
-                    />
-                </Card>
+                        <form
+                            onSubmit={handleFilter}
+                            style={{ marginBottom: 16 }}
+                        >
+                            <Row gutter={[12, 12]}>
+                                <Col xs={24} lg={8}>
+                                    <Input
+                                        placeholder="Cari invoice, kasir, atau customer..."
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                    />
+                                </Col>
+                                <Col xs={24} sm={12} lg={5}>
+                                    <Select
+                                        allowClear
+                                        placeholder="Semua Metode"
+                                        style={{ width: "100%" }}
+                                        value={paymentMethod}
+                                        onChange={setPaymentMethod}
+                                        options={[
+                                            { value: "cash", label: "Tunai" },
+                                            {
+                                                value: "digital",
+                                                label: "Digital",
+                                            },
+                                            { value: "qris", label: "QRIS" },
+                                            {
+                                                value: "transfer",
+                                                label: "Transfer",
+                                            },
+                                        ]}
+                                    />
+                                </Col>
+                                <Col xs={24} sm={12} lg={5}>
+                                    <Select
+                                        allowClear
+                                        placeholder="Semua Pembayaran"
+                                        style={{ width: "100%" }}
+                                        value={paymentStatus}
+                                        onChange={setPaymentStatus}
+                                        options={[
+                                            {
+                                                value: "unpaid",
+                                                label: "Belum Bayar",
+                                            },
+                                            {
+                                                value: "pending",
+                                                label: "Pending",
+                                            },
+                                            { value: "paid", label: "Lunas" },
+                                            {
+                                                value: "failed",
+                                                label: "Gagal",
+                                            },
+                                            {
+                                                value: "expired",
+                                                label: "Expired",
+                                            },
+                                        ]}
+                                    />
+                                </Col>
+                                <Col xs={24} lg={6}>
+                                    <Space>
+                                        <Button
+                                            type="primary"
+                                            htmlType="submit"
+                                            icon={<FilterOutlined />}
+                                        >
+                                            Filter
+                                        </Button>
+                                        <Button
+                                            icon={<ReloadOutlined />}
+                                            onClick={handleReset}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </Space>
+                                </Col>
+                            </Row>
+                        </form>
+
+                        <Table
+                            rowKey="id"
+                            columns={columns}
+                            dataSource={transactions.data}
+                            pagination={false}
+                            scroll={{ x: "max-content" }}
+                            onRow={(record) =>
+                                record.status === "voided"
+                                    ? {
+                                          style: {
+                                              background: NEUTRAL.slate50,
+                                          },
+                                      }
+                                    : {}
+                            }
+                            locale={{
+                                emptyText:
+                                    "Belum ada transaksi. Buka POS Kasir untuk mencatat penjualan pertama.",
+                            }}
+                        />
+
+                        <div style={{ marginTop: 16, textAlign: "right" }}>
+                            <Pagination
+                                links={transactions.links}
+                                align="end"
+                                meta={{
+                                    current_page: transactions.current_page,
+                                    per_page: transactions.per_page,
+                                    total: transactions.total,
+                                }}
+                            />
+                        </div>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );

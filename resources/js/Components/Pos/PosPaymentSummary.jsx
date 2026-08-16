@@ -45,10 +45,11 @@ export default function PosPaymentSummary({
 
     return (
         <form className="pos-payment-form" onSubmit={onSubmit}>
-            <div className="mb-3">
+            <div style={{ marginBottom: 12 }}>
                 <label className={fieldLabelClassName}>Metode Pembayaran</label>
                 <Radio.Group
-                    className="pos-method-toggle w-full"
+                    className="pos-method-toggle"
+                    style={{ width: "100%" }}
                     value={paymentMethod}
                     onChange={(e) => onPaymentMethodChange(e.target.value)}
                     optionType="button"
@@ -69,7 +70,7 @@ export default function PosPaymentSummary({
                 </Radio.Group>
             </div>
 
-            <Row gutter={[8, 8]} className="mb-3">
+            <Row gutter={[8, 8]} style={{ marginBottom: 12 }}>
                 <Col xs={24} md={isCashLikePayment ? 10 : 24}>
                     <label className={fieldLabelClassName}>Diskon</label>
                     <Space.Compact style={{ width: "100%" }}>
@@ -77,8 +78,7 @@ export default function PosPaymentSummary({
                             min={0}
                             value={discount}
                             onChange={(value) => onDiscountChange(value ?? 0)}
-                            style={{ flex: 1 }}
-                            className="w-full"
+                            style={{ flex: 1, width: "100%" }}
                             {...numericMobileInputProps(isMobile)}
                         />
                         <Button
@@ -102,7 +102,7 @@ export default function PosPaymentSummary({
                     <Col xs={24} md={14}>
                         <label className={fieldLabelClassName}>{cashLabel}</label>
                         <InputNumber
-                            className="pos-cash-input w-full"
+                            className="pos-cash-input"
                             min={0}
                             value={cash === "" ? null : Number(cash)}
                             onChange={(value) =>
@@ -138,7 +138,7 @@ export default function PosPaymentSummary({
                 <Alert
                     type="info"
                     showIcon
-                    className="mb-3 text-xs"
+                    style={{ marginBottom: 12, fontSize: 12 }}
                     message="Pembayaran digital akan diproses melalui Midtrans. Kasir tidak perlu mengisi uang tunai."
                 />
             )}

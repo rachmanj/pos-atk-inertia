@@ -2,6 +2,8 @@ import LayoutAccount from "../../../Layouts/Account";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, SEMANTIC } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -15,6 +17,7 @@ import {
     Row,
     Select,
     Space,
+    Spin,
     Table,
     Typography,
 } from "antd";
@@ -35,6 +38,7 @@ const reasonLabel = {
 
 export default function Create() {
     const { transaction, returnableItems = [], errors = {} } = usePage().props;
+    const loading = useInertiaLoading();
 
     const [reason, setReason] = useState("customer_request");
     const [note, setNote] = useState("");
@@ -151,8 +155,9 @@ export default function Create() {
             title: "Produk",
             render: (_, item) => (
                 <>
-                    <div className="fw-bold">{item.product_title}</div>
-                    <Text type="secondary" className="small">
+                    <Text strong>{item.product_title}</Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
                         Harga: {formatRupiah(item.price)}
                     </Text>
                 </>
@@ -218,155 +223,194 @@ export default function Create() {
             title: "Estimasi Refund",
             align: "right",
             render: (_, item) => (
-                <strong>
+                <Text strong>
                     {formatRupiah(
                         refundPreviewByProductId[item.product_id] || 0,
                     )}
-                </strong>
+                </Text>
             ),
         },
     ];
 
     return (
         <>
-            <Head title="Ajukan Retur" />
+            <Head>
+                <title>Ajukan Retur - VASIA Stationery</title>
+            </Head>
 
             <LayoutAccount>
-                <Card
-                    className="border-0 shadow-sm rounded-3 mt-4"
-                    title={
-                        <div>
-                            <Title level={5} className="mb-1">
-                                <UndoOutlined className="me-2" />
-                                AJUKAN RETUR
-                            </Title>
-                            <Text type="secondary">
-                                Invoice: {transaction.invoice}
-                            </Text>
-                        </div>
-                    }
-                    extra={
-                        <Link
-                            href={`/account/transactions/${transaction.invoice}`}
-                        >
-                            <Button icon={<ArrowLeftOutlined />}>
-                                Kembali
-                            </Button>
-                        </Link>
-                    }
-                >
-                    {errors.items && (
-                        <Alert
-                            type="error"
-                            message={errors.items}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-
-                    <Row gutter={16} className="mb-4">
-                        <Col xs={24} md={8}>
-                            <div className="border rounded-3 p-3 h-100">
-                                <Text type="secondary" className="small">
-                                    Invoice Transaksi
-                                </Text>
-                                <Title level={5} className="mb-0">
-                                    {transaction.invoice}
-                                </Title>
-                            </div>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <div className="border rounded-3 p-3 h-100">
-                                <Text type="secondary" className="small">
-                                    Customer
-                                </Text>
-                                <Title level={5} className="mb-0">
-                                    {transaction.customer?.name || "Umum"}
-                                </Title>
-                            </div>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <div className="border rounded-3 p-3 h-100">
-                                <Text type="secondary" className="small">
-                                    Total Transaksi
-                                </Text>
-                                <Title level={5} className="mb-0 text-success">
-                                    {formatRupiah(transaction.grand_total)}
-                                </Title>
-                            </div>
-                        </Col>
-                    </Row>
-
-                    <form onSubmit={handleSubmit}>
-                        <Row gutter={16} className="mb-4">
-                            <Col xs={24} md={12}>
-                                <Form.Item label="Alasan Retur">
-                                    <Select
-                                        value={reason}
-                                        onChange={setReason}
-                                        options={Object.entries(reasonLabel).map(
-                                            ([value, label]) => ({
-                                                value,
-                                                label,
-                                            }),
-                                        )}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} md={12}>
-                                <Form.Item label="Catatan">
-                                    <Input
-                                        placeholder="Contoh: kemasan rusak, ukuran salah, dll."
-                                        value={note}
-                                        onChange={(e) =>
-                                            setNote(e.target.value)
-                                        }
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-
-                        <Table
-                            bordered
-                            rowKey="product_id"
-                            columns={columns}
-                            dataSource={returnableItems}
-                            pagination={false}
-                            scroll={{ x: 800 }}
-                            summary={() => (
-                                <Table.Summary.Row>
-                                    <Table.Summary.Cell
-                                        index={0}
-                                        colSpan={6}
-                                        align="end"
-                                    >
-                                        <strong>Estimasi Total Refund</strong>
-                                    </Table.Summary.Cell>
-                                    <Table.Summary.Cell index={1} align="end">
-                                        <Text strong type="success">
-                                            {formatRupiah(totalRefundPreview)}
-                                        </Text>
-                                    </Table.Summary.Cell>
-                                </Table.Summary.Row>
-                            )}
-                        />
-
-                        <div className="d-flex justify-content-end gap-2 mt-4">
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Space>
+                                <UndoOutlined
+                                    style={{ color: BRAND.primary }}
+                                />
+                                <div>
+                                    <Title level={4} style={{ margin: 0 }}>
+                                        AJUKAN RETUR
+                                    </Title>
+                                    <Text type="secondary">
+                                        Invoice: {transaction.invoice}
+                                    </Text>
+                                </div>
+                            </Space>
+                        }
+                        extra={
                             <Link
                                 href={`/account/transactions/${transaction.invoice}`}
                             >
-                                <Button>Batal</Button>
+                                <Button icon={<ArrowLeftOutlined />}>
+                                    Kembali
+                                </Button>
                             </Link>
-                            <Button
-                                type="primary"
-                                htmlType="submit"
-                                icon={<SendOutlined />}
+                        }
+                    >
+                        {errors.items && (
+                            <Alert
+                                type="error"
+                                message={errors.items}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+
+                        <Row gutter={16} style={{ marginBottom: 16 }}>
+                            <Col xs={24} md={8}>
+                                <Card size="small" style={{ height: "100%" }}>
+                                    <Text
+                                        type="secondary"
+                                        style={{ fontSize: 12 }}
+                                    >
+                                        Invoice Transaksi
+                                    </Text>
+                                    <Title level={5} style={{ margin: 0 }}>
+                                        {transaction.invoice}
+                                    </Title>
+                                </Card>
+                            </Col>
+                            <Col xs={24} md={8}>
+                                <Card size="small" style={{ height: "100%" }}>
+                                    <Text
+                                        type="secondary"
+                                        style={{ fontSize: 12 }}
+                                    >
+                                        Customer
+                                    </Text>
+                                    <Title level={5} style={{ margin: 0 }}>
+                                        {transaction.customer?.name || "Umum"}
+                                    </Title>
+                                </Card>
+                            </Col>
+                            <Col xs={24} md={8}>
+                                <Card size="small" style={{ height: "100%" }}>
+                                    <Text
+                                        type="secondary"
+                                        style={{ fontSize: 12 }}
+                                    >
+                                        Total Transaksi
+                                    </Text>
+                                    <Title
+                                        level={5}
+                                        style={{
+                                            margin: 0,
+                                            color: SEMANTIC.success,
+                                        }}
+                                    >
+                                        {formatRupiah(transaction.grand_total)}
+                                    </Title>
+                                </Card>
+                            </Col>
+                        </Row>
+
+                        <form onSubmit={handleSubmit}>
+                            <Row gutter={16} style={{ marginBottom: 16 }}>
+                                <Col xs={24} md={12}>
+                                    <Form.Item label="Alasan Retur">
+                                        <Select
+                                            value={reason}
+                                            onChange={setReason}
+                                            options={Object.entries(
+                                                reasonLabel,
+                                            ).map(([value, label]) => ({
+                                                value,
+                                                label,
+                                            }))}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} md={12}>
+                                    <Form.Item label="Catatan">
+                                        <Input
+                                            placeholder="Contoh: kemasan rusak, ukuran salah, dll."
+                                            value={note}
+                                            onChange={(e) =>
+                                                setNote(e.target.value)
+                                            }
+                                        />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Table
+                                rowKey="product_id"
+                                columns={columns}
+                                dataSource={returnableItems}
+                                pagination={false}
+                                scroll={{ x: "max-content" }}
+                                summary={() => (
+                                    <Table.Summary.Row>
+                                        <Table.Summary.Cell
+                                            index={0}
+                                            colSpan={6}
+                                            align="end"
+                                        >
+                                            <Text strong>
+                                                Estimasi Total Refund
+                                            </Text>
+                                        </Table.Summary.Cell>
+                                        <Table.Summary.Cell
+                                            index={1}
+                                            align="end"
+                                        >
+                                            <Text
+                                                strong
+                                                style={{
+                                                    color: SEMANTIC.success,
+                                                }}
+                                            >
+                                                {formatRupiah(
+                                                    totalRefundPreview,
+                                                )}
+                                            </Text>
+                                        </Table.Summary.Cell>
+                                    </Table.Summary.Row>
+                                )}
+                            />
+
+                            <Space
+                                style={{
+                                    width: "100%",
+                                    justifyContent: "flex-end",
+                                    marginTop: 16,
+                                }}
                             >
-                                Ajukan Retur
-                            </Button>
-                        </div>
-                    </form>
-                </Card>
+                                <Link
+                                    href={`/account/transactions/${transaction.invoice}`}
+                                >
+                                    <Button>Batal</Button>
+                                </Link>
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    icon={<SendOutlined />}
+                                >
+                                    Ajukan Retur
+                                </Button>
+                            </Space>
+                        </form>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );

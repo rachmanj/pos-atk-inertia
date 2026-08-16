@@ -3,6 +3,8 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, Link, router } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -12,6 +14,7 @@ import {
     Row,
     Select,
     Space,
+    Spin,
     Table,
     Tag,
     Typography,
@@ -56,6 +59,7 @@ export default function StockMovementIndex() {
     const { stockMovements, filters, flash, auth = {} } = usePage().props;
 
     const permissions = auth.permissions || {};
+    const loading = useInertiaLoading();
 
     const [search, setSearch] = useState(filters.q || "");
     const [type, setType] = useState(filters.type || undefined);
@@ -96,10 +100,9 @@ export default function StockMovementIndex() {
             title: "Produk",
             render: (_, record) => (
                 <>
-                    <div className="fw-bold">
-                        {record.product?.title || "-"}
-                    </div>
-                    <Text type="secondary" className="small">
+                    <Text strong>{record.product?.title || "-"}</Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
                         {record.product?.barcode || "-"}
                     </Text>
                 </>
@@ -145,7 +148,7 @@ export default function StockMovementIndex() {
             title: "Sesudah",
             align: "center",
             dataIndex: "stock_after",
-            render: (value) => <strong>{value}</strong>,
+            render: (value) => <Text strong>{value}</Text>,
         },
         {
             title: "Sumber",
@@ -170,110 +173,122 @@ export default function StockMovementIndex() {
             </Head>
 
             <LayoutAccount>
-                <Card
-                    className="border-0 shadow-sm rounded-3 mt-4"
-                    title={
-                        <Title level={5} className="mb-0">
-                            <AppstoreOutlined className="me-2" />
-                            MUTASI STOK
-                        </Title>
-                    }
-                    extra={
-                        hasAnyPermission(
-                            ["stock_movements.create"],
-                            permissions,
-                        ) && (
-                            <Link href="/account/stock-movements/create">
-                                <Button
-                                    type="primary"
-                                    icon={<PlusOutlined />}
-                                >
-                                    KOREKSI STOK
-                                </Button>
-                            </Link>
-                        )
-                    }
-                >
-                    {flash.success && (
-                        <Alert
-                            type="success"
-                            message={flash.success}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-                    {flash.error && (
-                        <Alert
-                            type="error"
-                            message={flash.error}
-                            showIcon
-                            className="mb-4"
-                        />
-                    )}
-
-                    <form onSubmit={handleFilter} className="mb-4">
-                        <Row gutter={[12, 12]}>
-                            <Col xs={24} md={12}>
-                                <Input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Cari produk, barcode, pengguna, atau catatan..."
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Space>
+                                <AppstoreOutlined
+                                    style={{ color: BRAND.primary }}
                                 />
-                            </Col>
-                            <Col xs={24} md={6}>
-                                <Select
-                                    allowClear
-                                    placeholder="Semua Tipe"
-                                    className="w-100"
-                                    value={type}
-                                    onChange={setType}
-                                    options={typeOptions.filter(
-                                        (item) => item.value !== "",
-                                    )}
-                                />
-                            </Col>
-                            <Col xs={24} md={6}>
-                                <Space>
+                                <Title level={4} style={{ margin: 0 }}>
+                                    MUTASI STOK
+                                </Title>
+                            </Space>
+                        }
+                        extra={
+                            hasAnyPermission(
+                                ["stock_movements.create"],
+                                permissions,
+                            ) && (
+                                <Link href="/account/stock-movements/create">
                                     <Button
                                         type="primary"
-                                        htmlType="submit"
-                                        icon={<FilterOutlined />}
+                                        icon={<PlusOutlined />}
                                     >
-                                        TERAPKAN
+                                        KOREKSI STOK
                                     </Button>
-                                    <Button
-                                        icon={<ReloadOutlined />}
-                                        onClick={handleReset}
-                                    >
-                                        ATUR ULANG
-                                    </Button>
-                                </Space>
-                            </Col>
-                        </Row>
-                    </form>
+                                </Link>
+                            )
+                        }
+                    >
+                        {flash.success && (
+                            <Alert
+                                type="success"
+                                message={flash.success}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+                        {flash.error && (
+                            <Alert
+                                type="error"
+                                message={flash.error}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
 
-                    <Table
-                        bordered
-                        rowKey="id"
-                        columns={columns}
-                        dataSource={stockMovements.data}
-                        pagination={false}
-                        locale={{
-                            emptyText: "Belum ada histori mutasi stok.",
-                        }}
-                        scroll={{ x: 1000 }}
-                    />
+                        <form
+                            onSubmit={handleFilter}
+                            style={{ marginBottom: 16 }}
+                        >
+                            <Row gutter={[12, 12]}>
+                                <Col xs={24} md={12}>
+                                    <Input
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                        placeholder="Cari produk, barcode, pengguna, atau catatan..."
+                                    />
+                                </Col>
+                                <Col xs={24} md={6}>
+                                    <Select
+                                        allowClear
+                                        placeholder="Semua Tipe"
+                                        style={{ width: "100%" }}
+                                        value={type}
+                                        onChange={setType}
+                                        options={typeOptions.filter(
+                                            (item) => item.value !== "",
+                                        )}
+                                    />
+                                </Col>
+                                <Col xs={24} md={6}>
+                                    <Space>
+                                        <Button
+                                            type="primary"
+                                            htmlType="submit"
+                                            icon={<FilterOutlined />}
+                                        >
+                                            TERAPKAN
+                                        </Button>
+                                        <Button
+                                            icon={<ReloadOutlined />}
+                                            onClick={handleReset}
+                                        >
+                                            ATUR ULANG
+                                        </Button>
+                                    </Space>
+                                </Col>
+                            </Row>
+                        </form>
 
-                    <Pagination
-                        links={stockMovements.links}
-                        align="end"
-                        meta={{
-                            current_page: stockMovements.current_page,
-                            per_page: stockMovements.per_page,
-                            total: stockMovements.total,
-                        }}
-                    />
-                </Card>
+                        <Table
+                            rowKey="id"
+                            columns={columns}
+                            dataSource={stockMovements.data}
+                            pagination={false}
+                            scroll={{ x: "max-content" }}
+                            locale={{
+                                emptyText:
+                                    "Belum ada histori mutasi stok. Koreksi stok atau transaksi akan tercatat di sini.",
+                            }}
+                        />
+
+                        <div style={{ marginTop: 16, textAlign: "right" }}>
+                            <Pagination
+                                links={stockMovements.links}
+                                align="end"
+                                meta={{
+                                    current_page: stockMovements.current_page,
+                                    per_page: stockMovements.per_page,
+                                    total: stockMovements.total,
+                                }}
+                            />
+                        </div>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );

@@ -1,11 +1,30 @@
 import React, { useEffect, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, NEUTRAL, SEMANTIC } from "../../../theme/colors";
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    Form,
+    Input,
+    InputNumber,
+    Row,
+    Select,
+    Space,
+    Spin,
+    Statistic,
+    Typography,
+} from "antd";
 import {
     AppstoreOutlined,
     ArrowLeftOutlined,
     SaveOutlined,
 } from "@ant-design/icons";
+
+const { Title, Text } = Typography;
 
 export default function StockMovementCreate() {
     const {
@@ -14,6 +33,7 @@ export default function StockMovementCreate() {
         errors = {},
         flash = {},
     } = usePage().props;
+    const loading = useInertiaLoading();
 
     const fallbackProductId = products[0]?.id ? String(products[0].id) : "";
 
@@ -79,240 +99,218 @@ export default function StockMovementCreate() {
             </Head>
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 col-xl-10 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <AppstoreOutlined className="me-2" />
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Space>
+                                <AppstoreOutlined
+                                    style={{ color: BRAND.primary }}
+                                />
+                                <Title level={4} style={{ margin: 0 }}>
                                     KOREKSI STOK
-                                </h5>
+                                </Title>
+                            </Space>
+                        }
+                        extra={
+                            <Link href="/account/stock-movements">
+                                <Button icon={<ArrowLeftOutlined />}>
+                                    KEMBALI
+                                </Button>
+                            </Link>
+                        }
+                    >
+                        {flash.error && (
+                            <Alert
+                                type="error"
+                                message={flash.error}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
 
-                                <div>
-                                    <Link
-                                        href="/account/stock-movements"
-                                        className="btn btn-secondary shadow-sm rounded-sm"
+                        {products.length === 0 && (
+                            <Alert
+                                type="warning"
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                                message="Belum ada produk"
+                                description="Tambahkan produk terlebih dahulu sebelum membuat koreksi stok."
+                            />
+                        )}
+
+                        <form onSubmit={storeMovement}>
+                            <Row gutter={[16, 16]}>
+                                <Col xs={24} lg={14}>
+                                    <Form.Item
+                                        label="Produk"
+                                        validateStatus={
+                                            errors.product_id ? "error" : ""
+                                        }
+                                        help={errors.product_id}
+                                        required
                                     >
-                                        <ArrowLeftOutlined className="me-2" />
-                                        KEMBALI
-                                    </Link>
-                                </div>
-                            </div>
+                                        <Select
+                                            value={productId || undefined}
+                                            onChange={(value) => {
+                                                setProductId(value);
+                                                setTargetStock("");
+                                            }}
+                                            disabled={products.length === 0}
+                                            options={products.map((product) => ({
+                                                value: String(product.id),
+                                                label: `${product.title} - ${product.barcode}`,
+                                            }))}
+                                        />
+                                    </Form.Item>
 
-                            <div className="card-body">
-                                {flash.error && (
-                                    <div className="alert alert-danger shadow-sm">
-                                        {flash.error}
-                                    </div>
-                                )}
+                                    <Form.Item
+                                        label="Stok Fisik / Target"
+                                        validateStatus={
+                                            errors.target_stock ? "error" : ""
+                                        }
+                                        help={errors.target_stock}
+                                        required
+                                    >
+                                        <InputNumber
+                                            min={0}
+                                            style={{ width: "100%" }}
+                                            value={
+                                                targetStock === ""
+                                                    ? null
+                                                    : Number(targetStock)
+                                            }
+                                            onChange={(value) =>
+                                                setTargetStock(
+                                                    value != null
+                                                        ? String(value)
+                                                        : "",
+                                                )
+                                            }
+                                            disabled={!selectedProduct}
+                                            placeholder="Masukkan stok fisik/target"
+                                        />
+                                    </Form.Item>
 
-                                {products.length === 0 && (
-                                    <div className="alert alert-warning shadow-sm">
-                                        Belum ada produk. Tambahkan produk
-                                        terlebih dahulu sebelum membuat koreksi
-                                        stok.
-                                    </div>
-                                )}
+                                    <Form.Item
+                                        label="Catatan"
+                                        validateStatus={
+                                            errors.note ? "error" : ""
+                                        }
+                                        help={errors.note}
+                                    >
+                                        <Input.TextArea
+                                            rows={4}
+                                            value={note}
+                                            onChange={(e) =>
+                                                setNote(e.target.value)
+                                            }
+                                            placeholder="Contoh: barang rusak, selisih hitung fisik kecil, koreksi input stok awal"
+                                            disabled={!selectedProduct}
+                                        />
+                                    </Form.Item>
 
-                                <form onSubmit={storeMovement}>
-                                    <div className="row">
-                                        <div className="col-lg-7">
-                                            <div className="mb-4">
-                                                <label className="fw-bold mb-2">
-                                                    Produk
-                                                </label>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        icon={<SaveOutlined />}
+                                        disabled={
+                                            !selectedProduct || !hasStockChange
+                                        }
+                                    >
+                                        SIMPAN KOREKSI
+                                    </Button>
+                                </Col>
 
-                                                <select
-                                                    className={`form-select ${
-                                                        errors.product_id
-                                                            ? "is-invalid"
-                                                            : ""
-                                                    }`}
-                                                    value={productId}
-                                                    onChange={(e) => {
-                                                        setProductId(
-                                                            e.target.value,
-                                                        );
-                                                        setTargetStock("");
-                                                    }}
-                                                    disabled={
-                                                        products.length === 0
-                                                    }
+                                <Col xs={24} lg={10}>
+                                    <Card
+                                        size="small"
+                                        title="PRATINJAU STOK"
+                                        style={{
+                                            background: NEUTRAL.slate50,
+                                        }}
+                                    >
+                                        <Space
+                                            direction="vertical"
+                                            size="middle"
+                                            style={{ width: "100%" }}
+                                        >
+                                            <div>
+                                                <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: 12 }}
                                                 >
-                                                    {products.map((product) => (
-                                                        <option
-                                                            key={product.id}
-                                                            value={product.id}
-                                                        >
-                                                            {product.title} -{" "}
-                                                            {product.barcode}
-                                                        </option>
-                                                    ))}
-                                                </select>
-
-                                                {errors.product_id && (
-                                                    <div className="invalid-feedback">
-                                                        {errors.product_id}
-                                                    </div>
-                                                )}
+                                                    Produk
+                                                </Text>
+                                                <br />
+                                                <Text strong>
+                                                    {selectedProduct?.title ||
+                                                        "-"}
+                                                </Text>
+                                                <br />
+                                                <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: 12 }}
+                                                >
+                                                    {selectedProduct?.barcode ||
+                                                        "-"}
+                                                </Text>
                                             </div>
 
-                                            <div className="mb-4">
-                                                <label className="fw-bold mb-2">
-                                                    Stok Fisik / Target
-                                                </label>
+                                            <Row gutter={12}>
+                                                <Col span={12}>
+                                                    <Card size="small">
+                                                        <Statistic
+                                                            title="Stok Sistem"
+                                                            value={currentStock}
+                                                            suffix={unit}
+                                                        />
+                                                    </Card>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Card size="small">
+                                                        <Statistic
+                                                            title="Estimasi Setelah"
+                                                            value={
+                                                                hasTargetStock
+                                                                    ? estimatedStock
+                                                                    : "-"
+                                                            }
+                                                            suffix={unit}
+                                                            valueStyle={{
+                                                                color: SEMANTIC.success,
+                                                            }}
+                                                        />
+                                                    </Card>
+                                                </Col>
+                                            </Row>
 
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    className={`form-control ${
-                                                        errors.target_stock
-                                                            ? "is-invalid"
-                                                            : ""
-                                                    }`}
-                                                    value={targetStock}
-                                                    onChange={(e) =>
-                                                        setTargetStock(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    disabled={!selectedProduct}
-                                                    placeholder="Masukkan stok fisik/target"
-                                                />
-
-                                                {errors.target_stock && (
-                                                    <div className="invalid-feedback">
-                                                        {errors.target_stock}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="mb-4">
-                                                <label className="fw-bold mb-2">
-                                                    Catatan
-                                                </label>
-
-                                                <textarea
-                                                    className={`form-control ${
-                                                        errors.note
-                                                            ? "is-invalid"
-                                                            : ""
-                                                    }`}
-                                                    rows="4"
-                                                    value={note}
-                                                    onChange={(e) =>
-                                                        setNote(e.target.value)
-                                                    }
-                                                    placeholder="Contoh: barang rusak, selisih hitung fisik kecil, koreksi input stok awal"
-                                                    disabled={!selectedProduct}
-                                                />
-
-                                                {errors.note && (
-                                                    <div className="invalid-feedback">
-                                                        {errors.note}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <button
-                                                type="submit"
-                                                className="btn btn-success shadow-sm rounded-sm"
-                                                disabled={
-                                                    !selectedProduct ||
-                                                    !hasStockChange
-                                                }
-                                            >
-                                                <SaveOutlined className="me-2" />
-                                                SIMPAN KOREKSI
-                                            </button>
-                                        </div>
-
-                                        <div className="col-lg-5">
-                                            <div className="border bg-light shadow-sm rounded-3 p-3">
-                                                <div>
-                                                    <h6 className="fw-bold mb-3">
-                                                        PRATINJAU STOK
-                                                    </h6>
-
-                                                    <div className="mb-3">
-                                                        <small className="d-block mb-1">
-                                                            Produk
-                                                        </small>
-
-                                                        <div className="fw-bold">
-                                                            {selectedProduct?.title ||
-                                                                "-"}
-                                                        </div>
-
-                                                        <small>
-                                                            {selectedProduct?.barcode ||
-                                                                "-"}
-                                                        </small>
-                                                    </div>
-
-                                                    <div className="row g-3">
-                                                        <div className="col-6">
-                                                            <div className="border rounded-3 p-3 bg-white text-dark h-100">
-                                                                <small className="d-block mb-1">
-                                                                    Stok Sistem
-                                                                </small>
-
-                                                                <div className="fw-bold fs-4">
-                                                                    {
-                                                                        currentStock
-                                                                    }
-                                                                </div>
-
-                                                                <small>
-                                                                    {unit}
-                                                                </small>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="col-6">
-                                                            <div className="border rounded-3 p-3 bg-white text-dark h-100">
-                                                                <small className="d-block mb-1">
-                                                                    Estimasi
-                                                                    Setelah
-                                                                </small>
-
-                                                                <div className="fw-bold fs-4 text-success">
-                                                                    {hasTargetStock
-                                                                        ? estimatedStock
-                                                                        : "-"}
-                                                                </div>
-
-                                                                <small>
-                                                                    {unit}
-                                                                </small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="mt-3 border rounded-3 p-3 bg-white text-dark">
-                                                        <small className="d-block mb-1">
-                                                            Jenis Koreksi
-                                                        </small>
-
-                                                        <div className="fw-bold">
-                                                            {correctionLabel}
-                                                        </div>
-
-                                                        <small>
-                                                            Selisih:{" "}
-                                                            {correctionQty}{" "}
-                                                            {unit}
-                                                        </small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                            <Card size="small">
+                                                <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: 12 }}
+                                                >
+                                                    Jenis Koreksi
+                                                </Text>
+                                                <br />
+                                                <Text strong>
+                                                    {correctionLabel}
+                                                </Text>
+                                                <br />
+                                                <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: 12 }}
+                                                >
+                                                    Selisih: {correctionQty}{" "}
+                                                    {unit}
+                                                </Text>
+                                            </Card>
+                                        </Space>
+                                    </Card>
+                                </Col>
+                            </Row>
+                        </form>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );

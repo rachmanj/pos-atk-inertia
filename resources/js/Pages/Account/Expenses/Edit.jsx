@@ -1,15 +1,35 @@
 import { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { notification } from "antd";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND } from "../../../theme/colors";
+import {
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Form,
+    Input,
+    InputNumber,
+    Row,
+    Select,
+    Space,
+    Spin,
+    Typography,
+    notification,
+} from "antd";
 import {
     ArrowLeftOutlined,
     EditOutlined,
     SaveOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
+
+const { Title, Text } = Typography;
 
 export default function ExpenseEdit() {
     const { errors = {}, expense = {}, categories = [] } = usePage().props;
+    const loading = useInertiaLoading();
 
     const [expenseDate, setExpenseDate] = useState(expense.expense_date || "");
     const [category, setCategory] = useState(expense.category || "");
@@ -43,180 +63,143 @@ export default function ExpenseEdit() {
 
     return (
         <>
-            <Head title="Edit Pengeluaran" />
+            <Head>
+                <title>Edit Pengeluaran - VASIA Stationery</title>
+            </Head>
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Space>
+                                <EditOutlined style={{ color: BRAND.primary }} />
                                 <div>
-                                    <h5 className="mb-1 fw-bold">
-                                        <EditOutlined className="me-2" />
+                                    <Title level={4} style={{ margin: 0 }}>
                                         EDIT PENGELUARAN
-                                    </h5>
-                                    <small className="text-muted">
+                                    </Title>
+                                    <Text type="secondary">
                                         Kode: {expense.code}
-                                    </small>
+                                    </Text>
                                 </div>
-
-                                <Link
-                                    href="/account/expenses"
-                                    className="btn btn-secondary shadow-sm rounded-sm"
-                                >
-                                    <ArrowLeftOutlined className="me-2" />
-                                    BACK
-                                </Link>
-                            </div>
-
-                            <div className="card-body">
-                                <form onSubmit={updateExpense}>
-                                    <div className="row">
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Tanggal Pengeluaran
-                                            </label>
-                                            <input
-                                                type="date"
-                                                className={`form-control ${
-                                                    errors.expense_date
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={expenseDate}
-                                                onChange={(e) =>
-                                                    setExpenseDate(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                            {errors.expense_date && (
-                                                <div className="invalid-feedback">
-                                                    {errors.expense_date}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="col-md-6 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Kategori
-                                            </label>
-                                            <select
-                                                className={`form-select ${
-                                                    errors.category
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={category}
-                                                onChange={(e) =>
-                                                    setCategory(e.target.value)
-                                                }
-                                            >
-                                                <option value="">
-                                                    Pilih Kategori
-                                                </option>
-                                                {categories.map((item) => (
-                                                    <option
-                                                        key={item.value}
-                                                        value={item.value}
-                                                    >
-                                                        {item.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            {errors.category && (
-                                                <div className="invalid-feedback">
-                                                    {errors.category}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="row">
-                                        <div className="col-md-8 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Judul Pengeluaran
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className={`form-control ${
-                                                    errors.title
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={title}
-                                                onChange={(e) =>
-                                                    setTitle(e.target.value)
-                                                }
-                                                placeholder="Contoh: Bayar listrik toko"
-                                            />
-                                            {errors.title && (
-                                                <div className="invalid-feedback">
-                                                    {errors.title}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="col-md-4 mb-4">
-                                            <label className="fw-bold mb-2">
-                                                Nominal
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className={`form-control ${
-                                                    errors.amount
-                                                        ? "is-invalid"
-                                                        : ""
-                                                }`}
-                                                value={amount}
-                                                onChange={(e) =>
-                                                    setAmount(e.target.value)
-                                                }
-                                                placeholder="0"
-                                            />
-                                            {errors.amount && (
-                                                <div className="invalid-feedback">
-                                                    {errors.amount}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="fw-bold mb-2">
-                                            Catatan
-                                        </label>
-                                        <textarea
-                                            className={`form-control ${
-                                                errors.note ? "is-invalid" : ""
-                                            }`}
-                                            value={note}
-                                            onChange={(e) =>
-                                                setNote(e.target.value)
-                                            }
-                                            rows="3"
-                                            placeholder="Catatan tambahan"
-                                        ></textarea>
-                                        {errors.note && (
-                                            <div className="invalid-feedback">
-                                                {errors.note}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        className="btn btn-success shadow-sm rounded-sm"
+                            </Space>
+                        }
+                        extra={
+                            <Link href="/account/expenses">
+                                <Button icon={<ArrowLeftOutlined />}>
+                                    KEMBALI
+                                </Button>
+                            </Link>
+                        }
+                    >
+                        <form onSubmit={updateExpense}>
+                            <Row gutter={16}>
+                                <Col xs={24} md={12}>
+                                    <Form.Item
+                                        label="Tanggal Pengeluaran"
+                                        validateStatus={
+                                            errors.expense_date ? "error" : ""
+                                        }
+                                        help={errors.expense_date}
+                                        required
                                     >
-                                        <SaveOutlined className="me-2" />
-                                        UPDATE
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                        <DatePicker
+                                            style={{ width: "100%" }}
+                                            format="YYYY-MM-DD"
+                                            value={
+                                                expenseDate
+                                                    ? dayjs(expenseDate)
+                                                    : null
+                                            }
+                                            onChange={(_, dateString) =>
+                                                setExpenseDate(dateString)
+                                            }
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} md={12}>
+                                    <Form.Item
+                                        label="Kategori"
+                                        validateStatus={
+                                            errors.category ? "error" : ""
+                                        }
+                                        help={errors.category}
+                                        required
+                                    >
+                                        <Select
+                                            placeholder="Pilih Kategori"
+                                            value={category || undefined}
+                                            onChange={setCategory}
+                                            options={categories.map((item) => ({
+                                                value: item.value,
+                                                label: item.label,
+                                            }))}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Row gutter={16}>
+                                <Col xs={24} md={16}>
+                                    <Form.Item
+                                        label="Judul Pengeluaran"
+                                        validateStatus={
+                                            errors.title ? "error" : ""
+                                        }
+                                        help={errors.title}
+                                        required
+                                    >
+                                        <Input
+                                            value={title}
+                                            onChange={(e) =>
+                                                setTitle(e.target.value)
+                                            }
+                                            placeholder="Contoh: Bayar listrik toko"
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} md={8}>
+                                    <Form.Item
+                                        label="Nominal"
+                                        validateStatus={
+                                            errors.amount ? "error" : ""
+                                        }
+                                        help={errors.amount}
+                                        required
+                                    >
+                                        <InputNumber
+                                            min={1}
+                                            style={{ width: "100%" }}
+                                            placeholder="0"
+                                            value={amount}
+                                            onChange={setAmount}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Form.Item
+                                label="Catatan"
+                                validateStatus={errors.note ? "error" : ""}
+                                help={errors.note}
+                            >
+                                <Input.TextArea
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    rows={3}
+                                    placeholder="Catatan tambahan"
+                                />
+                            </Form.Item>
+
+                            <Button
+                                type="primary"
+                                htmlType="submit"
+                                icon={<SaveOutlined />}
+                            >
+                                SIMPAN PERUBAHAN
+                            </Button>
+                        </form>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );

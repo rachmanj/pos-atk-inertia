@@ -4,6 +4,22 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, SEMANTIC } from "../../../theme/colors";
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Input,
+    Row,
+    Select,
+    Space,
+    Spin,
+    Table,
+    Typography,
+} from "antd";
 import {
     EyeOutlined,
     FilterOutlined,
@@ -11,6 +27,9 @@ import {
     ShoppingOutlined,
     UndoOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
+
+const { Title, Text } = Typography;
 
 const reasonLabels = {
     defect: "Barang Rusak",
@@ -21,9 +40,12 @@ const reasonLabels = {
 
 export default function SupplierReturnIndex() {
     const { supplierReturns, suppliers, filters, flash } = usePage().props;
+    const loading = useInertiaLoading();
 
     const [search, setSearch] = useState(filters.q || "");
-    const [supplierId, setSupplierId] = useState(filters.supplier_id || "");
+    const [supplierId, setSupplierId] = useState(
+        filters.supplier_id || undefined,
+    );
     const [startDate, setStartDate] = useState(filters.start_date || "");
     const [endDate, setEndDate] = useState(filters.end_date || "");
 
@@ -32,7 +54,7 @@ export default function SupplierReturnIndex() {
 
         router.get("/account/supplier-returns", {
             q: search,
-            supplier_id: supplierId,
+            supplier_id: supplierId || "",
             start_date: startDate,
             end_date: endDate,
         });
@@ -40,12 +62,84 @@ export default function SupplierReturnIndex() {
 
     const handleReset = () => {
         setSearch("");
-        setSupplierId("");
+        setSupplierId(undefined);
         setStartDate("");
         setEndDate("");
 
         router.get("/account/supplier-returns");
     };
+
+    const columns = [
+        {
+            title: "No.",
+            width: 60,
+            align: "center",
+            render: (_, __, index) =>
+                index +
+                1 +
+                (supplierReturns.current_page - 1) *
+                    supplierReturns.per_page,
+        },
+        {
+            title: "Invoice Retur",
+            dataIndex: "invoice",
+            render: (value) => (
+                <Text strong style={{ color: BRAND.primary }}>
+                    {value}
+                </Text>
+            ),
+        },
+        {
+            title: "Invoice Pembelian",
+            render: (_, record) => record.purchase?.invoice || "-",
+        },
+        {
+            title: "Tanggal",
+            dataIndex: "return_date",
+            render: (value) =>
+                new Date(value).toLocaleDateString("id-ID"),
+        },
+        {
+            title: "Supplier",
+            render: (_, record) => record.supplier?.name || "-",
+        },
+        {
+            title: "Alasan",
+            dataIndex: "reason",
+            render: (value) => reasonLabels[value] || value,
+        },
+        {
+            title: "Qty",
+            align: "center",
+            dataIndex: "total_qty",
+            render: (value) => <Text strong>{value}</Text>,
+        },
+        {
+            title: "Total",
+            align: "right",
+            dataIndex: "total_amount",
+            render: (value) => (
+                <Text strong style={{ color: SEMANTIC.error }}>
+                    {formatRupiah(value)}
+                </Text>
+            ),
+        },
+        {
+            title: "Aksi",
+            width: 100,
+            align: "center",
+            render: (_, record) =>
+                hasAnyPermission(["supplier_returns.show"]) ? (
+                    <Link
+                        href={`/account/supplier-returns/${record.invoice}`}
+                    >
+                        <Button size="small" icon={<EyeOutlined />}>
+                            Detail
+                        </Button>
+                    </Link>
+                ) : null,
+        },
+    ];
 
     return (
         <>
@@ -54,244 +148,143 @@ export default function SupplierReturnIndex() {
             </Head>
 
             <LayoutAccount>
-                <div className="row mt-4">
-                    <div className="col-12 mb-4">
-                        <div className="card border-0 shadow-sm rounded-3">
-                            <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0 fw-bold">
-                                    <UndoOutlined className="me-2" />
+                <Spin spinning={loading}>
+                    <Card
+                        title={
+                            <Space>
+                                <UndoOutlined
+                                    style={{ color: BRAND.primary }}
+                                />
+                                <Title level={4} style={{ margin: 0 }}>
                                     RETUR SUPPLIER
-                                </h5>
-
-                                {hasAnyPermission(["purchases.index"]) && (
-                                    <Link
-                                        href="/account/purchases"
-                                        className="btn btn-secondary shadow-sm rounded-sm"
-                                    >
-                                        <ShoppingOutlined className="me-2" />
+                                </Title>
+                            </Space>
+                        }
+                        extra={
+                            hasAnyPermission(["purchases.index"]) && (
+                                <Link href="/account/purchases">
+                                    <Button icon={<ShoppingOutlined />}>
                                         LIHAT PEMBELIAN
-                                    </Link>
-                                )}
-                            </div>
+                                    </Button>
+                                </Link>
+                            )
+                        }
+                    >
+                        {flash.success && (
+                            <Alert
+                                type="success"
+                                message={flash.success}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+                        {flash.error && (
+                            <Alert
+                                type="error"
+                                message={flash.error}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
 
-                            <div className="card-body">
-                                {flash.success && (
-                                    <div className="alert alert-success shadow-sm">
-                                        {flash.success}
-                                    </div>
-                                )}
-
-                                {flash.error && (
-                                    <div className="alert alert-danger shadow-sm">
-                                        {flash.error}
-                                    </div>
-                                )}
-
-                                <form onSubmit={handleFilter} className="mb-4">
-                                    <div className="row g-3">
-                                        <div className="col-lg-4">
-                                            <input
-                                                type="text"
-                                                className="form-control border-0 shadow-sm"
-                                                value={search}
-                                                onChange={(e) =>
-                                                    setSearch(e.target.value)
-                                                }
-                                                placeholder="Cari invoice retur, invoice pembelian, supplier, atau pembuat..."
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <select
-                                                className="form-select border-0 shadow-sm"
-                                                value={supplierId}
-                                                onChange={(e) =>
-                                                    setSupplierId(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            >
-                                                <option value="">
-                                                    Semua Supplier
-                                                </option>
-
-                                                {suppliers.map((supplier) => (
-                                                    <option
-                                                        key={supplier.id}
-                                                        value={supplier.id}
-                                                    >
-                                                        {supplier.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={startDate}
-                                                onChange={(e) =>
-                                                    setStartDate(e.target.value)
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2">
-                                            <input
-                                                type="date"
-                                                className="form-control border-0 shadow-sm"
-                                                value={endDate}
-                                                onChange={(e) =>
-                                                    setEndDate(e.target.value)
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="col-lg-2 d-flex gap-2">
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary shadow-sm w-100"
-                                            >
-                                                <FilterOutlined className="me-2" />
-                                                Filter
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className="btn btn-secondary shadow-sm w-100"
-                                                onClick={handleReset}
-                                            >
-                                                <ReloadOutlined className="me-2" />
-                                                Reset
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-
-                                <div className="table-responsive">
-                                    <table className="table table-bordered align-middle mb-0">
-                                        <thead className="table-dark">
-                                            <tr>
-                                                <th style={{ width: "5%" }}>
-                                                    No.
-                                                </th>
-                                                <th>Invoice Retur</th>
-                                                <th>Invoice Pembelian</th>
-                                                <th>Tanggal</th>
-                                                <th>Supplier</th>
-                                                <th>Alasan</th>
-                                                <th className="text-center">
-                                                    Qty
-                                                </th>
-                                                <th className="text-end">
-                                                    Total
-                                                </th>
-                                                <th
-                                                    className="text-center"
-                                                    style={{ width: "12%" }}
-                                                >
-                                                    Aksi
-                                                </th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {supplierReturns.data.length > 0 ? (
-                                                supplierReturns.data.map(
-                                                    (item, index) => (
-                                                        <tr key={item.id}>
-                                                            <td className="fw-bold text-center">
-                                                                {++index +
-                                                                    (supplierReturns.current_page -
-                                                                        1) *
-                                                                        supplierReturns.per_page}
-                                                            </td>
-
-                                                            <td className="fw-bold text-primary">
-                                                                {item.invoice}
-                                                            </td>
-
-                                                            <td>
-                                                                {item.purchase
-                                                                    ?.invoice ||
-                                                                    "-"}
-                                                            </td>
-
-                                                            <td>
-                                                                {new Date(
-                                                                    item.return_date,
-                                                                ).toLocaleDateString(
-                                                                    "id-ID",
-                                                                )}
-                                                            </td>
-
-                                                            <td>
-                                                                {item.supplier
-                                                                    ?.name ||
-                                                                    "-"}
-                                                            </td>
-
-                                                            <td>
-                                                                {reasonLabels[
-                                                                    item.reason
-                                                                ] ||
-                                                                    item.reason}
-                                                            </td>
-
-                                                            <td className="text-center fw-bold">
-                                                                {item.total_qty}
-                                                            </td>
-
-                                                            <td className="text-end fw-bold text-danger">
-                                                                {formatRupiah(
-                                                                    item.total_amount,
-                                                                )}
-                                                            </td>
-
-                                                            <td className="text-center">
-                                                                {hasAnyPermission(
-                                                                    [
-                                                                        "supplier_returns.show",
-                                                                    ],
-                                                                ) && (
-                                                                    <Link
-                                                                        href={`/account/supplier-returns/${item.invoice}`}
-                                                                        className="btn btn-secondary btn-sm shadow-sm"
-                                                                    >
-                                                                        <EyeOutlined className="me-1" />
-                                                                        Detail
-                                                                    </Link>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ),
-                                                )
-                                            ) : (
-                                                <tr>
-                                                    <td
-                                                        colSpan="9"
-                                                        className="text-center py-4"
-                                                    >
-                                                        Belum ada data retur
-                                                        supplier.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="mt-4">
-                                    <Pagination
-                                        links={supplierReturns.links}
-                                        align="end"
+                        <form onSubmit={handleFilter} style={{ marginBottom: 16 }}>
+                            <Row gutter={[12, 12]}>
+                                <Col xs={24} lg={8}>
+                                    <Input
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
+                                        }
+                                        placeholder="Cari invoice retur, invoice pembelian, supplier, atau pembuat..."
                                     />
-                                </div>
-                            </div>
+                                </Col>
+                                <Col xs={24} sm={8} lg={4}>
+                                    <Select
+                                        allowClear
+                                        placeholder="Semua Supplier"
+                                        style={{ width: "100%" }}
+                                        value={supplierId}
+                                        onChange={setSupplierId}
+                                        options={suppliers.map((supplier) => ({
+                                            value: String(supplier.id),
+                                            label: supplier.name,
+                                        }))}
+                                    />
+                                </Col>
+                                <Col xs={24} sm={8} lg={4}>
+                                    <DatePicker
+                                        style={{ width: "100%" }}
+                                        placeholder="Dari tanggal"
+                                        format="YYYY-MM-DD"
+                                        value={
+                                            startDate
+                                                ? dayjs(startDate)
+                                                : null
+                                        }
+                                        onChange={(_, dateString) =>
+                                            setStartDate(dateString)
+                                        }
+                                    />
+                                </Col>
+                                <Col xs={24} sm={8} lg={4}>
+                                    <DatePicker
+                                        style={{ width: "100%" }}
+                                        placeholder="Sampai tanggal"
+                                        format="YYYY-MM-DD"
+                                        value={
+                                            endDate ? dayjs(endDate) : null
+                                        }
+                                        onChange={(_, dateString) =>
+                                            setEndDate(dateString)
+                                        }
+                                    />
+                                </Col>
+                                <Col xs={24} lg={4}>
+                                    <Space>
+                                        <Button
+                                            type="primary"
+                                            htmlType="submit"
+                                            icon={<FilterOutlined />}
+                                        >
+                                            Filter
+                                        </Button>
+                                        <Button
+                                            icon={<ReloadOutlined />}
+                                            onClick={handleReset}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </Space>
+                                </Col>
+                            </Row>
+                        </form>
+
+                        <Table
+                            rowKey="id"
+                            columns={columns}
+                            dataSource={supplierReturns.data}
+                            pagination={false}
+                            scroll={{ x: "max-content" }}
+                            locale={{
+                                emptyText:
+                                    "Belum ada retur supplier. Buat retur dari detail pembelian yang sudah tercatat.",
+                            }}
+                        />
+
+                        <div style={{ marginTop: 16, textAlign: "right" }}>
+                            <Pagination
+                                links={supplierReturns.links}
+                                align="end"
+                                meta={{
+                                    current_page:
+                                        supplierReturns.current_page,
+                                    per_page: supplierReturns.per_page,
+                                    total: supplierReturns.total,
+                                }}
+                            />
                         </div>
-                    </div>
-                </div>
+                    </Card>
+                </Spin>
             </LayoutAccount>
         </>
     );
