@@ -218,7 +218,7 @@ export default function PpobBalanceLogIndex() {
                                 Akun ini bisa dipakai bersamaan oleh beberapa
                                 kasir shift yang berbeda. Cocokkan saldo di atas
                                 dengan saldo di app provider, lalu catat
-                                selisihnya lewat Penyesuaian di bawah — bukan
+                                selisihnya lewat Penyesuaian di bawah, bukan
                                 lewat form buka/tutup shift.
                             </Text>
                         </>

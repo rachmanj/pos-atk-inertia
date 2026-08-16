@@ -125,7 +125,7 @@ export default function ProductIndex() {
                         />
                     </div>
                 ) : (
-                    <Text type="secondary">—</Text>
+                    <Text type="secondary">-</Text>
                 ),
         },
         {
@@ -144,7 +144,7 @@ export default function ProductIndex() {
             align: "right",
             render: (_, product) =>
                 product.product_type === "ppob" ? (
-                    <Text type="secondary">—</Text>
+                    <Text type="secondary">-</Text>
                 ) : (
                     <>
                         {formatRupiah(
@@ -296,7 +296,10 @@ export default function ProductIndex() {
                         columns={columns}
                         dataSource={products.data}
                         pagination={false}
-                        locale={{ emptyText: "Data Belum Tersedia!" }}
+                        locale={{
+                            emptyText:
+                                "Belum ada produk. Tambahkan produk pertama untuk mulai menjual di POS.",
+                        }}
                         rowSelection={{
                             selectedRowKeys,
                             onChange: setSelectedRowKeys,

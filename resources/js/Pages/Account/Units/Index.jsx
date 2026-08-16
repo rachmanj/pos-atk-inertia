@@ -86,7 +86,10 @@ export default function UnitIndex() {
                         columns={columns}
                         dataSource={units.data}
                         pagination={false}
-                        locale={{ emptyText: "Belum ada data satuan." }}
+                        locale={{
+                            emptyText:
+                                "Belum ada satuan. Tambahkan satuan (pcs, box, dus) untuk produk.",
+                        }}
                     />
 
                     <Pagination links={units.links} meta={units} />

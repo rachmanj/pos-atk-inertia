@@ -4,6 +4,8 @@ import { Head, Link, usePage } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, NEUTRAL, SEMANTIC, TEAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -11,6 +13,7 @@ import {
     Col,
     Row,
     Space,
+    Spin,
     Statistic,
     Table,
     Tag,
@@ -35,9 +38,9 @@ const statusColors = { open: "success", closed: "default" };
 const statusLabels = { open: "BUKA", closed: "TUTUP" };
 
 const statIconColors = {
-    primary: "#3b82f6",
-    success: "#22c55e",
-    teal: "#0d9488",
+    primary: SEMANTIC.info,
+    success: SEMANTIC.success,
+    teal: BRAND.primary,
 };
 
 const dateTimeFormatOptions = {
@@ -88,6 +91,7 @@ function StatCard({ title, value, icon, color = "primary" }) {
 export default function CashierShiftIndex() {
     const { activeShift, shifts, flash, auth, summary = {} } = usePage().props;
     const permissions = auth?.permissions || {};
+    const loading = useInertiaLoading();
 
     const canOpenShift =
         !activeShift && hasAnyPermission(["cashier_shifts.open"], permissions);
@@ -207,11 +211,12 @@ export default function CashierShiftIndex() {
                 <title>Shift Kasir - VASIA Stationery</title>
             </Head>
             <LayoutAccount>
+                <Spin spinning={loading}>
                 <Space direction="vertical" size="middle" style={{ width: "100%" }}>
                     <Row align="middle" gutter={[16, 16]}>
                         <Col flex="auto">
                             <Space>
-                                <ClockCircleOutlined style={{ fontSize: 24, color: "#0d9488" }} />
+                                <ClockCircleOutlined style={{ fontSize: 24, color: BRAND.primary }} />
                                 <div>
                                     <Title level={4} style={{ margin: 0 }}>
                                         Shift Kasir
@@ -266,7 +271,7 @@ export default function CashierShiftIndex() {
                     {activeShift ? (
                         <Card
                             style={{
-                                background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
+                                background: `linear-gradient(135deg, ${TEAL[50]} 0%, ${TEAL[100]} 100%)`,
                                 border: "1px solid #6ee7b7",
                             }}
                         >
@@ -276,12 +281,12 @@ export default function CashierShiftIndex() {
                                 wrap
                             >
                                 <Space>
-                                    <CheckCircleOutlined style={{ fontSize: 28, color: "#16a34a" }} />
+                                    <CheckCircleOutlined style={{ fontSize: 28, color: BRAND.primary }} />
                                     <div>
-                                        <Text strong style={{ color: "#15803d", fontSize: 13 }}>
+                                        <Text strong style={{ color: TEAL[700], fontSize: 13 }}>
                                             SHIFT AKTIF
                                         </Text>
-                                        <Title level={4} style={{ margin: 0, color: "#14532d" }}>
+                                        <Title level={4} style={{ margin: 0, color: TEAL[900] }}>
                                             Dibuka{" "}
                                             {activeShift.opened_at
                                                 ? new Date(activeShift.opened_at).toLocaleString(
@@ -298,7 +303,7 @@ export default function CashierShiftIndex() {
                             </Space>
                             <Row gutter={[12, 12]}>
                                 <Col xs={12} sm={12} md={6}>
-                                    <Card size="small" style={{ background: "#ffffffcc" }}>
+                                    <Card size="small">
                                         <Statistic
                                             title="Kas Awal"
                                             value={activeShift.cash_in_hand}
@@ -308,34 +313,34 @@ export default function CashierShiftIndex() {
                                     </Card>
                                 </Col>
                                 <Col xs={12} sm={12} md={6}>
-                                    <Card size="small" style={{ background: "#ffffffcc" }}>
+                                    <Card size="small">
                                         <Statistic
                                             title="Penjualan Tunai"
                                             value={activeShift.summary?.cash_sales || 0}
                                             prefix={<RiseOutlined />}
-                                            valueStyle={{ color: "#22c55e" }}
+                                            valueStyle={{ color: SEMANTIC.success }}
                                             formatter={(v) => formatRupiah(v)}
                                         />
                                     </Card>
                                 </Col>
                                 <Col xs={12} sm={12} md={6}>
-                                    <Card size="small" style={{ background: "#ffffffcc" }}>
+                                    <Card size="small">
                                         <Statistic
                                             title="Refund Tunai"
                                             value={activeShift.summary?.cash_refunds || 0}
                                             prefix={<FallOutlined />}
-                                            valueStyle={{ color: "#ef4444" }}
+                                            valueStyle={{ color: SEMANTIC.error }}
                                             formatter={(v) => formatRupiah(v)}
                                         />
                                     </Card>
                                 </Col>
                                 <Col xs={12} sm={12} md={6}>
-                                    <Card size="small" style={{ background: "#ffffffcc" }}>
+                                    <Card size="small">
                                         <Statistic
                                             title="Kas Seharusnya"
                                             value={activeShift.summary?.expected_cash || 0}
                                             prefix={<DollarOutlined />}
-                                            valueStyle={{ color: "#0d9488" }}
+                                            valueStyle={{ color: BRAND.primary }}
                                             formatter={(v) => formatRupiah(v)}
                                         />
                                     </Card>
@@ -354,7 +359,7 @@ export default function CashierShiftIndex() {
                     <Card
                         title={
                             <Space>
-                                <UnorderedListOutlined style={{ color: "#64748b" }} />
+                                <UnorderedListOutlined style={{ color: NEUTRAL.slate500 }} />
                                 <span>Histori Shift</span>
                             </Space>
                         }
@@ -366,7 +371,10 @@ export default function CashierShiftIndex() {
                             pagination={false}
                             size="middle"
                             scroll={{ x: 1100 }}
-                            locale={{ emptyText: "Belum ada histori shift kasir." }}
+                            locale={{
+                                emptyText:
+                                    "Belum ada histori shift. Buka shift pertama untuk mulai transaksi kasir.",
+                            }}
                         />
 
                         <div style={{ marginTop: 16, textAlign: "right" }}>
@@ -382,6 +390,7 @@ export default function CashierShiftIndex() {
                         </div>
                     </Card>
                 </Space>
+                </Spin>
             </LayoutAccount>
         </>
     );

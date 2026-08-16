@@ -233,7 +233,8 @@ export default function Index() {
                         dataSource={returns.data}
                         pagination={false}
                         locale={{
-                            emptyText: "Belum ada data retur penjualan.",
+                            emptyText:
+                                "Belum ada retur penjualan. Retur dibuat dari detail transaksi yang sudah lunas.",
                         }}
                         scroll={{ x: 900 }}
                     />

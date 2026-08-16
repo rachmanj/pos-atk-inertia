@@ -3,20 +3,24 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, SEMANTIC } from "../../../theme/colors";
 import {
     Alert,
     Button,
     Card,
     Col,
     Descriptions,
-    Divider,
     Form,
+    Input,
     InputNumber,
     Row,
     Space,
+    Spin,
     Statistic,
     Tag,
     Typography,
+    notification,
 } from "antd";
 import {
     ArrowLeftOutlined,
@@ -42,6 +46,7 @@ const dateTimeFormatOptions = {
 export default function CashierShiftShow() {
     const { shift, flash, errors, auth } = usePage().props;
     const permissions = auth?.permissions || {};
+    const loading = useInertiaLoading();
 
     const [actualCash, setActualCash] = useState(
         shift.status === "open" ? shift.summary?.expected_cash || 0 : shift.actual_cash,
@@ -55,17 +60,30 @@ export default function CashierShiftShow() {
 
     const closeShift = (e) => {
         e.preventDefault();
-        router.put(`/account/cashier-shifts/${shift.id}/close`, { actual_cash: actualCash, note });
+        router.put(
+            `/account/cashier-shifts/${shift.id}/close`,
+            { actual_cash: actualCash, note },
+            {
+                onError: () => {
+                    notification.error({
+                        message: "Gagal",
+                        description:
+                            "Penutupan shift gagal. Periksa data dan coba lagi.",
+                    });
+                },
+            },
+        );
     };
 
     return (
         <>
             <Head><title>Detail Shift - VASIA Stationery</title></Head>
             <LayoutAccount>
+                <Spin spinning={loading}>
                 <Space direction="vertical" size="large" style={{ width: "100%" }}>
                     <Space style={{ width: "100%", justifyContent: "space-between" }} wrap>
                         <Space>
-                            <ClockCircleOutlined style={{ color: "#0d9488", fontSize: 20 }} />
+                            <ClockCircleOutlined style={{ color: BRAND.primary, fontSize: 20 }} />
                             <div>
                                 <Title level={4} style={{ margin: 0 }}>DETAIL SHIFT #{shift.id}</Title>
                                 <Text type="secondary">
@@ -111,25 +129,25 @@ export default function CashierShiftShow() {
                         </Row>
                     </Card>
 
-                    <Card title={<Space><DollarOutlined style={{ color: "#0d9488" }} />Ringkasan Keuangan</Space>}>
+                    <Card title={<Space><DollarOutlined style={{ color: BRAND.primary }} />Ringkasan Keuangan</Space>}>
                         <Row gutter={[16, 16]}>
                             <Col xs={12} sm={12} md={6}>
                                 <Card size="small"><Statistic title="Kas Awal" value={shift.cash_in_hand} prefix={<MoneyCollectOutlined />} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
-                                <Card size="small"><Statistic title="Penjualan Tunai" value={shift.summary?.cash_sales || 0} prefix={<RiseOutlined />} valueStyle={{ color: "#22c55e" }} formatter={v => formatRupiah(v)} /></Card>
+                                <Card size="small"><Statistic title="Penjualan Tunai" value={shift.summary?.cash_sales || 0} prefix={<RiseOutlined />} valueStyle={{ color: SEMANTIC.success }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
-                                <Card size="small"><Statistic title="Non Tunai" value={shift.summary?.non_cash_sales || 0} prefix={<WalletOutlined />} valueStyle={{ color: "#3b82f6" }} formatter={v => formatRupiah(v)} /></Card>
+                                <Card size="small"><Statistic title="Non Tunai" value={shift.summary?.non_cash_sales || 0} prefix={<WalletOutlined />} valueStyle={{ color: SEMANTIC.info }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
-                                <Card size="small"><Statistic title="Kas Seharusnya" value={shift.summary?.expected_cash || 0} prefix={<DollarOutlined />} valueStyle={{ color: "#0d9488" }} formatter={v => formatRupiah(v)} /></Card>
+                                <Card size="small"><Statistic title="Kas Seharusnya" value={shift.summary?.expected_cash || 0} prefix={<DollarOutlined />} valueStyle={{ color: BRAND.primary }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
-                                <Card size="small"><Statistic title="Refund Tunai" value={shift.summary?.cash_refunds || 0} prefix={<FallOutlined />} valueStyle={{ color: "#ef4444" }} formatter={v => formatRupiah(v)} /></Card>
+                                <Card size="small"><Statistic title="Refund Tunai" value={shift.summary?.cash_refunds || 0} prefix={<FallOutlined />} valueStyle={{ color: SEMANTIC.error }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
-                                <Card size="small"><Statistic title="Refund Non Tunai" value={shift.summary?.non_cash_refunds || 0} prefix={<SwapOutlined />} valueStyle={{ color: "#f59e0b" }} formatter={v => formatRupiah(v)} /></Card>
+                                <Card size="small"><Statistic title="Refund Non Tunai" value={shift.summary?.non_cash_refunds || 0} prefix={<SwapOutlined />} valueStyle={{ color: SEMANTIC.warning }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
                                 <Card size="small"><Statistic title="Transaksi" value={shift.summary?.total_transactions || 0} prefix={<ShoppingCartOutlined />} suffix={<Text type="secondary" style={{ fontSize: 12 }}>Lunas: {shift.summary?.paid_transactions || 0}</Text>} /></Card>
@@ -143,7 +161,7 @@ export default function CashierShiftShow() {
                     {shift.summary?.ppob_expected_balance != null && (
                         <Card
                             title="Ringkasan PPOB Shift"
-                            style={{ background: "linear-gradient(135deg, #0d9488, #115e59)" }}
+                            style={{ background: `linear-gradient(135deg, ${BRAND.primary}, #115e59)` }}
                             headStyle={{ color: "#fff", borderBottom: "1px solid rgba(255,255,255,0.15)" }}
                         >
                             <Row gutter={[16, 16]}>
@@ -151,10 +169,10 @@ export default function CashierShiftShow() {
                                     <Statistic title="Saldo Awal" value={shift.summary.ppob_opening_balance || shift.ppob_opening_balance || 0} formatter={v => formatRupiah(v)} />
                                 </Col>
                                 <Col xs={12} sm={6}>
-                                    <Statistic title="Top Up" value={shift.summary.ppob_top_ups || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: "#22c55e" }} />
+                                    <Statistic title="Top Up" value={shift.summary.ppob_top_ups || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: SEMANTIC.success }} />
                                 </Col>
                                 <Col xs={12} sm={6}>
-                                    <Statistic title="Biaya Penjualan" value={shift.summary.ppob_sales_cost || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: "#ef4444" }} />
+                                    <Statistic title="Biaya Penjualan" value={shift.summary.ppob_sales_cost || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: SEMANTIC.error }} />
                                 </Col>
                                 <Col xs={12} sm={6}>
                                     <Statistic title="Kontribusi Shift" value={shift.summary.ppob_expected_balance || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: "#fff" }} />
@@ -177,8 +195,8 @@ export default function CashierShiftShow() {
 
                     {shift.status === "open" && hasAnyPermission(["cashier_shifts.close"], permissions) ? (
                         <Card
-                            title={<Space><CloseCircleOutlined style={{ color: "#ef4444" }} />TUTUP SHIFT</Space>}
-                            style={{ borderColor: "#ef4444" }}
+                            title={<Space><CloseCircleOutlined style={{ color: SEMANTIC.error }} />TUTUP SHIFT</Space>}
+                            style={{ borderColor: SEMANTIC.error }}
                         >
                             <Form layout="vertical" onFinish={closeShift}>
                                 <Row gutter={[16, 16]}>
@@ -206,7 +224,7 @@ export default function CashierShiftShow() {
                                     <Col xs={24} md={8}>
                                         <Form.Item label="Perkiraan Selisih">
                                             <InputNumber
-                                                style={{ width: "100%", color: estimatedDifference < 0 ? "#ef4444" : "#22c55e" }}
+                                                style={{ width: "100%", color: estimatedDifference < 0 ? SEMANTIC.error : SEMANTIC.success }}
                                                 value={estimatedDifference}
                                                 disabled
                                                 formatter={v => formatRupiah(v)}
@@ -231,7 +249,7 @@ export default function CashierShiftShow() {
                                     <Statistic title="Kas Aktual" value={shift.actual_cash} formatter={v => formatRupiah(v)} prefix={<MoneyCollectOutlined />} />
                                 </Col>
                                 <Col xs={24} sm={8}>
-                                    <Statistic title="Selisih" value={shift.difference} formatter={v => formatRupiah(v)} valueStyle={{ color: shift.difference < 0 ? "#ef4444" : "#22c55e" }} prefix={<SwapOutlined />} />
+                                    <Statistic title="Selisih" value={shift.difference} formatter={v => formatRupiah(v)} valueStyle={{ color: shift.difference < 0 ? SEMANTIC.error : SEMANTIC.success }} prefix={<SwapOutlined />} />
                                 </Col>
                                 <Col xs={24} sm={8}>
                                     <Statistic title="Total Transaksi" value={shift.total_transactions} prefix={<ShoppingCartOutlined />} />
@@ -240,6 +258,7 @@ export default function CashierShiftShow() {
                         </Card>
                     ) : null}
                 </Space>
+                </Spin>
             </LayoutAccount>
         </>
     );

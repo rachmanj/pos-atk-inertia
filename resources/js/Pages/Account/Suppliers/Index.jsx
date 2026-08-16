@@ -161,7 +161,10 @@ export default function SupplierIndex() {
                         columns={columns}
                         dataSource={suppliers.data}
                         pagination={false}
-                        locale={{ emptyText: "Belum ada data supplier." }}
+                        locale={{
+                            emptyText:
+                                "Belum ada supplier. Tambahkan supplier pertama untuk mulai membuat pembelian.",
+                        }}
                     />
 
                     <Pagination

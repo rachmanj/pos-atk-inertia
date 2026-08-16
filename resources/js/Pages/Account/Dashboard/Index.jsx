@@ -1,5 +1,7 @@
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage } from "@inertiajs/react";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { BRAND, NEUTRAL, SEMANTIC } from "../../../theme/colors";
 import {
     Alert,
     Card,
@@ -9,6 +11,7 @@ import {
     List,
     Row,
     Space,
+    Spin,
     Statistic,
     Table,
     Tag,
@@ -60,11 +63,11 @@ const formatDateTime = (value) => {
 };
 
 const statIconColors = {
-    primary: "#0d9488",
-    info: "#0d9488",
-    success: "#22c55e",
-    danger: "#ef4444",
-    secondary: "#94a3b8",
+    primary: BRAND.primary,
+    info: BRAND.primary,
+    success: SEMANTIC.success,
+    danger: SEMANTIC.error,
+    secondary: NEUTRAL.slate400,
 };
 
 function StatCard({ title, value, subtitle, icon, color }) {
@@ -119,6 +122,7 @@ export default function Dashboard() {
         lowStockProducts = [],
         ppobAccount = null,
     } = usePage().props;
+    const loading = useInertiaLoading();
 
     const netProfitColor =
         Number(summary.today_net_profit || 0) < 0 ? "danger" : "success";
@@ -201,6 +205,7 @@ export default function Dashboard() {
                 <title>Dashboard - VASIA Stationery</title>
             </Head>
             <LayoutAccount>
+                <Spin spinning={loading}>
                 <Space
                     direction="vertical"
                     size="large"
@@ -224,7 +229,7 @@ export default function Dashboard() {
                                 <Card
                                     style={
                                         ppobAccount.is_low_balance
-                                            ? { borderColor: "#ef4444" }
+                                            ? { borderColor: SEMANTIC.error }
                                             : undefined
                                     }
                                 >
@@ -246,7 +251,7 @@ export default function Dashboard() {
                                         prefix={<WalletOutlined />}
                                         valueStyle={{
                                             color: ppobAccount.is_low_balance
-                                                ? "#ef4444"
+                                                ? SEMANTIC.error
                                                 : undefined,
                                             fontWeight: 700,
                                         }}
@@ -268,7 +273,7 @@ export default function Dashboard() {
                                 title={
                                     <Space>
                                         <ClockCircleOutlined
-                                            style={{ color: "#0d9488" }}
+                                            style={{ color: BRAND.primary }}
                                         />
                                         Shift Kasir
                                     </Space>
@@ -302,7 +307,7 @@ export default function Dashboard() {
                                                     level={5}
                                                     style={{
                                                         margin: 0,
-                                                        color: "#22c55e",
+                                                        color: SEMANTIC.success,
                                                     }}
                                                 >
                                                     Aktif
@@ -344,7 +349,7 @@ export default function Dashboard() {
                                                         <Text
                                                             strong
                                                             style={{
-                                                                color: "#22c55e",
+                                                                color: SEMANTIC.success,
                                                             }}
                                                         >
                                                             {formatRupiah(
@@ -368,7 +373,7 @@ export default function Dashboard() {
                                             <ClockCircleOutlined
                                                 style={{
                                                     fontSize: 48,
-                                                    color: "#94a3b8",
+                                                    color: NEUTRAL.slate400,
                                                 }}
                                             />
                                         }
@@ -383,7 +388,7 @@ export default function Dashboard() {
                                 title={
                                     <Space>
                                         <PieChartOutlined
-                                            style={{ color: "#3b82f6" }}
+                                            style={{ color: SEMANTIC.info }}
                                         />
                                         Pantauan Cepat
                                     </Space>
@@ -402,7 +407,8 @@ export default function Dashboard() {
                                             size="small"
                                             scroll={{ x: "max-content", y: 260 }}
                                             locale={{
-                                                emptyText: "Belum ada transaksi.",
+                                                emptyText:
+                                                    "Belum ada transaksi hari ini. Buka POS Kasir untuk mencatat penjualan.",
                                             }}
                                         />
                                     </Col>
@@ -454,6 +460,7 @@ export default function Dashboard() {
                         </Col>
                     </Row>
                 </Space>
+                </Spin>
             </LayoutAccount>
         </>
     );

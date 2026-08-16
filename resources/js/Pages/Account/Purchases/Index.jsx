@@ -250,7 +250,8 @@ export default function PurchaseIndex() {
                         dataSource={purchases.data}
                         pagination={false}
                         locale={{
-                            emptyText: "Belum ada data pembelian.",
+                            emptyText:
+                                "Belum ada data pembelian. Buat pembelian pertama dari menu Pembelian Supplier.",
                         }}
                         scroll={{ x: 900 }}
                     />

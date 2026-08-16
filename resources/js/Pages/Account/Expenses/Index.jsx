@@ -282,7 +282,8 @@ export default function ExpenseIndex() {
                         dataSource={expenses.data}
                         pagination={false}
                         locale={{
-                            emptyText: "Data pengeluaran belum tersedia.",
+                            emptyText:
+                                "Data pengeluaran belum tersedia. Catat pengeluaran pertama untuk mulai melacak biaya.",
                         }}
                         scroll={{ x: 1000 }}
                     />

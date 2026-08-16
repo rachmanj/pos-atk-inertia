@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { Button, Col, Drawer, Modal, notification, Row } from "antd";
+import { Button, Col, Drawer, Modal, notification, Row, Spin } from "antd";
 import { FileTextOutlined, ShoppingCartOutlined } from "@ant-design/icons";
 import LayoutAccount from "../../../Layouts/Account";
 import useMobile from "../../../Hooks/useMobile";
+import useInertiaLoading from "../../../Hooks/useInertiaLoading";
 import { formatRupiah } from "../../../Utils/format";
 import { getModalWidth } from "../../../Utils/responsive";
 import PosProductGrid from "../../../Components/Pos/PosProductGrid";
@@ -62,6 +63,7 @@ export default function TransactionCreate() {
     const discountTimers = useRef({});
 
     const isMobile = useMobile();
+    const loading = useInertiaLoading();
     const [localCarts, setLocalCarts] = useState(carts);
 
     useEffect(() => {
@@ -898,6 +900,7 @@ export default function TransactionCreate() {
             </Head>
 
             <LayoutAccount>
+                <Spin spinning={loading}>
                 <div
                     className={`pos-cashier-page${isMobile ? " pos-cashier-page--mobile" : ""}`}
                 >
@@ -1013,6 +1016,7 @@ export default function TransactionCreate() {
                         onClose={() => setShowBarcodeScanner(false)}
                     />
                 )}
+                </Spin>
             </LayoutAccount>
         </>
     );

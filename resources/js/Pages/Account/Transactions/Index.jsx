@@ -333,7 +333,8 @@ export default function Index() {
                         dataSource={transactions.data}
                         pagination={false}
                         locale={{
-                            emptyText: "Belum ada data transaksi.",
+                            emptyText:
+                                "Belum ada transaksi. Buka POS Kasir untuk mencatat penjualan pertama.",
                         }}
                         rowClassName={(record) =>
                             record.status === "voided" ? "table-light" : ""

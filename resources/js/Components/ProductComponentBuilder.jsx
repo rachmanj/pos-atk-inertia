@@ -39,7 +39,7 @@ export default function ProductComponentBuilder({
 
     const productOptions = physicalProducts.map((product) => ({
         value: String(product.id),
-        label: `${product.title} (${product.barcode}) — stok ${product.stock} ${product.unit}`,
+        label: `${product.title} (${product.barcode}) · stok ${product.stock} ${product.unit}`,
     }));
 
     const columns = [
