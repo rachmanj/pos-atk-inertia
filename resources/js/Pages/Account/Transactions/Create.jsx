@@ -101,9 +101,7 @@ export default function TransactionCreate() {
         );
     }, [products.data]);
 
-    const isCashLikePayment = ["cash", "qris", "transfer"].includes(
-        paymentMethod,
-    );
+    const isCashLikePayment = ["cash", "qris"].includes(paymentMethod);
 
     const activeCarts = useMemo(
         () => localCarts.filter((cart) => !cart.is_held),
@@ -738,9 +736,12 @@ export default function TransactionCreate() {
 
         Modal.confirm({
             title: "Proses Pembayaran?",
-            content: isCashLikePayment
-                ? "Pastikan uang yang diterima sudah sesuai."
-                : "Pembayaran digital akan diproses melalui Midtrans.",
+            content:
+                paymentMethod === "transfer"
+                    ? "Transaksi transfer akan disimpan sebagai pending. Konfirmasi setelah dana masuk ke rekening toko."
+                    : isCashLikePayment
+                      ? "Pastikan uang yang diterima sudah sesuai."
+                      : "Pembayaran digital akan diproses melalui Midtrans.",
             okText: "Ya, Bayar!",
             cancelText: "Batal",
             width: getModalWidth(isMobile),
@@ -861,7 +862,7 @@ export default function TransactionCreate() {
         paymentMethod,
         onPaymentMethodChange: (value) => {
             setPaymentMethod(value);
-            if (value === "digital") {
+            if (value === "digital" || value === "transfer") {
                 setCash("");
             }
         },

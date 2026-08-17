@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import {
+    Alert,
     Button,
     Input,
     Modal,
@@ -12,6 +13,7 @@ import {
 } from "antd";
 import {
     ArrowLeftOutlined,
+    CheckCircleOutlined,
     StopOutlined,
     PrinterOutlined,
     ShopOutlined,
@@ -105,6 +107,21 @@ export default function TransactionShow() {
     const hasBlockingReturn =
         Number(transaction.blocking_returns_count || 0) > 0;
 
+    const isTransferPending =
+        transaction.payment_method === "transfer" &&
+        transaction.payment_status === "pending" &&
+        transaction.status === "pending";
+
+    const canConfirmTransfer =
+        isTransferPending &&
+        hasAnyPermission(["transactions.edit"], permissions);
+
+    const displayStatusLabel = isTransferPending
+        ? "Menunggu Konfirmasi Transfer"
+        : statusLabel[transaction.status] ||
+          transaction.status ||
+          "-";
+
     const canVoidTransaction =
         hasAnyPermission(["transactions.void"], permissions) &&
         transaction.status === "completed" &&
@@ -145,6 +162,20 @@ export default function TransactionShow() {
             return;
         }
         router.visit("/account/transactions");
+    };
+
+    const handleConfirmTransfer = () => {
+        Modal.confirm({
+            title: "Konfirmasi pembayaran transfer?",
+            content:
+                "Pastikan dana sudah masuk ke rekening toko sebelum mengonfirmasi transaksi ini.",
+            okText: "Ya, konfirmasi",
+            cancelText: "Batal",
+            onOk: () =>
+                router.post(
+                    `/account/transactions/${transaction.invoice}/confirm-transfer`,
+                ),
+        });
     };
 
     const handleVoid = () => {
@@ -246,12 +277,13 @@ export default function TransactionShow() {
 
                         <Tag
                             className={`transaction-status-chip ${
-                                statusClass[transaction.status] || "is-warning"
+                                isTransferPending
+                                    ? "is-warning"
+                                    : statusClass[transaction.status] ||
+                                      "is-warning"
                             }`}
                         >
-                            {statusLabel[transaction.status] ||
-                                transaction.status ||
-                                "-"}
+                            {displayStatusLabel}
                         </Tag>
                     </div>
 
@@ -269,6 +301,30 @@ export default function TransactionShow() {
                                     size="middle"
                                     style={{ width: "100%" }}
                                 >
+                                    {isTransferPending && (
+                                        <Alert
+                                            type="warning"
+                                            showIcon
+                                            message="Menunggu Konfirmasi Transfer"
+                                            description="Pelanggan transfer ke rekening toko. Konfirmasi setelah dana masuk."
+                                        />
+                                    )}
+
+                                    {canConfirmTransfer && (
+                                        <Button
+                                            type="primary"
+                                            block
+                                            icon={<CheckCircleOutlined />}
+                                            onClick={handleConfirmTransfer}
+                                            style={{
+                                                background: "#22c55e",
+                                                borderColor: "#22c55e",
+                                            }}
+                                        >
+                                            Konfirmasi Pembayaran
+                                        </Button>
+                                    )}
+
                                     <Link href="/account/transactions/create">
                                         <Button
                                             type="primary"
@@ -419,17 +475,22 @@ export default function TransactionShow() {
 
                                             <span
                                                 className={`receipt-status-pill ${
-                                                    paymentStatusClass[
-                                                        transaction
-                                                            .payment_status
-                                                    ] || "is-pending"
+                                                    isTransferPending
+                                                        ? "is-pending"
+                                                        : paymentStatusClass[
+                                                              transaction
+                                                                  .payment_status
+                                                          ] || "is-pending"
                                                 }`}
                                             >
-                                                {paymentStatusLabel[
-                                                    transaction.payment_status
-                                                ] ||
-                                                    transaction.payment_status ||
-                                                    "-"}
+                                                {isTransferPending
+                                                    ? "Menunggu Konfirmasi Transfer"
+                                                    : paymentStatusLabel[
+                                                          transaction
+                                                              .payment_status
+                                                      ] ||
+                                                      transaction.payment_status ||
+                                                      "-"}
                                             </span>
                                         </div>
 

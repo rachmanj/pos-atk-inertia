@@ -78,7 +78,8 @@ class CheckoutService
         }
 
         return DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $discountType, $activeShift, $lines) {
-            $isImmediatePayment = in_array($paymentMethod, ['cash', 'qris', 'transfer'], true);
+            $isImmediatePayment = in_array($paymentMethod, ['cash', 'qris'], true);
+            $isCashLikePayment = in_array($paymentMethod, ['cash', 'qris'], true);
 
             $productIds = collect($lines)->pluck('product_id')->unique()->values()->all();
 
@@ -141,13 +142,13 @@ class CheckoutService
             }
 
             $grandTotal = $subtotal - $discountAmount;
-            $cash = in_array($paymentMethod, ['cash', 'qris', 'transfer']) ? (int) ($data['cash'] ?? 0) : 0;
+            $cash = $isCashLikePayment ? (int) ($data['cash'] ?? 0) : 0;
 
-            if (in_array($paymentMethod, ['cash', 'qris', 'transfer']) && $cash < $grandTotal) {
+            if ($isCashLikePayment && $cash < $grandTotal) {
                 throw new DomainException('Uang pembayaran kurang dari total belanja.');
             }
 
-            $change = in_array($paymentMethod, ['cash', 'qris', 'transfer']) ? $cash - $grandTotal : 0;
+            $change = $isCashLikePayment ? $cash - $grandTotal : 0;
             $invoice = $this->generateTransactionInvoice();
 
             $transaction = Transaction::create([

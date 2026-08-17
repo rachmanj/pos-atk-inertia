@@ -36,12 +36,13 @@ export default function PosPaymentSummary({
     onSubmit,
 }) {
     const isMobile = useMobile();
+    const isManualTransfer = paymentMethod === "transfer";
     const cashLabel =
         paymentMethod === "cash"
             ? "Uang Tunai"
             : paymentMethod === "qris"
               ? "Nominal QRIS"
-              : "Nominal Transfer";
+              : "Transfer Manual";
 
     return (
         <form className="pos-payment-form" onSubmit={onSubmit}>
@@ -143,6 +144,15 @@ export default function PosPaymentSummary({
                 />
             )}
 
+            {isManualTransfer && (
+                <Alert
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 12, fontSize: 12 }}
+                    message="Pelanggan transfer ke rekening toko. Transaksi akan disimpan sebagai pending dan bisa dikonfirmasi setelah dana masuk."
+                />
+            )}
+
             <div className="pos-summary-box">
                 <div>
                     <span>Subtotal</span>
@@ -159,12 +169,26 @@ export default function PosPaymentSummary({
                     <strong>{formatRupiah(grandTotal)}</strong>
                 </div>
                 <div>
-                    <span>{isCashLikePayment ? "Kembalian" : "Status"}</span>
-                    <Text type="success" strong>
+                    <span>
                         {isCashLikePayment
-                            ? formatRupiah(change)
-                            : "Menunggu pembayaran"}
-                    </Text>
+                            ? "Kembalian"
+                            : isManualTransfer
+                              ? "Status"
+                              : "Status"}
+                    </span>
+                    {isCashLikePayment ? (
+                        <Text type="success" strong>
+                            {formatRupiah(change)}
+                        </Text>
+                    ) : isManualTransfer ? (
+                        <Text style={{ color: "#f59e0b" }} strong>
+                            Menunggu konfirmasi
+                        </Text>
+                    ) : (
+                        <Text type="success" strong>
+                            Menunggu pembayaran
+                        </Text>
+                    )}
                 </div>
             </div>
 

@@ -160,6 +160,61 @@ class TransactionController extends Controller
         ]);
     }
 
+    public function confirmTransfer(Request $request, string $invoice)
+    {
+        $user = $request->user();
+
+        $transaction = Transaction::with('details')
+            ->where('invoice', $invoice)
+            ->when(! $user->isAdminUser(), function ($query) use ($user) {
+                $query->where('cashier_id', $user->id);
+            })
+            ->firstOrFail();
+
+        if ($transaction->payment_method !== 'transfer') {
+            return redirect()
+                ->route('account.transactions.show', $invoice)
+                ->with('error', 'Konfirmasi hanya untuk transaksi transfer manual.');
+        }
+
+        if ($transaction->payment_status !== 'pending') {
+            return redirect()
+                ->route('account.transactions.show', $invoice)
+                ->with('error', 'Transaksi transfer ini sudah dikonfirmasi atau tidak dalam status pending.');
+        }
+
+        DB::transaction(function () use ($transaction) {
+            $transaction->update([
+                'payment_status' => 'paid',
+                'status' => 'completed',
+                'paid_at' => now(),
+            ]);
+
+            $totalCost = $transaction->details->sum(function ($detail) {
+                if ($detail->ppob_cost !== null) {
+                    return (int) $detail->ppob_cost * (int) $detail->qty;
+                }
+
+                return (int) $detail->buy_price * $detail->qtyInBaseUnits();
+            });
+
+            Profit::updateOrCreate(
+                [
+                    'transaction_id' => $transaction->id,
+                ],
+                [
+                    'total_revenue' => (int) $transaction->grand_total,
+                    'total_cost' => (int) $totalCost,
+                    'profit_amount' => (int) $transaction->grand_total - (int) $totalCost,
+                ]
+            );
+        });
+
+        return redirect()
+            ->route('account.transactions.show', $invoice)
+            ->with('success', 'Pembayaran transfer berhasil dikonfirmasi.');
+    }
+
     public function void(Request $request, $invoice)
     {
         $user = $request->user();

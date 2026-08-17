@@ -61,6 +61,7 @@ class PermissionsTableSeeder extends Seeder
             'transactions.create',
             'transactions.show',
             'transactions.print',
+            'transactions.edit',
             'transactions.void',
 
             // Returns

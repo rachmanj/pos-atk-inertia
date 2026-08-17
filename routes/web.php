@@ -243,6 +243,10 @@ Route::middleware(['auth'])
             ->middleware('permission:transactions.void')
             ->name('transactions.void');
 
+        Route::post('/transactions/{invoice}/confirm-transfer', [TransactionController::class, 'confirmTransfer'])
+            ->middleware('permission:transactions.edit')
+            ->name('transactions.confirm-transfer');
+
         Route::get('/transactions/{invoice}', [TransactionController::class, 'show'])
             ->middleware('permission:transactions.show')
             ->name('transactions.show');

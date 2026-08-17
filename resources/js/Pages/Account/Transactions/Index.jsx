@@ -25,6 +25,7 @@ import {
     FilterOutlined,
     ReloadOutlined,
     ShoppingCartOutlined,
+    CheckCircleOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
@@ -61,7 +62,16 @@ const paymentStatusColor = (status) => {
     return colors[status] || "default";
 };
 
-const transactionStatusLabel = (status) => {
+const isTransferPending = (record) =>
+    record.payment_method === "transfer" &&
+    record.payment_status === "pending" &&
+    record.status === "pending";
+
+const transactionStatusLabel = (status, record) => {
+    if (record && isTransferPending(record)) {
+        return "Menunggu Konfirmasi";
+    }
+
     const labels = {
         completed: "Selesai",
         pending: "Pending",
@@ -70,7 +80,11 @@ const transactionStatusLabel = (status) => {
     return labels[status] || "-";
 };
 
-const transactionStatusColor = (status) => {
+const transactionStatusColor = (status, record) => {
+    if (record && isTransferPending(record)) {
+        return "warning";
+    }
+
     const colors = {
         completed: "success",
         pending: "warning",
@@ -183,9 +197,9 @@ export default function Index() {
             title: "Status Transaksi",
             align: "center",
             dataIndex: "status",
-            render: (status) => (
-                <Tag color={transactionStatusColor(status)}>
-                    {transactionStatusLabel(status)}
+            render: (status, record) => (
+                <Tag color={transactionStatusColor(status, record)}>
+                    {transactionStatusLabel(status, record)}
                 </Tag>
             ),
         },
@@ -201,16 +215,37 @@ export default function Index() {
         },
         {
             title: "Aksi",
-            width: 100,
+            width: 180,
             align: "center",
-            render: (_, record) =>
-                hasAnyPermission(["transactions.show"], permissions) ? (
-                    <Link href={`/account/transactions/${record.invoice}`}>
-                        <Button size="small" icon={<EyeOutlined />}>
-                            Detail
-                        </Button>
-                    </Link>
-                ) : null,
+            render: (_, record) => (
+                <Space size="small">
+                    {hasAnyPermission(["transactions.show"], permissions) && (
+                        <Link href={`/account/transactions/${record.invoice}`}>
+                            <Button size="small" icon={<EyeOutlined />}>
+                                Detail
+                            </Button>
+                        </Link>
+                    )}
+                    {isTransferPending(record) &&
+                        hasAnyPermission(
+                            ["transactions.edit"],
+                            permissions,
+                        ) && (
+                            <Button
+                                size="small"
+                                type="primary"
+                                icon={<CheckCircleOutlined />}
+                                onClick={() =>
+                                    router.post(
+                                        `/account/transactions/${record.invoice}/confirm-transfer`,
+                                    )
+                                }
+                            >
+                                Konfirmasi
+                            </Button>
+                        )}
+                </Space>
+            ),
         },
     ];
 
