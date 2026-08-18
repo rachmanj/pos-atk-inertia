@@ -58,8 +58,7 @@ export default function CashierShiftShow() {
         return Number.isNaN(value) ? 0 : value;
     }, [actualCash, shift.summary?.expected_cash]);
 
-    const closeShift = (e) => {
-        e.preventDefault();
+    const closeShift = () => {
         router.put(
             `/account/cashier-shifts/${shift.id}/close`,
             { actual_cash: actualCash, note },

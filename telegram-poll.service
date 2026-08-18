@@ -1,0 +1,16 @@
+[Unit]
+Description=POS Kasir Telegram Bot Polling
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=deahermes
+WorkingDirectory=/home/deahermes/pos-atk-inertia
+ExecStart=/usr/bin/php artisan telegram:poll --timeout=30
+Restart=always
+RestartSec=5
+StandardOutput=append:/home/deahermes/pos-atk-inertia/storage/logs/telegram-poll.log
+StandardError=append:/home/deahermes/pos-atk-inertia/storage/logs/telegram-poll.log
+
+[Install]
+WantedBy=multi-user.target
