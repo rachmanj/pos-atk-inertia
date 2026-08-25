@@ -21,18 +21,10 @@ export function getZenTheme(mode) {
         },
         components: {
             Layout: {
-                siderBg: isDark ? BRAND.darkSider : WARM.surface,
-                triggerBg: isDark ? BRAND.darkSider : WARM.surface,
-                triggerColor: isDark ? "#ffffff" : WARM.text,
+                siderBg: BRAND.darkSider,
+                triggerBg: BRAND.darkSider,
             },
             Menu: {
-                itemBg: "transparent",
-                itemColor: WARM.text,
-                itemHoverBg: WARM.background,
-                itemHoverColor: BRAND.primary,
-                itemSelectedBg: "#FDF3F6",
-                itemSelectedColor: BRAND.primary,
-                groupTitleColor: "rgba(43, 38, 34, 0.6)",
                 darkItemBg: BRAND.darkSider,
                 darkItemSelectedBg: "rgba(217, 55, 106, 0.22)",
                 darkItemSelectedColor: "#ffffff",

@@ -42,13 +42,11 @@ export default function Login() {
                                 <span className="pos-login-kicker">
                                     Point of Sale
                                 </span>
-                                <h1>
-                                    <span className="pos-login-highlight">
-                                        {storeName}
-                                    </span>
-                                </h1>
+                                <h1>{storeName}</h1>
                             </div>
                         </div>
+
+                        <div className="pos-login-torn" aria-hidden="true" />
 
                         <div className="pos-login-brand-copy">
                             <p>

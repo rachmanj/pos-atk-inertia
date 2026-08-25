@@ -29,7 +29,6 @@ import {
 } from "@ant-design/icons";
 import { NAV_MENUS } from "../Utils/navMenu";
 import hasAnyPermission from "../Utils/Permissions";
-import { useTheme } from "../theme/ThemeContext";
 
 const MENU_ICONS = {
     dashboard: DashboardOutlined,
@@ -145,9 +144,6 @@ export default function Sidebar({
     onMenuClick,
 }) {
     const menuItems = useSidebarMenuItems(permissions);
-    const { mode } = useTheme();
-    const isDark = mode === "dark";
-    const brandColor = isDark ? "#fff" : "#2B2622";
 
     return (
         <>
@@ -174,14 +170,12 @@ export default function Sidebar({
                         }}
                     />
                 ) : (
-                    <ShopOutlined style={{ fontSize: 24, color: brandColor }} />
+                    <ShopOutlined style={{ fontSize: 24, color: "#fff" }} />
                 )}
                 {!collapsed && (
                     <strong
                         style={{
-                            color: brandColor,
-                            fontFamily: "var(--font-display)",
-                            fontWeight: 700,
+                            color: "#fff",
                             whiteSpace: "nowrap",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -193,7 +187,7 @@ export default function Sidebar({
             </div>
 
             <Menu
-                theme={isDark ? "dark" : "light"}
+                theme="dark"
                 mode="inline"
                 selectedKeys={selectedKey ? [selectedKey] : []}
                 items={menuItems}

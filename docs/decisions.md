@@ -308,22 +308,4 @@
 
 **Review Date**: 2027-02-25
 
----
-
-## Decision: Login page + Sidebar migrated to "Highlighter Pastel", superseding "Tinta & Nota" — 2026-08-25
-
-**Context**: The POS/Dashboard/Kasir surfaces were already migrated to "Highlighter Pastel" (`docs/design-vasia-pos-modern-clean.md`), but two surfaces still carried the older "Tinta & Nota" identity: the login page (dark ink-blue gradient, `.pos-login-torn` signature, `#FF6A2E` CTA — see decision above from earlier the same day) and the `Sidebar`/`Sider` (`#1e293b` dark slate, unconditionally `theme="dark"` regardless of the app's light/dark toggle).
-
-**Decision (Login page)**: Background flattened to `#FDF3F6` (pastel pink, no gradient — Hard Gate in the modern-clean spec forbids purposeless gradients). Card stays white `#FFFFFF` with a `#EDE4D8` border and `14px` radius (no shadow, matching `.pos-sale-panel`/`.pos-checkout-panel` flat-card convention elsewhere in the app). CTA button recolored to solid `#D9376A` (pink stabilo, matching the POS "Bayar" button). The `.pos-login-torn` signature (torn-nota paper strip) was removed and replaced by a single "Sapuan Stabilo" accent (`.pos-login-highlight`, a rotated `-1.5deg` pastel-yellow `::before` reusing the same pattern as `.pos-price-highlight`) behind the store name in the `<h1>` — the one signature accent point called for by the spec (§4).
-
-**Decision (Sidebar)**: Previously the `Sider`/`Menu` were hardcoded `theme="dark"` in both `Account.jsx` and `Sidebar.jsx`, so the sidebar looked identical (dark slate) regardless of the user's light/dark mode toggle. Now both read `mode` from `ThemeContext` and pass `theme={mode === "dark" ? "dark" : "light"}`, so: dark mode keeps the existing dark slate sidebar (`BRAND.darkSider`, unchanged, zero regression for users who prefer it) and light mode gets a new white sidebar (`WARM.surface`) with pink-tint active state (`itemSelectedBg: "#FDF3F6"`, `itemSelectedColor: BRAND.primary`) and `WARM.background` hover. New non-`dark`-prefixed Menu component tokens (`itemBg`, `itemColor`, `itemHoverBg`, `itemHoverColor`, `itemSelectedBg`, `itemSelectedColor`, `groupTitleColor`) were added to `zenTheme.js` alongside the existing `darkItem*` tokens — AntD only applies the `dark`-prefixed set when `theme="dark"` is passed to `<Menu>`, so both variants coexist without conflict. Mobile `Drawer` sidebar (used below the `md` breakpoint) mirrors the same background/text/border via inline styles in `Account.jsx` since it renders outside `<Sider>`.
-
-**Rationale**: Both surfaces are "modern clean" per the spec's ENERGY=2 dial — light backgrounds with warm-neutral text, two functional brand hues, no gradients/glow. Keeping dark-mode sidebar dark (rather than forcing it light too) satisfies rule R-34 (dark mode must keep working) while still fixing the actual complaint (light mode sidebar was stuck dark).
-
-**Rejected alternative**: Solid pink pill for the active sidebar menu item (white text on `#D9376A`). Rejected in favor of the tint (`#FDF3F6` bg + pink text) because a solid pill repeated down a tall menu list reads visually heavier/noisier than a single highlighted "Bayar" button; the tint keeps ENERGY at 2 while still being unambiguous at a glance.
-
-**Implementation**: `resources/js/theme/zenTheme.js` (`Layout.siderBg`/`triggerBg`/`triggerColor` now `isDark`-conditional; new light `Menu` tokens), `resources/js/Components/Sidebar.jsx` (reads `useTheme()`, `Menu theme` now conditional, brand text/icon color conditional, brand text now Poppins bold), `resources/js/Layouts/Account.jsx` (`Sider theme` conditional + border, mobile `Drawer` colors conditional), `resources/css/app.css` (`.pos-login-*` block rewritten, new `.pos-login-highlight`), `resources/js/Pages/Auth/Login.jsx` (removed `.pos-login-torn` div, wrapped store name in `.pos-login-highlight`; form structure/logic untouched).
-
-**Review Date**: 2027-02-25
-
 **Review Date**: 2026-10-14
