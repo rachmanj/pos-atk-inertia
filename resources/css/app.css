@@ -439,37 +439,130 @@ html {
 }
 
 .pos-sale-panel,
-.pos-checkout-panel {
+.pos-checkout-panel,
+.pos-cashier-main {
     background: #FFFFFF;
     border: 1px solid #C9C4B4;
     border-radius: 8px;
     overflow: hidden;
 }
 
-.pos-sale-panel {
-    min-height: 100%;
+.pos-cashier-main {
     display: flex;
     flex-direction: column;
+    min-height: calc(100vh - 130px);
+}
+
+.pos-search-section {
+    position: relative;
+    z-index: 20;
+    flex-shrink: 0;
+    background: #FFFFFF;
+    border-bottom: 1px solid #C9C4B4;
 }
 
 .pos-search-bar {
     padding: 14px;
-    border-bottom: 1px solid #C9C4B4;
+    border-bottom: none;
 }
 
-.pos-search-toolbar {
+.pos-search-results-area {
+    min-height: 52px;
+    padding: 0 14px 14px;
+}
+
+.pos-search-results-area--dropdown {
+    position: relative;
+}
+
+.pos-search-hint,
+.pos-search-empty {
+    margin: 0;
+    padding: 12px 14px;
+    color: #64748b;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: center;
+    background: #EFEDE3;
+    border: 1px dashed #C9C4B4;
+    border-radius: 8px;
+}
+
+.pos-search-result-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: min(360px, 42vh);
+    overflow-y: auto;
+    background: #FFFFFF;
+    border: 1px solid #C9C4B4;
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(27, 29, 41, 0.12);
+}
+
+.pos-search-result-item {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
     display: flex;
-    justify-content: flex-end;
-    margin-bottom: 10px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+    background: #FFFFFF;
+    border: none;
+    border-bottom: 1px solid #EFEDE3;
+    cursor: pointer;
+    transition: background 0.15s ease;
 }
 
-.pos-view-toggle .ant-segmented-item-label {
-    display: inline-flex;
+.pos-search-result-item:last-child {
+    border-bottom: none;
+}
+
+.pos-search-result-item:hover:not(:disabled) {
+    background: #EFEDE3;
+}
+
+.pos-search-result-item.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+}
+
+.pos-search-result-name {
+    flex: 1;
+    min-width: 0;
+    display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
-    min-height: 32px;
-    font-family: var(--font-display);
+    color: #1B1D29;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.pos-search-result-badges {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 4px;
+}
+
+.pos-search-result-badges .pos-product-badge {
+    margin: 0;
+    font-size: 0.68rem;
+    line-height: 1.2;
+}
+
+.pos-search-result-price {
+    flex-shrink: 0;
+    color: #2A3B8F;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1rem;
     font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
 }
 
 .pos-category-strip {
@@ -818,14 +911,17 @@ html {
 }
 
 .pos-checkout-panel {
-    position: sticky;
-    top: 76px;
-    max-height: calc(100vh - 92px);
+    flex: 1 1 auto;
+    min-height: 0;
+    position: static;
+    top: auto;
+    max-height: none;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
+    overflow: hidden;
+    border: none;
+    border-radius: 0;
+    border-top: 1px solid #C9C4B4;
 }
 
 .pos-checkout-panel--mobile {
@@ -881,8 +977,8 @@ html {
    so nothing clips or overlaps when the list grows (see MEMORY.md). */
 .pos-cart-list {
     flex: 1 1 auto;
-    min-height: 0;
-    max-height: 44vh;
+    min-height: 160px;
+    max-height: min(520px, 42vh);
     padding: 4px 0;
     overflow-y: auto;
     overflow-x: hidden;
@@ -891,6 +987,7 @@ html {
 
 .pos-checkout-panel--mobile .pos-cart-list {
     max-height: none;
+    min-height: 120px;
     flex: 1 1 auto;
 }
 
@@ -1096,7 +1193,18 @@ html {
 }
 
 .pos-payment-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     margin-bottom: 12px !important;
+}
+
+.pos-payment-field {
+    width: 100%;
+}
+
+.pos-payment-field .pos-field-label {
+    margin-bottom: 6px;
 }
 
 .pos-payment-alert {
@@ -1259,7 +1367,7 @@ html {
 }
 
 @media (max-width: 1199.98px) {
-    .pos-sale-panel {
+    .pos-cashier-main {
         min-height: auto;
     }
 
@@ -1269,7 +1377,7 @@ html {
     }
 
     .pos-cart-list {
-        max-height: none;
+        max-height: min(480px, 50vh);
     }
 }
 
@@ -1428,9 +1536,45 @@ html {
 }
 
 [data-theme="dark"] .pos-sale-panel,
-[data-theme="dark"] .pos-checkout-panel {
+[data-theme="dark"] .pos-checkout-panel,
+[data-theme="dark"] .pos-cashier-main {
     background: #1e293b;
     border-color: #334155;
+}
+
+[data-theme="dark"] .pos-search-section {
+    background: #1e293b;
+    border-bottom-color: #334155;
+}
+
+[data-theme="dark"] .pos-search-hint,
+[data-theme="dark"] .pos-search-empty {
+    color: #94a3b8;
+    background: #0f172a;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .pos-search-result-list {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .pos-search-result-item {
+    background: #1e293b;
+    border-bottom-color: #334155;
+}
+
+[data-theme="dark"] .pos-search-result-item:hover:not(:disabled) {
+    background: #0f172a;
+}
+
+[data-theme="dark"] .pos-search-result-name {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .pos-search-result-price {
+    color: #93a3e8;
 }
 
 [data-theme="dark"] .pos-search-bar {

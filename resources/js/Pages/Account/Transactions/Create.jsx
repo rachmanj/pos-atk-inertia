@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { Button, Col, Drawer, Modal, notification, Row, Spin } from "antd";
+import { Button, Drawer, Modal, notification, Spin } from "antd";
 import { FileTextOutlined, ShoppingCartOutlined } from "@ant-design/icons";
 import LayoutAccount from "../../../Layouts/Account";
 import useMobile from "../../../Hooks/useMobile";
@@ -20,7 +20,6 @@ export default function TransactionCreate() {
     const {
         products = { data: [], links: [] },
         carts = [],
-        categories = [],
         ppobSettings = { ppob_admin_fee: 2000 },
         ppobAccount = null,
         errors = {},
@@ -30,9 +29,6 @@ export default function TransactionCreate() {
     const params = new URLSearchParams(window.location.search);
     const searchInputRef = useRef(null);
 
-    const [categoryId, setCategoryId] = useState(
-        params.get("category_id") || "",
-    );
     const [searchQuery, setSearchQuery] = useState(params.get("q") || "");
     const [customerId, setCustomerId] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -94,11 +90,7 @@ export default function TransactionCreate() {
         if (product.barcode !== q) return;
 
         addToCart(product);
-        router.get(
-            "/account/transactions/create",
-            {},
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
+        resetProductSearch();
     }, [products.data]);
 
     const isCashLikePayment = ["cash", "qris"].includes(paymentMethod);
@@ -156,7 +148,21 @@ export default function TransactionCreate() {
             .slice(0, 5);
     }, [grandTotal, isCashLikePayment]);
 
-    const visitProductList = (nextCategoryId, nextSearchQuery) => {
+    const resetProductSearch = () => {
+        setSearchQuery("");
+        router.get(
+            "/account/transactions/create",
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ["products"],
+            },
+        );
+    };
+
+    const visitProductList = (nextSearchQuery) => {
         const query = new URLSearchParams();
         const trimmedSearch = nextSearchQuery.trim();
 
@@ -164,35 +170,39 @@ export default function TransactionCreate() {
             query.set("q", trimmedSearch);
         }
 
-        if (nextCategoryId) {
-            query.set("category_id", nextCategoryId);
-        }
-
         router.get(
             `/account/transactions/create${query.toString() ? `?${query.toString()}` : ""}`,
             {},
-            { preserveState: true, preserveScroll: true },
+            { preserveState: true, preserveScroll: true, only: ["products"] },
         );
     };
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        visitProductList(categoryId, searchQuery);
-    };
+    const handleSearchDebounced = useCallback((query) => {
+        visitProductList(query);
+    }, []);
 
-    const handleCategoryClick = (id) => {
-        setCategoryId(id);
-        visitProductList(id, searchQuery);
-    };
+    const handleSearchQueryChange = useCallback((value) => {
+        setSearchQuery(value);
+
+        if (!value.trim()) {
+            router.get(
+                "/account/transactions/create",
+                {},
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    only: ["products"],
+                },
+            );
+        }
+    }, []);
 
     const handleBarcodeScan = (barcode) => {
         setShowBarcodeScanner(false);
         setSearchQuery(barcode);
 
         const query = new URLSearchParams({ q: barcode });
-        if (categoryId) {
-            query.set("category_id", categoryId);
-        }
 
         router.get(
             `/account/transactions/create?${query.toString()}`,
@@ -209,16 +219,7 @@ export default function TransactionCreate() {
 
                     if (match) {
                         addToCart(match);
-                        setSearchQuery("");
-                        router.get(
-                            "/account/transactions/create",
-                            {},
-                            {
-                                preserveState: true,
-                                preserveScroll: true,
-                                replace: true,
-                            },
-                        );
+                        resetProductSearch();
                         return;
                     }
 
@@ -412,6 +413,8 @@ export default function TransactionCreate() {
             { product_id: product.id, unit_id: unitId },
             inertiaCartOptions(snapshot),
         );
+
+        resetProductSearch();
     };
 
     const submitPpobCart = (e) => {
@@ -448,7 +451,10 @@ export default function TransactionCreate() {
                 admin_fee: adminFee,
             },
             inertiaCartOptions(snapshot, {
-                onSuccess: () => setPpobModalProduct(null),
+                onSuccess: () => {
+                    setPpobModalProduct(null);
+                    resetProductSearch();
+                },
             }),
         );
     };
@@ -507,7 +513,10 @@ export default function TransactionCreate() {
                 unit_id: selectedUnitId,
             },
             inertiaCartOptions(snapshot, {
-                onSuccess: () => setUnitModalProduct(null),
+                onSuccess: () => {
+                    setUnitModalProduct(null);
+                    resetProductSearch();
+                },
             }),
         );
     };
@@ -918,32 +927,20 @@ export default function TransactionCreate() {
                         </Link>
                     </div>
 
-                    <Row
-                        gutter={[12, 12]}
-                        className="min-h-[calc(100vh-130px)] items-stretch max-xl:min-h-0"
-                    >
-                        <Col xs={24} xl={16}>
-                            <PosProductGrid
-                                searchInputRef={searchInputRef}
-                                products={products}
-                                categories={categories}
-                                categoryId={categoryId}
-                                searchQuery={searchQuery}
-                                onSearchQueryChange={setSearchQuery}
-                                onSearch={handleSearch}
-                                onCategoryClick={handleCategoryClick}
-                                onAddToCart={addToCart}
-                                showScannerButton
-                                onOpenScanner={() => setShowBarcodeScanner(true)}
-                            />
-                        </Col>
+                    <div className="pos-cashier-main">
+                        <PosProductGrid
+                            searchInputRef={searchInputRef}
+                            products={products}
+                            searchQuery={searchQuery}
+                            onSearchQueryChange={handleSearchQueryChange}
+                            onSearchDebounced={handleSearchDebounced}
+                            onAddToCart={addToCart}
+                            showScannerButton
+                            onOpenScanner={() => setShowBarcodeScanner(true)}
+                        />
 
-                        {!isMobile && (
-                            <Col xs={24} xl={8}>
-                                {checkoutPanel(false)}
-                            </Col>
-                        )}
-                    </Row>
+                        {!isMobile && checkoutPanel(false)}
+                    </div>
                 </div>
 
                 {isMobile && (

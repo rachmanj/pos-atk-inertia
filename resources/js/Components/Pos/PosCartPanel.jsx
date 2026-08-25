@@ -285,7 +285,7 @@ export default function PosCartPanel({
                         <ShoppingOutlined style={{ fontSize: 32 }} />
                         <strong>Keranjang kosong</strong>
                         <span>
-                            Pindai barcode atau pilih produk untuk mulai
+                            Ketik nama produk atau scan barcode untuk mulai
                             transaksi.
                         </span>
                     </div>

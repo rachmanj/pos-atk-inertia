@@ -1,10 +1,8 @@
 import {
     Alert,
     Button,
-    Col,
     InputNumber,
     Radio,
-    Row,
     Space,
     Typography,
 } from "antd";
@@ -71,8 +69,8 @@ export default function PosPaymentSummary({
                 </Radio.Group>
             </div>
 
-            <Row gutter={[8, 12]} className="pos-payment-fields">
-                <Col xs={24} md={isCashLikePayment ? 10 : 24}>
+            <div className="pos-payment-fields">
+                <div className="pos-payment-field">
                     <label className={fieldLabelClassName}>Diskon</label>
                     <Space.Compact style={{ width: "100%" }}>
                         <InputNumber
@@ -97,10 +95,10 @@ export default function PosPaymentSummary({
                             {discountType === "nominal" ? "Rp" : "%"}
                         </Button>
                     </Space.Compact>
-                </Col>
+                </div>
 
                 {isCashLikePayment && (
-                    <Col xs={24} md={14}>
+                    <div className="pos-payment-field">
                         <label className={fieldLabelClassName}>{cashLabel}</label>
                         <InputNumber
                             className="pos-cash-input"
@@ -131,9 +129,9 @@ export default function PosPaymentSummary({
                                 ))}
                             </div>
                         )}
-                    </Col>
+                    </div>
                 )}
-            </Row>
+            </div>
 
             {paymentMethod === "digital" && (
                 <Alert
