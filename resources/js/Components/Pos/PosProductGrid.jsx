@@ -112,11 +112,11 @@ export default function PosProductGrid({
                             defaultUnit?.sell_price ?? product.sell_price;
                         const componentBlocked =
                             isService && serviceComponentBlocked(product);
-                        const disabled = isPpob
-                            ? false
-                            : isService
-                              ? componentBlocked
-                              : product.stock < 1;
+                        // Produk fisik TIDAK pernah disabled walau stok 0
+                        // (tetap bisa dijual, hanya diberi badge "Habis")
+                        const disabled = isService && componentBlocked;
+                        const outOfStock =
+                            !isPpob && !isService && Number(product.stock ?? 0) < 1;
 
                         return (
                             <button
@@ -139,7 +139,7 @@ export default function PosProductGrid({
                                     ) : (
                                         <BoxPlotOutlined />
                                     )}
-                                    {disabled && (
+                                    {(disabled || outOfStock) && (
                                         <span className="pos-product-empty">
                                             {isService ? "Bahan habis" : "Habis"}
                                         </span>
