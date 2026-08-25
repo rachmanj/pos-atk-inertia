@@ -23,4 +23,5 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /scripts
-/.php-ext.hermes-task-prompt.md
+/.php-ext
+.hermes-task-prompt.md
