@@ -949,6 +949,10 @@ export default function TransactionCreate() {
                 {isMobile && (
                     <>
                         <div className="pos-mobile-cart-bar">
+                            <div
+                                className="pos-torn-edge pos-torn-edge--up"
+                                aria-hidden="true"
+                            />
                             <Button
                                 type="primary"
                                 size="large"

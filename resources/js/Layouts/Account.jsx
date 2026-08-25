@@ -130,7 +130,7 @@ export default function LayoutAccount({ children }) {
                 </Drawer>
             )}
 
-            <Layout>
+            <Layout style={{ background: token.colorBgLayout }}>
                 <Header
                     style={{
                         background: token.colorBgContainer,
@@ -174,7 +174,7 @@ export default function LayoutAccount({ children }) {
                     style={{
                         margin: isCompact ? 8 : 16,
                         padding: isCompact ? 12 : 16,
-                        background: token.colorBgContainer,
+                        background: token.colorBgLayout,
                         borderRadius: 8,
                     }}
                 >

@@ -88,6 +88,8 @@ export default function PosProductGrid({
                 ))}
             </div>
 
+            <div className="pos-torn-edge pos-torn-edge--down" aria-hidden="true" />
+
             <div
                 className="pos-product-grid"
                 style={

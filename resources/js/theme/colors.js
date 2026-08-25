@@ -1,6 +1,17 @@
 export const BRAND = {
-    primary: "#0d9488",
+    primary: "#2A3B8F",
     darkSider: "#1e293b",
+};
+
+export const ACCENT = {
+    highlighter: "#FF6A2E",
+};
+
+export const PAPER = {
+    buram: "#EFEDE3",
+    kanvas: "#FFFFFF",
+    tinta: "#1B1D29",
+    garis: "#C9C4B4",
 };
 
 export const NEUTRAL = {

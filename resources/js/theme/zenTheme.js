@@ -6,13 +6,15 @@ export function getZenTheme(mode) {
     return {
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
-            colorPrimary: "#0d9488",
+            colorPrimary: "#2A3B8F",
             colorSuccess: "#22c55e",
             colorWarning: "#f59e0b",
             colorError: "#ef4444",
             colorInfo: "#3b82f6",
+            colorBgLayout: isDark ? "#0f172a" : "#EFEDE3",
+            colorBgContainer: isDark ? "#1e293b" : "#FFFFFF",
             borderRadius: 8,
-            fontFamily: "'Instrument Sans', 'Quicksand', sans-serif",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
         },
         components: {
             Layout: {
@@ -31,10 +33,12 @@ export function getZenTheme(mode) {
                 headerColor: isDark ? "#f1f5f9" : "#0f172a",
                 borderColor: isDark ? "#334155" : "#e2e8f0",
                 rowHoverBg: isDark ? "rgba(255, 255, 255, 0.04)" : "#f8fafc",
-                rowSelectedBg: isDark ? "rgba(13, 148, 136, 0.15)" : "#e0f2f1",
+                rowSelectedBg: isDark
+                    ? "rgba(42, 59, 143, 0.15)"
+                    : "rgba(42, 59, 143, 0.08)",
                 rowSelectedHoverBg: isDark
-                    ? "rgba(13, 148, 136, 0.22)"
-                    : "#ccfbf1",
+                    ? "rgba(42, 59, 143, 0.22)"
+                    : "rgba(42, 59, 143, 0.12)",
             },
         },
     };
