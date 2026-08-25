@@ -46,7 +46,7 @@ export default function PosPaymentSummary({
 
     return (
         <form className="pos-payment-form" onSubmit={onSubmit}>
-            <div style={{ marginBottom: 12 }}>
+            <div className="pos-payment-block">
                 <label className={fieldLabelClassName}>Metode Pembayaran</label>
                 <Radio.Group
                     className="pos-method-toggle"
@@ -71,7 +71,7 @@ export default function PosPaymentSummary({
                 </Radio.Group>
             </div>
 
-            <Row gutter={[8, 8]} style={{ marginBottom: 12 }}>
+            <Row gutter={[8, 12]} className="pos-payment-fields">
                 <Col xs={24} md={isCashLikePayment ? 10 : 24}>
                     <label className={fieldLabelClassName}>Diskon</label>
                     <Space.Compact style={{ width: "100%" }}>
@@ -139,7 +139,7 @@ export default function PosPaymentSummary({
                 <Alert
                     type="info"
                     showIcon
-                    style={{ marginBottom: 12, fontSize: 12 }}
+                    className="pos-payment-alert"
                     message="Pembayaran digital akan diproses melalui Midtrans. Kasir tidak perlu mengisi uang tunai."
                 />
             )}
@@ -148,7 +148,7 @@ export default function PosPaymentSummary({
                 <Alert
                     type="info"
                     showIcon
-                    style={{ marginBottom: 12, fontSize: 12 }}
+                    className="pos-payment-alert"
                     message="Pelanggan transfer ke rekening toko. Transaksi akan disimpan sebagai pending dan bisa dikonfirmasi setelah dana masuk."
                 />
             )}
