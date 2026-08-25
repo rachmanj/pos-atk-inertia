@@ -317,8 +317,8 @@ export default function TransactionShow() {
                                             icon={<CheckCircleOutlined />}
                                             onClick={handleConfirmTransfer}
                                             style={{
-                                                background: "#22c55e",
-                                                borderColor: "#22c55e",
+                                                background: "#2F6F4E",
+                                                borderColor: "#2F6F4E",
                                             }}
                                         >
                                             Konfirmasi Pembayaran
@@ -392,9 +392,9 @@ export default function TransactionShow() {
                                                 block
                                                 icon={<UndoOutlined />}
                                                 style={{
-                                                    background: "#f59e0b",
-                                                    borderColor: "#f59e0b",
-                                                    color: "#0f172a",
+                                                    background: "#8F5F22",
+                                                    borderColor: "#8F5F22",
+                                                    color: "#fff",
                                                 }}
                                             >
                                                 Ajukan Retur

@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings  
-**Last Updated**: 2026-07-25 (legacy inventory import from ExportFile.xls)
+**Last Updated**: 2026-08-25 ("Tinta & Nota" pass 2: SEMANTIC + login redesign)
 
 ---
 
@@ -161,6 +161,12 @@
 **Challenge/Decision**: Migrasi ~3200 produk ATK dari export Excel lama (.xls) ke `products` + `product_units`.  
 **Solution**: `php artisan inventory:import-legacy storage/app/imports/ExportFile.xls` — parser Python (`tools/parse_legacy_inventory_xls.py`, xlrd) + command `ImportLegacyInventory` + `LegacyInventoryCategoryDetector`. Harga kolom Harga1 dalam ribuan (9.0 → Rp 9.000). Barcode col2 fallback col0; skip jika barcode sudah ada.  
 **Key Learning**: Folder `/scripts` di `.gitignore` — parser diletakkan di `tools/`. Backup DB: `mysqldump pos_kasir > backup.sql` sebelum import. Hasil 2026-07-25: 3205 produk diimpor, 0 skipped.
+
+### POS-025 "Tinta & Nota" pass 2: SEMANTIC harmonization + login redesign (2026-08-25) ✅ COMPLETE
+
+**Challenge/Decision**: Pass 1 (`b0405ab`) applied the "Tinta & Nota" palette to POS/Dashboard but left `SEMANTIC` colors on generic Tailwind-stock hex and the login page on the old slate→teal gradient.
+**Solution**: `SEMANTIC` in `resources/js/theme/colors.js` now uses ink-family hues (`success #2F6F4E`, `warning #8F5F22`, `error #8B2E3B`, `info #2A3B8F`); `zenTheme.js` imports `SEMANTIC` instead of duplicating hex. Login page (`Login.jsx` + `.pos-login-*` in `app.css`) redesigned: dark ink-blue gradient background ("sampul buku tulis") + white form card + solid stabilo `#FF6A2E` CTA + one torn-nota accent strip. See `docs/decisions.md` "Tinta & Nota — SEMANTIC palette harmonization + login page identity" for full rationale incl. rejected alternatives and contrast checks.
+**Key Learning**: `.pos-login-input i` / `.pos-login-card-icon i` / `.pos-login-button i` CSS selectors were dead since the AntD icon migration (icons render as `<span class="anticon">`, not `<i>`) — fixed alongside. When grepping for a color to change, also check for its hardcoded hex duplicated in `zenTheme.js` and inline component `style={{}}` — not everything reads from `colors.js`.
 
 ### POS-024 Barcode scanner kamera HP (2026-08-03) ✅ COMPLETE
 

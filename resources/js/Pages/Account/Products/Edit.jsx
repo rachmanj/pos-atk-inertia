@@ -469,9 +469,10 @@ export default function ProductEdit() {
                                                             icon={<SwapOutlined />}
                                                             style={{
                                                                 background:
-                                                                    "#f59e0b",
+                                                                    "#8F5F22",
                                                                 borderColor:
-                                                                    "#f59e0b",
+                                                                    "#8F5F22",
+                                                                color: "#fff",
                                                             }}
                                                         >
                                                             SESUAIKAN

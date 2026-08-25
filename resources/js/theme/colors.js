@@ -27,11 +27,14 @@ export const NEUTRAL = {
     slate50: "#f8fafc",
 };
 
+// Nuansa "tinta" — dalam/muted, bukan warna stock generik neon.
+// warning sengaja dijauhkan dari ACCENT.highlighter (#FF6A2E) agar tidak
+// tertukar dengan tombol Bayar. info memakai BRAND.primary (biru tinta).
 export const SEMANTIC = {
-    success: "#22c55e",
-    warning: "#f59e0b",
-    error: "#ef4444",
-    info: "#3b82f6",
+    success: "#2F6F4E",
+    warning: "#8F5F22",
+    error: "#8B2E3B",
+    info: "#2A3B8F",
 };
 
 export const TEAL = {

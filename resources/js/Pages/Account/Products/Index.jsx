@@ -244,8 +244,9 @@ export default function ProductIndex() {
                                     <Button
                                         icon={<SwapOutlined />}
                                         style={{
-                                            background: "#f59e0b",
-                                            borderColor: "#f59e0b",
+                                            background: "#8F5F22",
+                                            borderColor: "#8F5F22",
+                                            color: "#fff",
                                         }}
                                     >
                                         KOREKSI STOK

@@ -181,7 +181,7 @@ export default function PosPaymentSummary({
                             {formatRupiah(change)}
                         </Text>
                     ) : isManualTransfer ? (
-                        <Text style={{ color: "#f59e0b" }} strong>
+                        <Text style={{ color: "#8F5F22" }} strong>
                             Menunggu konfirmasi
                         </Text>
                     ) : (

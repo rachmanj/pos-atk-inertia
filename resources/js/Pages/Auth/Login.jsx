@@ -46,6 +46,8 @@ export default function Login() {
                             </div>
                         </div>
 
+                        <div className="pos-login-torn" aria-hidden="true" />
+
                         <div className="pos-login-brand-copy">
                             <p>
                                 Sistem kasir modern untuk menjaga operasional

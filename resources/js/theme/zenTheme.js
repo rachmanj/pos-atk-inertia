@@ -1,4 +1,5 @@
 import { theme } from "antd";
+import { SEMANTIC } from "./colors";
 
 export function getZenTheme(mode) {
     const isDark = mode === "dark";
@@ -7,10 +8,10 @@ export function getZenTheme(mode) {
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
             colorPrimary: "#2A3B8F",
-            colorSuccess: "#22c55e",
-            colorWarning: "#f59e0b",
-            colorError: "#ef4444",
-            colorInfo: "#3b82f6",
+            colorSuccess: SEMANTIC.success,
+            colorWarning: SEMANTIC.warning,
+            colorError: SEMANTIC.error,
+            colorInfo: SEMANTIC.info,
             colorBgLayout: isDark ? "#0f172a" : "#EFEDE3",
             colorBgContainer: isDark ? "#1e293b" : "#FFFFFF",
             borderRadius: 8,

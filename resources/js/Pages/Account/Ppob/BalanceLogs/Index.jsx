@@ -195,7 +195,7 @@ export default function PpobBalanceLogIndex() {
                                             <div>
                                                 <Text
                                                     strong
-                                                    style={{ color: "#3b82f6" }}
+                                                    style={{ color: "#2A3B8F" }}
                                                 >
                                                     {formatRupiah(
                                                         account.current_balance,

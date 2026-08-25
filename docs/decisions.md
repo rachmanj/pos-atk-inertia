@@ -288,4 +288,24 @@
 
 **Implementation**: `CashierShiftController@store/close` (auto-capture, drop closing input), `CashierShifts/Create.jsx` + `Show.jsx` (remove manual PPOB balance inputs, add explanatory copy), `Ppob/BalanceLogs/Index.jsx` (surface current system balance per account as the reconciliation entry point).
 
+**Review Date**: 2027-01-14
+
+---
+
+## Decision: "Tinta & Nota" — SEMANTIC palette harmonization + login page identity — 2026-08-25
+
+**Context**: The "Tinta & Nota" theme (`docs/design-vasia-pos-redesign.md`) shipped to POS/Dashboard in commit `b0405ab`, but two things were left on the old stock palette: `SEMANTIC` colors (`success`/`warning`/`error`/`info`) were still generic Tailwind-stock hex (`#22c55e`/`#f59e0b`/`#ef4444`/`#3b82f6`), and the login page still used the pre-redesign slate→teal gradient.
+
+**Options Considered (SEMANTIC)**: Keep stock colors (rejected — visually clashes with the muted ink palette); make warning share a hue family with `ACCENT.highlighter` (`#FF6A2E`, rejected — warning tags would be confused with the "Bayar" CTA); invent unrelated new hues (rejected — would add brand hues beyond the "1 primary + 1 accent" gate).
+
+**Decision**: `SEMANTIC` now derives from the same ink family as `BRAND.primary`: `success = #2F6F4E` (deep ink/forest green), `warning = #8F5F22` (muted deep amber/mustard — hue ~34°, clearly separated from the ~17° stabilo orange and darker/less saturated so it never reads as the pay button), `error = #8B2E3B` (deep wine-red ink), `info = #2A3B8F` (identical to `BRAND.primary`, per spec's primary option). All four checked ≥4.5:1 contrast against both `#FFFFFF` and `#EFEDE3` for normal text. Hardcoded duplicate literals of the old stock hexes (`zenTheme.js` AntD tokens, a few inline button/text styles in `Transactions/Show.jsx`, `PosPaymentSummary.jsx`, `Ppob/BalanceLogs/Index.jsx`, `Products/Edit.jsx`, `Products/Index.jsx`, and `app.css` `.pos-product-empty`/`.pos-cart-delete`) were updated to match — components that already import `SEMANTIC` from `colors.js` needed no changes.
+
+**Decision (Login page)**: Background = dark ink-blue gradient (`#10143A → #1F2C6E → #2A3B8F`), representing the cover of an Indonesian school notebook ("sampul buku tulis") rather than the in-app "kertas kerja" background (`#EFEDE3`), so the login screen reads as the "toko's front cover" and the post-login app reads as "kertas kerja di dalamnya" — two distinct but related surfaces of the same ink/paper metaphor. Form card stays white/kanvas per the WCAG-AA card requirement. The lone "Masuk" CTA uses solid `#FF6A2E` (stabilo), consistent with the rule that stabilo orange is reserved for the primary action (mirrors `.pos-pay-button`). One signature accent (`.pos-login-torn`, a small torn-nota strip) sits under the brand header — the only place the torn-receipt signature appears on this page. Fixed a pre-existing dead-CSS bug in the process: `.pos-login-input i` / `.pos-login-card-icon i` / `.pos-login-button i` selectors never matched anything post-AntD-icon-migration (icons render as `<span class="anticon">`, not `<i>`); added `.anticon` selectors alongside so icon tinting actually applies.
+
+**Rejected alternative**: Light kertas-buram background for login. Would have been visually identical to the in-app background, losing the "storefront/cover vs. workspace" distinction and making the login screen feel like an unfinished/blank internal page rather than a deliberate entry point.
+
+**Implementation**: `resources/js/theme/colors.js` (`SEMANTIC`), `resources/js/theme/zenTheme.js` (now imports `SEMANTIC` instead of duplicating hexes), `resources/css/app.css` (`.pos-login-*` block, `.pos-product-empty`, `.pos-cart-delete`), `resources/js/Pages/Auth/Login.jsx` (added `.pos-login-torn` accent div only — form structure untouched), plus the inline-hex call sites listed above.
+
+**Review Date**: 2027-02-25
+
 **Review Date**: 2026-10-14
