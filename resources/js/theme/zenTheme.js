@@ -1,5 +1,5 @@
 import { theme } from "antd";
-import { SEMANTIC } from "./colors";
+import { BRAND, SEMANTIC, WARM } from "./colors";
 
 export function getZenTheme(mode) {
     const isDark = mode === "dark";
@@ -7,39 +7,48 @@ export function getZenTheme(mode) {
     return {
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
-            colorPrimary: "#2A3B8F",
+            colorPrimary: BRAND.primary,
             colorSuccess: SEMANTIC.success,
             colorWarning: SEMANTIC.warning,
             colorError: SEMANTIC.error,
             colorInfo: SEMANTIC.info,
-            colorBgLayout: isDark ? "#0f172a" : "#EFEDE3",
-            colorBgContainer: isDark ? "#1e293b" : "#FFFFFF",
-            borderRadius: 8,
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            colorBgLayout: isDark ? "#1a1a18" : WARM.background,
+            colorBgContainer: isDark ? "#26241f" : WARM.surface,
+            colorText: isDark ? "#f5f2ec" : WARM.text,
+            colorBorder: isDark ? "#3a362f" : WARM.border,
+            borderRadius: 12,
+            fontFamily: "'Inter', system-ui, sans-serif",
         },
         components: {
             Layout: {
-                siderBg: "#1e293b",
-                triggerBg: "#1e293b",
+                siderBg: BRAND.darkSider,
+                triggerBg: BRAND.darkSider,
             },
             Menu: {
-                darkItemBg: "#1e293b",
-                darkItemSelectedBg: "#0f172a",
+                darkItemBg: BRAND.darkSider,
+                darkItemSelectedBg: "rgba(217, 55, 106, 0.22)",
+                darkItemSelectedColor: "#ffffff",
             },
             Card: {
-                borderRadiusLG: 12,
+                borderRadiusLG: 14,
+            },
+            Input: {
+                borderRadius: 10,
+            },
+            Button: {
+                borderRadius: 12,
             },
             Table: {
-                headerBg: isDark ? "#1e293b" : "#f8fafc",
-                headerColor: isDark ? "#f1f5f9" : "#0f172a",
-                borderColor: isDark ? "#334155" : "#e2e8f0",
-                rowHoverBg: isDark ? "rgba(255, 255, 255, 0.04)" : "#f8fafc",
+                headerBg: isDark ? "#26241f" : WARM.background,
+                headerColor: isDark ? "#f5f2ec" : WARM.text,
+                borderColor: isDark ? "#3a362f" : WARM.border,
+                rowHoverBg: isDark ? "rgba(255, 255, 255, 0.04)" : WARM.background,
                 rowSelectedBg: isDark
-                    ? "rgba(42, 59, 143, 0.15)"
-                    : "rgba(42, 59, 143, 0.08)",
+                    ? "rgba(217, 55, 106, 0.15)"
+                    : "rgba(217, 55, 106, 0.08)",
                 rowSelectedHoverBg: isDark
-                    ? "rgba(42, 59, 143, 0.22)"
-                    : "rgba(42, 59, 143, 0.12)",
+                    ? "rgba(217, 55, 106, 0.22)"
+                    : "rgba(217, 55, 106, 0.12)",
             },
         },
     };

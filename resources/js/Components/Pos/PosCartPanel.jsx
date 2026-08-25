@@ -50,7 +50,9 @@ function CartRow({
                     )}
                 </div>
                 <div className="pos-cart-price">
-                    <strong>{formatRupiah(net)}</strong>
+                    <strong className="pos-price-highlight">
+                        {formatRupiah(net)}
+                    </strong>
                     {itemDiscount > 0 && (
                         <span className="pos-cart-discount-tag">
                             -{formatRupiah(itemDiscount)}

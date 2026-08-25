@@ -1,10 +1,17 @@
 export const BRAND = {
-    primary: "#2A3B8F",
+    primary: "#D9376A",
     darkSider: "#1e293b",
 };
 
 export const ACCENT = {
-    highlighter: "#FF6A2E",
+    highlight: "#E8A93A",
+};
+
+export const WARM = {
+    background: "#FDFBF8",
+    surface: "#FFFFFF",
+    text: "#2B2622",
+    border: "#EDE4D8",
 };
 
 export const PAPER = {
@@ -27,14 +34,13 @@ export const NEUTRAL = {
     slate50: "#f8fafc",
 };
 
-// Nuansa "tinta" — dalam/muted, bukan warna stock generik neon.
-// warning sengaja dijauhkan dari ACCENT.highlighter (#FF6A2E) agar tidak
-// tertukar dengan tombol Bayar. info memakai BRAND.primary (biru tinta).
+// warning sengaja dijauhkan dari ACCENT.highlight (#E8A93A) agar tidak
+// tertukar dengan highlight harga. info memakai BRAND.primary (pink stabilo).
 export const SEMANTIC = {
     success: "#2F6F4E",
     warning: "#8F5F22",
     error: "#8B2E3B",
-    info: "#2A3B8F",
+    info: "#D9376A",
 };
 
 export const TEAL = {

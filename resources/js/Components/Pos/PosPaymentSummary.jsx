@@ -166,7 +166,9 @@ export default function PosPaymentSummary({
                 </div>
                 <div className="pos-summary-total">
                     <span>Total</span>
-                    <strong>{formatRupiah(grandTotal)}</strong>
+                    <strong className="pos-price-highlight">
+                        {formatRupiah(grandTotal)}
+                    </strong>
                 </div>
                 <div>
                     <span>
