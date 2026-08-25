@@ -44,6 +44,10 @@ export default function LayoutAccount({ children }) {
     const storeLogo = store?.logo_url;
     const userName = auth?.user?.name || "User";
     const permissions = auth?.permissions || {};
+    const isDark = mode === "dark";
+    const siderBg = isDark ? "#1e293b" : "#FFFFFF";
+    const siderText = isDark ? "#ffffff" : "#2B2622";
+    const siderBorder = isDark ? "1px solid #3a362f" : "1px solid #EDE4D8";
 
     const selectedKey = resolveMenuSelectedKey(url);
 
@@ -105,7 +109,8 @@ export default function LayoutAccount({ children }) {
                     onCollapse={setCollapsed}
                     collapsedWidth={64}
                     width={240}
-                    theme="dark"
+                    theme={isDark ? "dark" : "light"}
+                    style={{ borderInlineEnd: siderBorder }}
                 >
                     <Sidebar {...sidebarProps} />
                 </Sider>
@@ -119,12 +124,16 @@ export default function LayoutAccount({ children }) {
                     onClose={() => setDrawerOpen(false)}
                     width={280}
                     styles={{
-                        body: { padding: 0 },
-                        header: { background: "#1e293b", color: "#fff" },
+                        body: { padding: 0, background: siderBg },
+                        header: {
+                            background: siderBg,
+                            color: siderText,
+                            borderBottom: siderBorder,
+                        },
                     }}
                     className="pos-mobile-drawer"
                 >
-                    <div style={{ background: "#1e293b", minHeight: "100%" }}>
+                    <div style={{ background: siderBg, minHeight: "100%" }}>
                         <Sidebar {...sidebarProps} />
                     </div>
                 </Drawer>

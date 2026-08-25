@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings  
-**Last Updated**: 2026-08-25 ("Tinta & Nota" pass 2: SEMANTIC + login redesign)
+**Last Updated**: 2026-08-25 ("Highlighter Pastel" pass: login page + sidebar light mode)
 
 ---
 
@@ -167,6 +167,12 @@
 **Challenge/Decision**: Pass 1 (`b0405ab`) applied the "Tinta & Nota" palette to POS/Dashboard but left `SEMANTIC` colors on generic Tailwind-stock hex and the login page on the old slate→teal gradient.
 **Solution**: `SEMANTIC` in `resources/js/theme/colors.js` now uses ink-family hues (`success #2F6F4E`, `warning #8F5F22`, `error #8B2E3B`, `info #2A3B8F`); `zenTheme.js` imports `SEMANTIC` instead of duplicating hex. Login page (`Login.jsx` + `.pos-login-*` in `app.css`) redesigned: dark ink-blue gradient background ("sampul buku tulis") + white form card + solid stabilo `#FF6A2E` CTA + one torn-nota accent strip. See `docs/decisions.md` "Tinta & Nota — SEMANTIC palette harmonization + login page identity" for full rationale incl. rejected alternatives and contrast checks.
 **Key Learning**: `.pos-login-input i` / `.pos-login-card-icon i` / `.pos-login-button i` CSS selectors were dead since the AntD icon migration (icons render as `<span class="anticon">`, not `<i>`) — fixed alongside. When grepping for a color to change, also check for its hardcoded hex duplicated in `zenTheme.js` and inline component `style={{}}` — not everything reads from `colors.js`.
+
+### POS-026 "Highlighter Pastel" pass: login page + sidebar light mode (2026-08-25) ✅ COMPLETE
+
+**Challenge/Decision**: Login page (`Login.jsx`/`.pos-login-*`) still used the "Tinta & Nota" dark ink-blue gradient (shipped hours earlier the same day, see POS-025) instead of the "Highlighter Pastel" identity already live on POS/Dashboard; `Sidebar`/`Sider` were hardcoded `theme="dark"` so the sidebar never followed the app's light/dark mode toggle (`ThemeContext`).
+**Solution**: Login background → flat `#FDF3F6` (no gradient), white card + `#EDE4D8` border + `14px` radius, CTA → solid `#D9376A`; `.pos-login-torn` accent replaced by `.pos-login-highlight` (yellow sapuan-stabilo `::before`, same pattern as `.pos-price-highlight`) behind the store name. Sidebar/`Sider`/`Menu` now read `mode` from `useTheme()` and pass `theme={mode === "dark" ? "dark" : "light"}`; `zenTheme.js` `Menu` component token gained non-`dark`-prefixed keys (`itemBg`, `itemColor`, `itemHoverBg`, `itemSelectedBg: "#FDF3F6"`, `itemSelectedColor: BRAND.primary`) for the light variant, `Layout.siderBg` is now `isDark ? BRAND.darkSider : WARM.surface`. Dark mode sidebar look is unchanged (still `#1e293b`).
+**Key Learning**: AntD `<Menu theme="dark">` only applies `darkItem*` component tokens; `theme="light"`/undefined uses the plain `item*` tokens — both sets can coexist in the same theme config without conflict, so light/dark sidebar variants don't need two separate `ConfigProvider` themes, just a conditional `theme` prop on `<Sider>`/`<Menu>`. Mobile `Drawer` sidebar renders outside `<Sider>` so it needs its own inline-style color logic (`Account.jsx`), it does not inherit AntD Layout tokens.
 
 ### POS-024 Barcode scanner kamera HP (2026-08-03) ✅ COMPLETE
 
