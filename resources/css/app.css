@@ -494,8 +494,8 @@ html {
 .pos-torn-edge {
     flex-shrink: 0;
     width: 100%;
-    height: 8px;
-    background: #FFFFFF;
+    height: 12px;
+    background: #EFEDE3;
     pointer-events: none;
 }
 
@@ -716,6 +716,9 @@ html {
     max-height: calc(100vh - 92px);
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
 }
 
 .pos-checkout-panel--mobile {
@@ -1178,7 +1181,7 @@ html {
 }
 
 [data-theme="dark"] .pos-torn-edge {
-    background: #1e293b;
+    background: #0f172a;
 }
 
 [data-theme="dark"] .pos-product-grid {
