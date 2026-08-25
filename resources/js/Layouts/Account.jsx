@@ -120,11 +120,11 @@ export default function LayoutAccount({ children }) {
                     width={280}
                     styles={{
                         body: { padding: 0 },
-                        header: { background: "#1e293b", color: "#fff" },
+                        header: { background: "#001529", color: "#fff" },
                     }}
                     className="pos-mobile-drawer"
                 >
-                    <div style={{ background: "#1e293b", minHeight: "100%" }}>
+                    <div style={{ background: "#001529", minHeight: "100%" }}>
                         <Sidebar {...sidebarProps} />
                     </div>
                 </Drawer>

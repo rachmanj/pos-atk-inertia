@@ -197,9 +197,7 @@ export default function PosProductGrid({
                     </span>
                     <span className="pos-product-meta">
                         <span>{metaLabel}</span>
-                        <strong className="pos-price-highlight">
-                            {priceLabel}
-                        </strong>
+                        <strong>{priceLabel}</strong>
                     </span>
                 </button>
             );
