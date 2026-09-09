@@ -2554,6 +2554,7 @@ body.printing-receipt .transaction-show-page {
     --semantic-info: #2A3B8F;
     --brand-primary: #2A3B8F;
     --bg-subtle: #f8fafc;
+    --text-primary: rgba(0, 0, 0, 0.88);
     --border-subtle: #e2e8f0;
     --icon-muted: #64748b;
 }
@@ -2565,6 +2566,7 @@ body.printing-receipt .transaction-show-page {
     --semantic-info: #9AADF2;
     --brand-primary: #93A6F0;
     --bg-subtle: #33312b;
+    --text-primary: #f5f2ec;
     --border-subtle: #3a362f;
     --icon-muted: #94a3b8;
 }
