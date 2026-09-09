@@ -62,7 +62,7 @@ class CartController extends Controller
         $conversionFactor = $this->resolveConversionFactor($product, $cart->unit_id);
         $qtyInBase = (int) round($qty * $conversionFactor);
 
-        if ($qtyInBase > (int) $product->stock) {
+        if ((int) $product->stock > 0 && $qtyInBase > (int) $product->stock) {
             return back()->with('error', 'Qty keranjang melebihi stok tersedia.');
         }
 
@@ -126,7 +126,7 @@ class CartController extends Controller
         $nextQty = (int) ($cart?->qty ?? 0) + 1;
         $qtyInBase = (int) round($nextQty * $conversionFactor);
 
-        if ($qtyInBase > (int) $product->stock) {
+        if ((int) $product->stock > 0 && $qtyInBase > (int) $product->stock) {
             return back()->with('error', 'Qty keranjang melebihi stok tersedia.');
         }
 
