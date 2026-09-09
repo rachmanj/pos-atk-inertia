@@ -35,11 +35,4 @@ return [
         ],
     ],
 
-    'whatsapp' => [
-        'base_url' => env('WAHUB_BASE_URL', 'http://100.87.250.66:8090'),
-        'api_key' => env('WAHUB_API_KEY', ''),
-        'admin_number' => env('WAHUB_ADMIN_WHATSAPP', '628115428871'),
-        'timeout' => 10,
-    ],
-
 ];

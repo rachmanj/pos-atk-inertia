@@ -57,21 +57,20 @@ class Setting extends Model
         return static::getValue($key, $default);
     }
 
-    public static function whatsappSettings(): array
+    public static function telegramSettings(): array
     {
         $settings = static::query()
-            ->where('group', 'whatsapp')
+            ->where('group', 'telegram')
             ->pluck('value', 'key');
 
-        $adminNumber = $settings->get('whatsapp.admin_number')
-            ?: config('services.whatsapp.admin_number', '628115428871');
+        $adminChatId = $settings->get('telegram.admin_chat_id') ?: '268015883';
 
-        $nontunaiEnabled = $settings->has('whatsapp.nontunai_enabled')
-            ? filter_var($settings->get('whatsapp.nontunai_enabled'), FILTER_VALIDATE_BOOLEAN)
+        $nontunaiEnabled = $settings->has('telegram.nontunai_enabled')
+            ? filter_var($settings->get('telegram.nontunai_enabled'), FILTER_VALIDATE_BOOLEAN)
             : true;
 
         return [
-            'admin_number' => $adminNumber,
+            'admin_chat_id' => $adminChatId,
             'nontunai_enabled' => $nontunaiEnabled,
         ];
     }

@@ -118,9 +118,9 @@ Route::middleware(['auth'])
             ->middleware('permission:settings.edit')
             ->name('settings.update');
 
-        Route::post('/settings/whatsapp/test', [SettingController::class, 'testWhatsapp'])
+        Route::post('/settings/telegram/test', [SettingController::class, 'testTelegram'])
             ->middleware('permission:settings.edit')
-            ->name('settings.whatsapp.test');
+            ->name('settings.telegram.test');
 
         Route::resource('categories', CategoryController::class)
             ->except(['show'])
@@ -215,13 +215,13 @@ Route::middleware(['auth'])
             ->middleware('permission:cashier_shifts.close')
             ->name('cashier-shifts.close');
 
-        Route::post('/cashier-shifts/{cashierShift}/wa-report/preview', [CashierShiftController::class, 'waReportPreview'])
+        Route::post('/cashier-shifts/{cashierShift}/report/preview', [CashierShiftController::class, 'reportPreview'])
             ->middleware('permission:cashier_shifts.index')
-            ->name('cashier-shifts.wa-report.preview');
+            ->name('cashier-shifts.report.preview');
 
-        Route::post('/cashier-shifts/{cashierShift}/wa-report/send', [CashierShiftController::class, 'waReportSend'])
+        Route::post('/cashier-shifts/{cashierShift}/report/send', [CashierShiftController::class, 'reportSend'])
             ->middleware('permission:cashier_shifts.index')
-            ->name('cashier-shifts.wa-report.send');
+            ->name('cashier-shifts.report.send');
 
         Route::post('/carts', [CartController::class, 'store'])
             ->middleware('permission:transactions.create')

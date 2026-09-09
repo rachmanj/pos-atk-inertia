@@ -107,7 +107,7 @@ export default function CashierShiftShow() {
 
         try {
             const response = await axios.post(
-                `/account/cashier-shifts/${shift.id}/wa-report/preview`,
+                `/account/cashier-shifts/${shift.id}/report/preview`,
                 {
                     expense_amount: expenseAmount || 0,
                     expense_note: expenseNote || null,
@@ -160,7 +160,7 @@ export default function CashierShiftShow() {
 
         try {
             const response = await axios.post(
-                `/account/cashier-shifts/${shift.id}/wa-report/send`,
+                `/account/cashier-shifts/${shift.id}/report/send`,
                 {
                     expense_amount: expenseAmount || 0,
                     expense_note: expenseNote || null,
@@ -171,7 +171,7 @@ export default function CashierShiftShow() {
             if (response.data?.ok) {
                 notification.success({
                     message: "Berhasil",
-                    description: "Rekap shift berhasil dikirim ke WhatsApp admin.",
+                    description: "Rekap shift berhasil dikirim ke Telegram admin.",
                 });
                 setWaModalOpen(false);
                 router.reload({ only: ["whatsappLogs"] });
@@ -391,13 +391,13 @@ export default function CashierShiftShow() {
                             </Card>
 
                             {canSendWaReport && (
-                                <Card title="Kirim Rekap ke WhatsApp">
+                                <Card title="Kirim Rekap ke Telegram">
                                     <Space direction="vertical" style={{ width: "100%" }}>
                                         <Text type="secondary">
-                                            Kirim ringkasan penjualan shift ini ke nomor admin WhatsApp.
+                                            Kirim ringkasan penjualan shift ini ke chat admin Telegram.
                                         </Text>
                                         <Button type="primary" icon={<SendOutlined />} onClick={openWaModal}>
-                                            Kirim Rekap Shift ke WA
+                                            Kirim Rekap Shift ke Telegram
                                         </Button>
                                     </Space>
                                 </Card>
@@ -464,7 +464,7 @@ export default function CashierShiftShow() {
                 </Spin>
 
                 <Modal
-                    title="Kirim Rekap Shift ke WhatsApp"
+                    title="Kirim Rekap Shift ke Telegram"
                     open={waModalOpen}
                     onCancel={() => setWaModalOpen(false)}
                     footer={null}
@@ -508,7 +508,7 @@ export default function CashierShiftShow() {
                                 disabled={!previewOk || previewLoading}
                                 onClick={sendWaReport}
                             >
-                                Kirim ke WA
+                                Kirim ke Telegram
                             </Button>
                         </Space>
                         <Form.Item label="Pratinjau Pesan">

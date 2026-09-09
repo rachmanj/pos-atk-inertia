@@ -1,3 +1,5 @@
+2026-09-09: channel diganti Telegram (bot @vasiapos_bot) karena akun WA gateway in-review; fitur/alur sama.
+
 # Fitur Notifikasi WA — VASIA POS (vasia.sbs)
 
 Keputusan grill-me 2026-09-09 (Iwan). Infra: **WA-Hub** GEEKOM `http://100.87.250.66:8090` (project `vasia-pos` id 2, session default pratasaba, nomor keluar 6287867021173). Env VASIA: `WAHUB_BASE_URL`, `WAHUB_API_KEY` (file ~/.hermes/secrets/wa_hub_vasia_key.txt), `WAHUB_ADMIN_WHATSAPP=628115428871`.

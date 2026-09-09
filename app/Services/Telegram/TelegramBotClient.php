@@ -15,13 +15,16 @@ class TelegramBotClient
         $this->baseUrl = "https://api.telegram.org/bot{$token}";
     }
 
-    public function sendMessage(int|string $chatId, string $text, ?array $replyMarkup = null): ?array
+    public function sendMessage(int|string $chatId, string $text, ?array $replyMarkup = null, bool $useParseMode = true): ?array
     {
         $payload = [
             'chat_id' => $chatId,
             'text' => $text,
-            'parse_mode' => config('telegram.parse_mode'),
         ];
+
+        if ($useParseMode && config('telegram.parse_mode')) {
+            $payload['parse_mode'] = config('telegram.parse_mode');
+        }
 
         if ($replyMarkup !== null) {
             $payload['reply_markup'] = json_encode($replyMarkup);

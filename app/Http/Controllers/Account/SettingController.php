@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
-use App\Services\WhatsAppService;
+use App\Services\TelegramNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -17,14 +17,14 @@ class SettingController extends Controller
         return Inertia::render('Account/Settings/Index', [
             'store' => Setting::storeSettings(),
             'ppob' => Setting::ppobSettings(),
-            'whatsapp' => Setting::whatsappSettings(),
+            'telegram' => Setting::telegramSettings(),
         ]);
     }
 
     public function update(Request $request)
     {
-        if ($request->hasAny(['whatsapp_admin_number', 'whatsapp_nontunai_enabled'])) {
-            return $this->updateWhatsapp($request);
+        if ($request->hasAny(['telegram_admin_chat_id', 'telegram_nontunai_enabled'])) {
+            return $this->updateTelegram($request);
         }
 
         $request->validate([
@@ -74,44 +74,45 @@ class SettingController extends Controller
             ->with('success', 'Pengaturan toko berhasil diperbarui.');
     }
 
-    public function testWhatsapp(WhatsAppService $whatsAppService)
+    public function testTelegram(Request $request, TelegramNotificationService $telegramService)
     {
-        $adminNumber = Setting::value(
-            'whatsapp.admin_number',
-            config('services.whatsapp.admin_number'),
-        );
+        $validated = $request->validate([
+            'chat_id' => 'required|string|max:20',
+        ]);
 
         try {
-            $whatsAppService->sendText($adminNumber, 'Test WA dari VASIA POS');
+            $telegramService->sendText($validated['chat_id'], 'Test Telegram dari VASIA POS');
 
-            return redirect()
-                ->route('account.settings.index')
-                ->with('success', 'Pesan uji WhatsApp berhasil dikirim.');
+            return response()->json([
+                'ok' => true,
+                'message' => 'Pesan uji Telegram berhasil dikirim.',
+            ]);
         } catch (Throwable $e) {
             report($e);
 
-            return redirect()
-                ->route('account.settings.index')
-                ->with('error', 'Gagal mengirim pesan uji WhatsApp. Periksa nomor admin dan konfigurasi WA-Hub.');
+            return response()->json([
+                'ok' => false,
+                'message' => 'Gagal mengirim pesan uji Telegram. Periksa Chat ID dan konfigurasi bot.',
+            ], 422);
         }
     }
 
-    protected function updateWhatsapp(Request $request)
+    protected function updateTelegram(Request $request)
     {
         $validated = $request->validate([
-            'whatsapp_admin_number' => 'required|string|max:20',
-            'whatsapp_nontunai_enabled' => 'nullable|boolean',
+            'telegram_admin_chat_id' => 'required|string|max:20|regex:/^-?\d+$/',
+            'telegram_nontunai_enabled' => 'nullable|boolean',
         ]);
 
-        $this->setWhatsappValue('whatsapp.admin_number', $validated['whatsapp_admin_number']);
-        $this->setWhatsappValue(
-            'whatsapp.nontunai_enabled',
-            $request->boolean('whatsapp_nontunai_enabled') ? '1' : '0',
+        $this->setTelegramValue('telegram.admin_chat_id', $validated['telegram_admin_chat_id']);
+        $this->setTelegramValue(
+            'telegram.nontunai_enabled',
+            $request->boolean('telegram_nontunai_enabled') ? '1' : '0',
         );
 
         return redirect()
             ->route('account.settings.index')
-            ->with('success', 'Pengaturan notifikasi WhatsApp berhasil diperbarui.');
+            ->with('success', 'Pengaturan notifikasi Telegram berhasil diperbarui.');
     }
 
     protected function setStoreValue(string $key, ?string $value): void
@@ -136,13 +137,13 @@ class SettingController extends Controller
         );
     }
 
-    protected function setWhatsappValue(string $key, ?string $value): void
+    protected function setTelegramValue(string $key, ?string $value): void
     {
         Setting::updateOrCreate(
             ['key' => $key],
             [
                 'value' => filled($value) ? trim($value) : null,
-                'group' => 'whatsapp',
+                'group' => 'telegram',
             ],
         );
     }

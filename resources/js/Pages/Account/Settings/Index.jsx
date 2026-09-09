@@ -24,6 +24,7 @@ import {
     ShopOutlined,
     UploadOutlined,
 } from "@ant-design/icons";
+import axios from "axios";
 import { NEUTRAL } from "../../../theme/colors";
 
 const { Title, Text } = Typography;
@@ -34,7 +35,7 @@ export default function SettingIndex() {
         errors = {},
         store = {},
         ppob = {},
-        whatsapp = {},
+        telegram = {},
         flash = {},
     } = usePage().props;
 
@@ -53,17 +54,17 @@ export default function SettingIndex() {
     const [ppobMinBalanceDefault, setPpobMinBalanceDefault] = useState(
         Number(ppob.ppob_min_balance_default || 100000),
     );
-    const [whatsappAdminNumber, setWhatsappAdminNumber] = useState(
-        whatsapp.admin_number || "",
+    const [telegramAdminChatId, setTelegramAdminChatId] = useState(
+        telegram.admin_chat_id || "",
     );
-    const [whatsappNontunaiEnabled, setWhatsappNontunaiEnabled] = useState(
-        whatsapp.nontunai_enabled ?? true,
+    const [telegramNontunaiEnabled, setTelegramNontunaiEnabled] = useState(
+        telegram.nontunai_enabled ?? true,
     );
     const [logo, setLogo] = useState(null);
     const [removeLogo, setRemoveLogo] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [savingWhatsapp, setSavingWhatsapp] = useState(false);
-    const [testingWhatsapp, setTestingWhatsapp] = useState(false);
+    const [savingTelegram, setSavingTelegram] = useState(false);
+    const [testingTelegram, setTestingTelegram] = useState(false);
 
     useEffect(() => {
         if (flash.success) {
@@ -140,38 +141,64 @@ export default function SettingIndex() {
         }
     };
 
-    const resetWhatsappForm = () => {
-        setWhatsappAdminNumber(whatsapp.admin_number || "");
-        setWhatsappNontunaiEnabled(whatsapp.nontunai_enabled ?? true);
+    const resetTelegramForm = () => {
+        setTelegramAdminChatId(telegram.admin_chat_id || "");
+        setTelegramNontunaiEnabled(telegram.nontunai_enabled ?? true);
     };
 
-    const saveWhatsappSettings = (e) => {
+    const saveTelegramSettings = (e) => {
         e.preventDefault();
-        setSavingWhatsapp(true);
+        setSavingTelegram(true);
 
         router.post(
             "/account/settings",
             {
                 _method: "PUT",
-                whatsapp_admin_number: whatsappAdminNumber,
-                whatsapp_nontunai_enabled: whatsappNontunaiEnabled,
+                telegram_admin_chat_id: telegramAdminChatId,
+                telegram_nontunai_enabled: telegramNontunaiEnabled,
             },
             {
-                onFinish: () => setSavingWhatsapp(false),
+                onFinish: () => setSavingTelegram(false),
             },
         );
     };
 
-    const testWhatsapp = () => {
-        setTestingWhatsapp(true);
+    const testTelegram = async () => {
+        setTestingTelegram(true);
 
-        router.post(
-            "/account/settings/whatsapp/test",
-            {},
-            {
-                onFinish: () => setTestingWhatsapp(false),
-            },
-        );
+        try {
+            const response = await axios.post("/account/settings/telegram/test", {
+                chat_id: telegramAdminChatId,
+            });
+
+            if (response.data?.ok) {
+                notification.success({
+                    message: "Berhasil",
+                    description:
+                        response.data.message ||
+                        "Pesan uji Telegram berhasil dikirim.",
+                    duration: 3,
+                });
+            } else {
+                notification.error({
+                    message: "Gagal",
+                    description:
+                        response.data?.message ||
+                        "Gagal mengirim pesan uji Telegram.",
+                    duration: 4,
+                });
+            }
+        } catch (error) {
+            notification.error({
+                message: "Gagal",
+                description:
+                    error.response?.data?.message ||
+                    "Gagal mengirim pesan uji Telegram.",
+                duration: 4,
+            });
+        } finally {
+            setTestingTelegram(false);
+        }
     };
 
     const logoPreview =
@@ -463,31 +490,34 @@ export default function SettingIndex() {
                     <Space direction="vertical" size={4} style={{ marginBottom: 24 }}>
                         <Title level={4} style={{ margin: 0 }}>
                             <MessageOutlined style={{ marginRight: 8 }} />
-                            NOTIFIKASI WHATSAPP
+                            NOTIFIKASI TELEGRAM
                         </Title>
                         <Text type="secondary">
-                            Pengaturan nomor admin dan notifikasi otomatis
-                            transaksi non-tunai via WA-Hub.
+                            Pengaturan chat ID admin dan notifikasi otomatis
+                            transaksi non-tunai via bot Telegram.
                         </Text>
                     </Space>
 
-                    <form onSubmit={saveWhatsappSettings}>
+                    <form onSubmit={saveTelegramSettings}>
                         <Form.Item
-                            label="Nomor Admin WhatsApp"
+                            label="Chat ID Telegram admin"
                             validateStatus={
-                                errors.whatsapp_admin_number ? "error" : ""
+                                errors.telegram_admin_chat_id ? "error" : ""
                             }
                             help={
-                                errors.whatsapp_admin_number ||
-                                "Format 628xxx atau 08xxx diterima."
+                                errors.telegram_admin_chat_id ||
+                                "Angka chat ID Telegram penerima notifikasi."
                             }
                         >
                             <Input
-                                value={whatsappAdminNumber}
+                                value={telegramAdminChatId}
                                 onChange={(e) =>
-                                    setWhatsappAdminNumber(e.target.value)
+                                    setTelegramAdminChatId(
+                                        e.target.value.replace(/\D/g, ""),
+                                    )
                                 }
-                                placeholder="628xxxxxxxxxx"
+                                placeholder="268015883"
+                                inputMode="numeric"
                             />
                         </Form.Item>
 
@@ -496,8 +526,8 @@ export default function SettingIndex() {
                             help="Kirim notifikasi ke admin saat transaksi QRIS, transfer, atau digital berhasil."
                         >
                             <Switch
-                                checked={whatsappNontunaiEnabled}
-                                onChange={setWhatsappNontunaiEnabled}
+                                checked={telegramNontunaiEnabled}
+                                onChange={setTelegramNontunaiEnabled}
                             />
                         </Form.Item>
 
@@ -506,20 +536,20 @@ export default function SettingIndex() {
                                 type="primary"
                                 htmlType="submit"
                                 icon={<SaveOutlined />}
-                                loading={savingWhatsapp}
+                                loading={savingTelegram}
                             >
                                 SIMPAN
                             </Button>
                             <Button
                                 icon={<MessageOutlined />}
-                                loading={testingWhatsapp}
-                                onClick={testWhatsapp}
+                                loading={testingTelegram}
+                                onClick={testTelegram}
                             >
-                                KIRIM WA UJI
+                                KIRIM UJI KE TELEGRAM
                             </Button>
                             <Button
                                 icon={<ReloadOutlined />}
-                                onClick={resetWhatsappForm}
+                                onClick={resetTelegramForm}
                             >
                                 RESET
                             </Button>

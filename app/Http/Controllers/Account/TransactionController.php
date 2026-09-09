@@ -17,7 +17,7 @@ use App\Models\User;
 use App\Models\WhatsappOutboundLog;
 use App\Services\CheckoutService;
 use App\Services\Telegram\TelegramFormatter;
-use App\Services\WhatsAppService;
+use App\Services\TelegramNotificationService;
 use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +32,7 @@ class TransactionController extends Controller
 {
     public function __construct(
         protected CheckoutService $checkoutService,
-        protected WhatsAppService $whatsAppService,
+        protected TelegramNotificationService $telegramNotificationService,
     ) {}
 
     public function create(Request $request)
@@ -245,16 +245,15 @@ class TransactionController extends Controller
 
     private function notifyNonCashPayment(Transaction $transaction, User $user): void
     {
-        $nontunaiEnabled = Setting::value('whatsapp.nontunai_enabled', '1');
+        $nontunaiEnabled = Setting::value('telegram.nontunai_enabled', '1');
 
         if (! filter_var($nontunaiEnabled, FILTER_VALIDATE_BOOLEAN)) {
             return;
         }
 
-        $adminNumber = Setting::value('whatsapp.admin_number')
-            ?: config('services.whatsapp.admin_number');
+        $adminChatId = Setting::value('telegram.admin_chat_id', '268015883');
 
-        if (blank($adminNumber)) {
+        if (blank($adminChatId)) {
             return;
         }
 
@@ -279,14 +278,14 @@ class TransactionController extends Controller
         $log = WhatsappOutboundLog::create([
             'purpose' => 'payment_notification',
             'transaction_id' => $transaction->id,
-            'to_number' => $adminNumber,
+            'to_number' => $adminChatId,
             'message_text' => $message,
             'status' => 'queued',
             'created_by' => $user->id,
         ]);
 
         try {
-            $messageId = $this->whatsAppService->sendText($adminNumber, $message);
+            $messageId = $this->telegramNotificationService->sendText($adminChatId, $message);
 
             $log->update([
                 'status' => 'sent',

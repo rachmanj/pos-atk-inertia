@@ -11,7 +11,7 @@ use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\WhatsappOutboundLog;
 use App\Services\ShiftReportBuilder;
-use App\Services\WhatsAppService;
+use App\Services\TelegramNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -23,7 +23,7 @@ class CashierShiftController extends Controller
 {
     public function __construct(
         protected ShiftReportBuilder $shiftReportBuilder,
-        protected WhatsAppService $whatsAppService,
+        protected TelegramNotificationService $telegramNotificationService,
     ) {}
 
     public function index(Request $request)
@@ -188,7 +188,7 @@ class CashierShiftController extends Controller
         ]);
     }
 
-    public function waReportPreview(Request $request, CashierShift $cashierShift): JsonResponse
+    public function reportPreview(Request $request, CashierShift $cashierShift): JsonResponse
     {
         $this->authorizeView($request, $cashierShift);
 
@@ -215,7 +215,7 @@ class CashierShiftController extends Controller
         ]);
     }
 
-    public function waReportSend(Request $request, CashierShift $cashierShift): JsonResponse
+    public function reportSend(Request $request, CashierShift $cashierShift): JsonResponse
     {
         $this->authorizeView($request, $cashierShift);
 
@@ -226,13 +226,12 @@ class CashierShiftController extends Controller
             ], 422);
         }
 
-        $adminNumber = Setting::value('whatsapp.admin_number')
-            ?: config('services.whatsapp.admin_number');
+        $adminChatId = Setting::value('telegram.admin_chat_id', '268015883');
 
-        if (blank($adminNumber)) {
+        if (blank($adminChatId)) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Nomor admin WhatsApp belum dikonfigurasi. Atur di menu Pengaturan.',
+                'message' => 'Chat ID admin Telegram belum dikonfigurasi. Atur di menu Pengaturan.',
             ], 422);
         }
 
@@ -250,14 +249,14 @@ class CashierShiftController extends Controller
         $log = WhatsappOutboundLog::create([
             'purpose' => 'shift_report',
             'cashier_shift_id' => $cashierShift->id,
-            'to_number' => $adminNumber,
+            'to_number' => $adminChatId,
             'message_text' => $message,
             'status' => 'queued',
             'created_by' => $request->user()->id,
         ]);
 
         try {
-            $messageId = $this->whatsAppService->sendText($adminNumber, $message);
+            $messageId = $this->telegramNotificationService->sendText($adminChatId, $message);
 
             $log->update([
                 'status' => 'sent',
