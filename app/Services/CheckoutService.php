@@ -305,7 +305,7 @@ class CheckoutService
                 $conversionFactor = (float) ($productUnit?->conversion_factor ?? 1);
                 $qtyInBase = (int) round((int) $line['qty'] * $conversionFactor);
 
-                if ($qtyInBase > (int) $lockedProduct->stock) {
+                if ((int) $lockedProduct->stock > 0 && $qtyInBase > (int) $lockedProduct->stock) {
                     throw new DomainException('Stok produk ' . $lockedProduct->title . ' tidak mencukupi.');
                 }
 
