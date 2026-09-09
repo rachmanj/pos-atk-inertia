@@ -13,11 +13,17 @@ use App\Models\Profit;
 use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Models\User;
+use App\Models\WhatsappOutboundLog;
 use App\Services\CheckoutService;
+use App\Services\Telegram\TelegramFormatter;
+use App\Services\WhatsAppService;
 use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Throwable;
 use Inertia\Inertia;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\Snap;
@@ -26,6 +32,7 @@ class TransactionController extends Controller
 {
     public function __construct(
         protected CheckoutService $checkoutService,
+        protected WhatsAppService $whatsAppService,
     ) {}
 
     public function create(Request $request)
@@ -104,6 +111,10 @@ class TransactionController extends Controller
                 $transaction->update([
                     'snap_token' => $snapToken,
                 ]);
+            }
+
+            if (in_array($transaction->payment_method, ['qris', 'transfer'], true)) {
+                $this->notifyNonCashPayment($transaction, $user);
             }
 
             return response()->json([
@@ -229,6 +240,65 @@ class TransactionController extends Controller
             return redirect()
                 ->route('account.transactions.show', $invoice)
                 ->with('error', $exception->getMessage());
+        }
+    }
+
+    private function notifyNonCashPayment(Transaction $transaction, User $user): void
+    {
+        $nontunaiEnabled = Setting::value('whatsapp.nontunai_enabled', '1');
+
+        if (! filter_var($nontunaiEnabled, FILTER_VALIDATE_BOOLEAN)) {
+            return;
+        }
+
+        $adminNumber = Setting::value('whatsapp.admin_number')
+            ?: config('services.whatsapp.admin_number');
+
+        if (blank($adminNumber)) {
+            return;
+        }
+
+        $methodLabel = $transaction->payment_method === 'qris' ? 'QRIS' : 'Transfer';
+        $time = ($transaction->created_at ?? now())->format('H:i');
+
+        $lines = [
+            '💰 PEMBAYARAN NON-TUNAI — VASIA',
+            'Kasir : ' . $user->name,
+            'Jam   : ' . $time,
+            'Metode: ' . $methodLabel,
+            'Total : ' . TelegramFormatter::idr((int) $transaction->grand_total),
+            'Invoice: ' . $transaction->invoice,
+        ];
+
+        if ($transaction->payment_method === 'transfer') {
+            $lines[] = 'Status: *menunggu konfirmasi — cek rekening lalu konfirmasi di app*';
+        }
+
+        $message = implode("\n", $lines);
+
+        $log = WhatsappOutboundLog::create([
+            'purpose' => 'payment_notification',
+            'transaction_id' => $transaction->id,
+            'to_number' => $adminNumber,
+            'message_text' => $message,
+            'status' => 'queued',
+            'created_by' => $user->id,
+        ]);
+
+        try {
+            $messageId = $this->whatsAppService->sendText($adminNumber, $message);
+
+            $log->update([
+                'status' => 'sent',
+                'wa_message_id' => $messageId,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            $log->update([
+                'status' => 'failed',
+                'error' => Str::limit($e->getMessage(), 500),
+            ]);
         }
     }
 
