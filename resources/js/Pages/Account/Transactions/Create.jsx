@@ -687,6 +687,12 @@ export default function TransactionCreate() {
         }
     };
 
+    const finishToInvoice = (invoice) => {
+        // Kosongkan localCarts dulu supaya snapshot history Inertia tidak restore keranjang lama saat back ke POS.
+        setLocalCarts([]);
+        router.get(`/account/transactions/${invoice}`);
+    };
+
     const openMidtransPopup = (snapToken, invoice) => {
         if (!window.snap) {
             notification.error({
@@ -698,8 +704,8 @@ export default function TransactionCreate() {
         }
 
         window.snap.pay(snapToken, {
-            onSuccess: () => router.get(`/account/transactions/${invoice}`),
-            onPending: () => router.get(`/account/transactions/${invoice}`),
+            onSuccess: () => finishToInvoice(invoice),
+            onPending: () => finishToInvoice(invoice),
             onError: () => {
                 notification.error({
                     message: "Error",
@@ -713,7 +719,7 @@ export default function TransactionCreate() {
                         "Transaksi sudah dibuat dengan status pending.",
                     duration: 1.8,
                 });
-                router.get(`/account/transactions/${invoice}`);
+                finishToInvoice(invoice);
             },
         });
     };
@@ -834,7 +840,7 @@ export default function TransactionCreate() {
                         return;
                     }
 
-                    router.get(`/account/transactions/${data.invoice}`);
+                    finishToInvoice(data.invoice);
                 } catch (error) {
                     notification.error({
                         message: "Error",
