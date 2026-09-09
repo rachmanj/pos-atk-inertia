@@ -33,6 +33,7 @@ export default function PpobReport() {
     const {
         ppobData,
         summary,
+        rekapKasir = [],
         filters = {},
         cashiers = [],
         isAdmin = false,
@@ -91,6 +92,43 @@ export default function PpobReport() {
         });
         window.location.href = `/account/reports/ppob/export?${params.toString()}`;
     };
+
+    const totalRekapHargaDasar = rekapKasir.reduce(
+        (sum, row) => sum + row.total_harga_dasar,
+        0,
+    );
+    const totalRekapPenjualan = rekapKasir.reduce(
+        (sum, row) => sum + row.total_penjualan,
+        0,
+    );
+
+    const rekapKasirColumns = [
+        {
+            title: "Kasir",
+            dataIndex: "cashier_name",
+            render: (name) => <Text strong>{name}</Text>,
+        },
+        {
+            title: "Total Harga Dasar PPOB",
+            dataIndex: "total_harga_dasar",
+            align: "right",
+            render: (value) => (
+                <Text style={{ color: SEMANTIC.warning }}>
+                    {formatRupiah(value)}
+                </Text>
+            ),
+        },
+        {
+            title: "Total Penjualan",
+            dataIndex: "total_penjualan",
+            align: "right",
+            render: (value) => (
+                <Text style={{ color: SEMANTIC.success }}>
+                    {formatRupiah(value)}
+                </Text>
+            ),
+        },
+    ];
 
     const columns = [
         {
@@ -335,6 +373,47 @@ export default function PpobReport() {
                             </Card>
                         </Col>
                     </Row>
+
+                    <Card size="small" style={{ marginBottom: 16 }}>
+                        <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
+                            Rekap Penjualan PPOB per Kasir
+                        </Title>
+                        <Table
+                            rowKey="cashier_name"
+                            columns={rekapKasirColumns}
+                            dataSource={rekapKasir}
+                            pagination={false}
+                            size="small"
+                            locale={{
+                                emptyText: "Belum ada data",
+                            }}
+                            summary={() => (
+                                <Table.Summary fixed>
+                                    <Table.Summary.Row>
+                                        <Table.Summary.Cell index={0}>
+                                            <Text strong>Total</Text>
+                                        </Table.Summary.Cell>
+                                        <Table.Summary.Cell index={1} align="right">
+                                            <Text
+                                                strong
+                                                style={{ color: SEMANTIC.warning }}
+                                            >
+                                                {formatRupiah(totalRekapHargaDasar)}
+                                            </Text>
+                                        </Table.Summary.Cell>
+                                        <Table.Summary.Cell index={2} align="right">
+                                            <Text
+                                                strong
+                                                style={{ color: SEMANTIC.success }}
+                                            >
+                                                {formatRupiah(totalRekapPenjualan)}
+                                            </Text>
+                                        </Table.Summary.Cell>
+                                    </Table.Summary.Row>
+                                </Table.Summary>
+                            )}
+                        />
+                    </Card>
 
                     <Table
                         rowKey={(item, index) =>

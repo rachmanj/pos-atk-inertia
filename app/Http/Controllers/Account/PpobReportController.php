@@ -138,6 +138,23 @@ class PpobReportController extends Controller
             ->selectRaw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total')
             ->value('total') ?? 0);
 
+        $rekapKasir = (clone $summaryQuery)
+            ->join('users', 'users.id', '=', 'transactions.cashier_id')
+            ->select([
+                'users.name as cashier_name',
+                DB::raw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total_harga_dasar'),
+                DB::raw('SUM(transaction_details.subtotal) as total_penjualan'),
+            ])
+            ->groupBy('transactions.cashier_id', 'users.name')
+            ->orderByDesc('total_penjualan')
+            ->get()
+            ->map(fn ($r) => [
+                'cashier_name' => $r->cashier_name,
+                'total_harga_dasar' => (int) $r->total_harga_dasar,
+                'total_penjualan' => (int) $r->total_penjualan,
+            ])
+            ->values();
+
         return Inertia::render('Account/Reports/Ppob', [
             'ppobData' => $ppobData,
             'summary' => [
@@ -147,6 +164,7 @@ class PpobReportController extends Controller
                 'total_cost' => $totalCost,
                 'total_laba' => $totalAdminFee,
             ],
+            'rekapKasir' => $rekapKasir,
             'filters' => [
                 'q' => $request->q ?? '',
                 'start_date' => $startDate->toDateString(),
