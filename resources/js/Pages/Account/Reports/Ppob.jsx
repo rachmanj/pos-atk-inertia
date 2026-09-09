@@ -297,22 +297,23 @@ export default function PpobReport() {
                                     ]}
                                 />
                             </Col>
-                            {isAdmin && (
-                                <Col xs={24} lg={4}>
-                                    <Select
-                                        style={{ width: "100%" }}
-                                        placeholder="Semua Kasir"
-                                        allowClear
-                                        value={cashierId}
-                                        onChange={setCashierId}
-                                        options={cashiers.map((cashier) => ({
-                                            value: String(cashier.id),
-                                            label: cashier.name,
-                                        }))}
-                                    />
-                                </Col>
-                            )}
-                            <Col xs={24} lg={isAdmin ? 6 : 6}>
+                            <Col xs={24} lg={4}>
+                                <Select
+                                    style={{ width: "100%" }}
+                                    placeholder="Semua Kasir"
+                                    allowClear
+                                    value={cashierId}
+                                    onChange={setCashierId}
+                                    options={cashiers.map((cashier) => ({
+                                        value: String(cashier.id),
+                                        label: cashier.name,
+                                    }))}
+                                />
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Semua kasir bisa melihat laporan ini
+                                </Text>
+                            </Col>
+                            <Col xs={24} lg={6}>
                                 <Space>
                                     <Button
                                         type="primary"

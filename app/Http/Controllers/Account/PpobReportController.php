@@ -47,10 +47,7 @@ class PpobReportController extends Controller
                 DB::raw('COALESCE(transactions.paid_at, transactions.created_at)'),
                 [$startDate, $endDate]
             )
-            ->when(!$user->isAdminUser(), function (Builder $query) use ($user) {
-                $query->where('transactions.cashier_id', $user->id);
-            })
-            ->when($user->isAdminUser() && filled($request->cashier_id), function (Builder $query) use ($request) {
+            ->when(filled($request->cashier_id), function (Builder $query) use ($request) {
                 $query->where('transactions.cashier_id', $request->cashier_id);
             })
             ->when(filled($request->q), function (Builder $query) use ($request) {
@@ -124,10 +121,7 @@ class PpobReportController extends Controller
                 DB::raw('COALESCE(transactions.paid_at, transactions.created_at)'),
                 [$startDate, $endDate]
             )
-            ->when(!$user->isAdminUser(), function (Builder $query) use ($user) {
-                $query->where('transactions.cashier_id', $user->id);
-            })
-            ->when($user->isAdminUser() && filled($request->cashier_id), function (Builder $query) use ($request) {
+            ->when(filled($request->cashier_id), function (Builder $query) use ($request) {
                 $query->where('transactions.cashier_id', $request->cashier_id);
             });
 
@@ -172,12 +166,10 @@ class PpobReportController extends Controller
                 'cashier_id' => $request->cashier_id ?? '',
                 'group_by' => $groupBy,
             ],
-            'cashiers' => $user->isAdminUser()
-                ? User::query()
-                    ->whereHas('transactions')
-                    ->orderBy('name')
-                    ->get(['id', 'name'])
-                : [],
+            'cashiers' => User::query()
+                ->whereHas('transactions')
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'isAdmin' => $user->isAdminUser(),
         ]);
     }
@@ -201,7 +193,7 @@ class PpobReportController extends Controller
             'q' => $request->q,
             'start_date' => $request->start_date ?: now()->startOfMonth()->toDateString(),
             'end_date' => $request->end_date ?: now()->toDateString(),
-            'cashier_id' => !$user->isAdminUser() ? $user->id : $request->cashier_id,
+            'cashier_id' => $request->cashier_id,
             'group_by' => $request->group_by ?: 'product',
         ];
 
