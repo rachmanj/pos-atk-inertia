@@ -2,12 +2,36 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use App\Services\Telegram\TelegramBotClient;
 use DomainException;
 use InvalidArgumentException;
 
 class TelegramNotificationService
 {
+    public function recipients(): array
+    {
+        $raw = Setting::value('telegram.admin_chat_ids', '268015883');
+
+        if (blank($raw)) {
+            return [];
+        }
+
+        $ids = [];
+
+        foreach (explode(',', (string) $raw) as $part) {
+            $part = trim($part);
+
+            if ($part === '' || ! preg_match('/^-?\d+$/', $part)) {
+                continue;
+            }
+
+            $ids[] = $part;
+        }
+
+        return array_values(array_unique($ids));
+    }
+
     public function sendText(string $chatId, string $text): string
     {
         $chatId = trim($chatId);

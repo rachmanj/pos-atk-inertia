@@ -54,8 +54,8 @@ export default function SettingIndex() {
     const [ppobMinBalanceDefault, setPpobMinBalanceDefault] = useState(
         Number(ppob.ppob_min_balance_default || 100000),
     );
-    const [telegramAdminChatId, setTelegramAdminChatId] = useState(
-        telegram.admin_chat_id || "",
+    const [telegramAdminChatIds, setTelegramAdminChatIds] = useState(
+        telegram.admin_chat_ids || "",
     );
     const [telegramNontunaiEnabled, setTelegramNontunaiEnabled] = useState(
         telegram.nontunai_enabled ?? true,
@@ -142,7 +142,7 @@ export default function SettingIndex() {
     };
 
     const resetTelegramForm = () => {
-        setTelegramAdminChatId(telegram.admin_chat_id || "");
+        setTelegramAdminChatIds(telegram.admin_chat_ids || "");
         setTelegramNontunaiEnabled(telegram.nontunai_enabled ?? true);
     };
 
@@ -154,7 +154,7 @@ export default function SettingIndex() {
             "/account/settings",
             {
                 _method: "PUT",
-                telegram_admin_chat_id: telegramAdminChatId,
+                telegram_admin_chat_ids: telegramAdminChatIds,
                 telegram_nontunai_enabled: telegramNontunaiEnabled,
             },
             {
@@ -168,33 +168,61 @@ export default function SettingIndex() {
 
         try {
             const response = await axios.post("/account/settings/telegram/test", {
-                chat_id: telegramAdminChatId,
+                chat_ids: telegramAdminChatIds,
             });
+
+            const results = response.data?.results || [];
+            const description =
+                results.length > 0
+                    ? results
+                          .map((result) =>
+                              result.ok
+                                  ? `${result.chat_id}: sukses`
+                                  : `${result.chat_id}: gagal${
+                                        result.message
+                                            ? ` — ${result.message}`
+                                            : ""
+                                    }`,
+                          )
+                          .join("\n")
+                    : response.data?.message ||
+                      "Gagal mengirim pesan uji Telegram.";
 
             if (response.data?.ok) {
                 notification.success({
                     message: "Berhasil",
-                    description:
-                        response.data.message ||
-                        "Pesan uji Telegram berhasil dikirim.",
-                    duration: 3,
+                    description,
+                    duration: 5,
                 });
             } else {
                 notification.error({
                     message: "Gagal",
-                    description:
-                        response.data?.message ||
-                        "Gagal mengirim pesan uji Telegram.",
-                    duration: 4,
+                    description,
+                    duration: 6,
                 });
             }
         } catch (error) {
+            const results = error.response?.data?.results || [];
+            const description =
+                results.length > 0
+                    ? results
+                          .map((result) =>
+                              result.ok
+                                  ? `${result.chat_id}: sukses`
+                                  : `${result.chat_id}: gagal${
+                                        result.message
+                                            ? ` — ${result.message}`
+                                            : ""
+                                    }`,
+                          )
+                          .join("\n")
+                    : error.response?.data?.message ||
+                      "Gagal mengirim pesan uji Telegram.";
+
             notification.error({
                 message: "Gagal",
-                description:
-                    error.response?.data?.message ||
-                    "Gagal mengirim pesan uji Telegram.",
-                duration: 4,
+                description,
+                duration: 6,
             });
         } finally {
             setTestingTelegram(false);
@@ -502,22 +530,19 @@ export default function SettingIndex() {
                         <Form.Item
                             label="Chat ID Telegram admin"
                             validateStatus={
-                                errors.telegram_admin_chat_id ? "error" : ""
+                                errors.telegram_admin_chat_ids ? "error" : ""
                             }
                             help={
-                                errors.telegram_admin_chat_id ||
-                                "Angka chat ID Telegram penerima notifikasi."
+                                errors.telegram_admin_chat_ids ||
+                                "Pisahkan dengan koma untuk beberapa penerima (mis. 268015883, 8524526016)"
                             }
                         >
                             <Input
-                                value={telegramAdminChatId}
+                                value={telegramAdminChatIds}
                                 onChange={(e) =>
-                                    setTelegramAdminChatId(
-                                        e.target.value.replace(/\D/g, ""),
-                                    )
+                                    setTelegramAdminChatIds(e.target.value)
                                 }
-                                placeholder="268015883"
-                                inputMode="numeric"
+                                placeholder="268015883, 8524526016"
                             />
                         </Form.Item>
 

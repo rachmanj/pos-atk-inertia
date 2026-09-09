@@ -63,14 +63,14 @@ class Setting extends Model
             ->where('group', 'telegram')
             ->pluck('value', 'key');
 
-        $adminChatId = $settings->get('telegram.admin_chat_id') ?: '268015883';
+        $adminChatIds = $settings->get('telegram.admin_chat_ids') ?: '268015883';
 
         $nontunaiEnabled = $settings->has('telegram.nontunai_enabled')
             ? filter_var($settings->get('telegram.nontunai_enabled'), FILTER_VALIDATE_BOOLEAN)
             : true;
 
         return [
-            'admin_chat_id' => $adminChatId,
+            'admin_chat_ids' => $adminChatIds,
             'nontunai_enabled' => $nontunaiEnabled,
         ];
     }

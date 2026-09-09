@@ -251,9 +251,9 @@ class TransactionController extends Controller
             return;
         }
 
-        $adminChatId = Setting::value('telegram.admin_chat_id', '268015883');
+        $recipients = $this->telegramNotificationService->recipients();
 
-        if (blank($adminChatId)) {
+        if ($recipients === []) {
             return;
         }
 
@@ -275,29 +275,31 @@ class TransactionController extends Controller
 
         $message = implode("\n", $lines);
 
-        $log = WhatsappOutboundLog::create([
-            'purpose' => 'payment_notification',
-            'transaction_id' => $transaction->id,
-            'to_number' => $adminChatId,
-            'message_text' => $message,
-            'status' => 'queued',
-            'created_by' => $user->id,
-        ]);
-
-        try {
-            $messageId = $this->telegramNotificationService->sendText($adminChatId, $message);
-
-            $log->update([
-                'status' => 'sent',
-                'wa_message_id' => $messageId,
+        foreach ($recipients as $chatId) {
+            $log = WhatsappOutboundLog::create([
+                'purpose' => 'payment_notification',
+                'transaction_id' => $transaction->id,
+                'to_number' => $chatId,
+                'message_text' => $message,
+                'status' => 'queued',
+                'created_by' => $user->id,
             ]);
-        } catch (Throwable $e) {
-            report($e);
 
-            $log->update([
-                'status' => 'failed',
-                'error' => Str::limit($e->getMessage(), 500),
-            ]);
+            try {
+                $messageId = $this->telegramNotificationService->sendText($chatId, $message);
+
+                $log->update([
+                    'status' => 'sent',
+                    'wa_message_id' => $messageId,
+                ]);
+            } catch (Throwable $e) {
+                report($e);
+
+                $log->update([
+                    'status' => 'failed',
+                    'error' => Str::limit($e->getMessage(), 500),
+                ]);
+            }
         }
     }
 

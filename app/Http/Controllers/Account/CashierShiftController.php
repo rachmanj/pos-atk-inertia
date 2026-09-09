@@ -7,7 +7,6 @@ use App\Models\CashierShift;
 use App\Models\PpobAccount;
 use App\Models\PpobBalanceLog;
 use App\Models\ReturnTransaction;
-use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\WhatsappOutboundLog;
 use App\Services\ShiftReportBuilder;
@@ -226,12 +225,12 @@ class CashierShiftController extends Controller
             ], 422);
         }
 
-        $adminChatId = Setting::value('telegram.admin_chat_id', '268015883');
+        $recipients = $this->telegramNotificationService->recipients();
 
-        if (blank($adminChatId)) {
+        if ($recipients === []) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Chat ID admin Telegram belum dikonfigurasi. Atur di menu Pengaturan.',
+                'message' => 'Belum ada penerima Telegram, atur di Pengaturan',
             ], 422);
         }
 
@@ -246,42 +245,63 @@ class CashierShiftController extends Controller
         $report = $this->shiftReportBuilder->build($cashierShift, $expenseAmount, $expenseNote);
         $message = $report['messageText'];
 
-        $log = WhatsappOutboundLog::create([
-            'purpose' => 'shift_report',
-            'cashier_shift_id' => $cashierShift->id,
-            'to_number' => $adminChatId,
-            'message_text' => $message,
-            'status' => 'queued',
-            'created_by' => $request->user()->id,
-        ]);
+        $results = [];
+        $allSent = true;
 
-        try {
-            $messageId = $this->telegramNotificationService->sendText($adminChatId, $message);
-
-            $log->update([
-                'status' => 'sent',
-                'wa_message_id' => $messageId,
+        foreach ($recipients as $chatId) {
+            $log = WhatsappOutboundLog::create([
+                'purpose' => 'shift_report',
+                'cashier_shift_id' => $cashierShift->id,
+                'to_number' => $chatId,
+                'message_text' => $message,
+                'status' => 'queued',
+                'created_by' => $request->user()->id,
             ]);
 
+            try {
+                $messageId = $this->telegramNotificationService->sendText($chatId, $message);
+
+                $log->update([
+                    'status' => 'sent',
+                    'wa_message_id' => $messageId,
+                ]);
+
+                $results[] = [
+                    'chat_id' => $chatId,
+                    'ok' => true,
+                    'status' => $log->status,
+                    'wa_message_id' => $log->wa_message_id,
+                ];
+            } catch (Throwable $e) {
+                report($e);
+                $allSent = false;
+
+                $log->update([
+                    'status' => 'failed',
+                    'error' => Str::limit($e->getMessage(), 500),
+                ]);
+
+                $results[] = [
+                    'chat_id' => $chatId,
+                    'ok' => false,
+                    'status' => $log->status,
+                    'message' => $log->error,
+                ];
+            }
+        }
+
+        if ($allSent) {
             return response()->json([
                 'ok' => true,
-                'status' => $log->status,
-                'wa_message_id' => $log->wa_message_id,
+                'results' => $results,
             ]);
-        } catch (Throwable $e) {
-            report($e);
-
-            $log->update([
-                'status' => 'failed',
-                'error' => Str::limit($e->getMessage(), 500),
-            ]);
-
-            return response()->json([
-                'ok' => false,
-                'status' => $log->status,
-                'message' => $log->error,
-            ], 422);
         }
+
+        return response()->json([
+            'ok' => false,
+            'message' => 'Gagal mengirim rekap shift ke sebagian penerima Telegram.',
+            'results' => $results,
+        ], 422);
     }
 
     public function close(Request $request, CashierShift $cashierShift)

@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Services\TelegramNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Throwable;
 
@@ -23,7 +24,7 @@ class SettingController extends Controller
 
     public function update(Request $request)
     {
-        if ($request->hasAny(['telegram_admin_chat_id', 'telegram_nontunai_enabled'])) {
+        if ($request->hasAny(['telegram_admin_chat_ids', 'telegram_nontunai_enabled'])) {
             return $this->updateTelegram($request);
         }
 
@@ -77,34 +78,74 @@ class SettingController extends Controller
     public function testTelegram(Request $request, TelegramNotificationService $telegramService)
     {
         $validated = $request->validate([
-            'chat_id' => 'required|string|max:20',
+            'chat_ids' => 'required|string|max:500',
         ]);
 
-        try {
-            $telegramService->sendText($validated['chat_id'], 'Test Telegram dari VASIA POS');
+        $chatIds = $this->parseTelegramChatIds($validated['chat_ids']);
 
-            return response()->json([
-                'ok' => true,
-                'message' => 'Pesan uji Telegram berhasil dikirim.',
-            ]);
-        } catch (Throwable $e) {
-            report($e);
-
+        if ($chatIds === null) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Gagal mengirim pesan uji Telegram. Periksa Chat ID dan konfigurasi bot.',
+                'message' => 'Format Chat ID Telegram tidak valid.',
             ], 422);
         }
+
+        if ($chatIds === []) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Belum ada Chat ID Telegram yang valid.',
+            ], 422);
+        }
+
+        $results = [];
+        $allOk = true;
+
+        foreach ($chatIds as $chatId) {
+            try {
+                $messageId = $telegramService->sendText($chatId, 'Test Telegram dari VASIA POS');
+                $results[] = [
+                    'chat_id' => $chatId,
+                    'ok' => true,
+                    'message_id' => $messageId,
+                ];
+            } catch (Throwable $e) {
+                report($e);
+                $allOk = false;
+                $results[] = [
+                    'chat_id' => $chatId,
+                    'ok' => false,
+                    'message' => Str::limit($e->getMessage(), 200),
+                ];
+            }
+        }
+
+        return response()->json([
+            'ok' => $allOk,
+            'message' => $allOk
+                ? 'Pesan uji Telegram berhasil dikirim ke semua penerima.'
+                : 'Sebagian penerima gagal menerima pesan uji.',
+            'results' => $results,
+        ], $allOk ? 200 : 422);
     }
 
     protected function updateTelegram(Request $request)
     {
         $validated = $request->validate([
-            'telegram_admin_chat_id' => 'required|string|max:20|regex:/^-?\d+$/',
+            'telegram_admin_chat_ids' => 'required|string|max:500',
             'telegram_nontunai_enabled' => 'nullable|boolean',
         ]);
 
-        $this->setTelegramValue('telegram.admin_chat_id', $validated['telegram_admin_chat_id']);
+        $chatIds = $this->parseTelegramChatIds($validated['telegram_admin_chat_ids']);
+
+        if ($chatIds === null || $chatIds === []) {
+            return redirect()
+                ->route('account.settings.index')
+                ->withErrors([
+                    'telegram_admin_chat_ids' => 'Format Chat ID Telegram tidak valid. Pisahkan dengan koma untuk beberapa penerima.',
+                ]);
+        }
+
+        $this->setTelegramValue('telegram.admin_chat_ids', implode(', ', $chatIds));
         $this->setTelegramValue(
             'telegram.nontunai_enabled',
             $request->boolean('telegram_nontunai_enabled') ? '1' : '0',
@@ -113,6 +154,33 @@ class SettingController extends Controller
         return redirect()
             ->route('account.settings.index')
             ->with('success', 'Pengaturan notifikasi Telegram berhasil diperbarui.');
+    }
+
+    protected function parseTelegramChatIds(string $raw): ?array
+    {
+        $raw = trim($raw);
+
+        if ($raw === '') {
+            return [];
+        }
+
+        $ids = [];
+
+        foreach (explode(',', $raw) as $part) {
+            $part = trim($part);
+
+            if ($part === '') {
+                continue;
+            }
+
+            if (! preg_match('/^-?\d+$/', $part)) {
+                return null;
+            }
+
+            $ids[] = $part;
+        }
+
+        return array_values(array_unique($ids));
     }
 
     protected function setStoreValue(string $key, ?string $value): void
