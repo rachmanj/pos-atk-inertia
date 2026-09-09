@@ -370,10 +370,7 @@ export default function PpobBalanceLogIndex() {
                         </Row>
                     </Card>
 
-                    {hasAnyPermission(
-                        ["ppob-balance-logs.store"],
-                        permissions,
-                    ) && (
+                    {isAdmin && (
                         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
                             <Col xs={24} lg={12}>
                                 <Card size="small" title="Top Up Saldo">
@@ -439,12 +436,11 @@ export default function PpobBalanceLogIndex() {
                                 </Card>
                             </Col>
 
-                            {isAdmin && (
-                                <Col xs={24} lg={12}>
-                                    <Card
-                                        size="small"
-                                        title="Penyesuaian (Admin)"
-                                    >
+                            <Col xs={24} lg={12}>
+                                <Card
+                                    size="small"
+                                    title="Penyesuaian (Admin)"
+                                >
                                         <form onSubmit={submitAdjustment}>
                                             <Space
                                                 direction="vertical"
@@ -530,9 +526,8 @@ export default function PpobBalanceLogIndex() {
                                                 </Button>
                                             </Space>
                                         </form>
-                                    </Card>
-                                </Col>
-                            )}
+                                </Card>
+                            </Col>
                         </Row>
                     )}
 

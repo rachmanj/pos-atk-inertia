@@ -91,12 +91,13 @@ class PpobBalanceLogController extends Controller
         ]);
 
         $user = $request->user();
+
+        if (!$user->isAdminUser()) {
+            abort(403, 'Hanya admin yang dapat mengubah saldo PPOB.');
+        }
+
         $type = $request->type;
         $amount = (int) $request->amount;
-
-        if ($type === 'adjustment' && !$user->isAdminUser()) {
-            abort(403, 'Hanya admin yang dapat melakukan penyesuaian saldo.');
-        }
 
         try {
             DB::transaction(function () use ($request, $user, $type, $amount) {
