@@ -25,15 +25,7 @@ class PpobReportExport implements FromQuery, WithHeadings, WithMapping, ShouldAu
         $groupBy = $filters['group_by'] ?? 'product';
 
         $query = TransactionDetail::query()
-            ->select([
-                'transaction_details.product_id',
-                DB::raw('SUM(transaction_details.qty) as total_qty'),
-                DB::raw('SUM(transaction_details.subtotal) as total_omzet'),
-                DB::raw('SUM(transaction_details.admin_fee) as total_admin_fee'),
-                DB::raw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total_cost'),
-            ])
             ->join('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
-            ->with(['product:id,title,barcode'])
             ->whereNotNull('transaction_details.ppob_cost')
             ->where('transactions.payment_status', 'paid')
             ->where('transactions.status', '!=', 'voided')
@@ -53,16 +45,40 @@ class PpobReportExport implements FromQuery, WithHeadings, WithMapping, ShouldAu
                     });
             });
 
-        if ($groupBy === 'date') {
-            $query->addSelect(
-                DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at)) as sale_date')
-            );
-            $query->groupBy(
-                DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at))'),
-                'transaction_details.product_id'
-            );
+        if ($groupBy === 'cashier') {
+            $query
+                ->join('users', 'users.id', '=', 'transactions.cashier_id')
+                ->select([
+                    'transactions.cashier_id',
+                    DB::raw('COUNT(DISTINCT transactions.id) as total_transactions'),
+                    DB::raw("COALESCE(users.name, '-') as cashier_name"),
+                    DB::raw('SUM(transaction_details.qty) as total_qty'),
+                    DB::raw('SUM(transaction_details.subtotal) as total_omzet'),
+                    DB::raw('SUM(transaction_details.admin_fee) as total_admin_fee'),
+                    DB::raw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total_cost'),
+                ])
+                ->groupBy('transactions.cashier_id', 'users.name');
         } else {
-            $query->groupBy('transaction_details.product_id');
+            $query->select([
+                'transaction_details.product_id',
+                DB::raw('SUM(transaction_details.qty) as total_qty'),
+                DB::raw('SUM(transaction_details.subtotal) as total_omzet'),
+                DB::raw('SUM(transaction_details.admin_fee) as total_admin_fee'),
+                DB::raw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total_cost'),
+            ])
+                ->with(['product:id,title,barcode']);
+
+            if ($groupBy === 'date') {
+                $query->addSelect(
+                    DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at)) as sale_date')
+                );
+                $query->groupBy(
+                    DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at))'),
+                    'transaction_details.product_id'
+                );
+            } else {
+                $query->groupBy('transaction_details.product_id');
+            }
         }
 
         return $query->orderByDesc('total_omzet');
@@ -70,6 +86,20 @@ class PpobReportExport implements FromQuery, WithHeadings, WithMapping, ShouldAu
 
     public function headings(): array
     {
+        $groupBy = $this->filters['group_by'] ?? 'product';
+
+        if ($groupBy === 'cashier') {
+            return [
+                'No',
+                'Kasir',
+                'Transaksi',
+                'Qty',
+                'Omzet',
+                'Modal (Cost)',
+                'Admin Fee / Laba',
+            ];
+        }
+
         return [
             'No',
             'Tanggal',
@@ -86,6 +116,20 @@ class PpobReportExport implements FromQuery, WithHeadings, WithMapping, ShouldAu
     {
         static $no = 0;
         $no++;
+
+        $groupBy = $this->filters['group_by'] ?? 'product';
+
+        if ($groupBy === 'cashier') {
+            return [
+                $no,
+                $row->cashier_name ?? '-',
+                (int) $row->total_transactions,
+                (int) $row->total_qty,
+                (int) $row->total_omzet,
+                (int) $row->total_cost,
+                (int) $row->total_admin_fee,
+            ];
+        }
 
         return [
             $no,

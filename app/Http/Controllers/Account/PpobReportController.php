@@ -25,7 +25,7 @@ class PpobReportController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'cashier_id' => 'nullable|exists:users,id',
-            'group_by' => 'nullable|in:product,date',
+            'group_by' => 'nullable|in:product,date,cashier',
         ]);
 
         $startDate = $request->start_date
@@ -39,13 +39,6 @@ class PpobReportController extends Controller
         $groupBy = $request->group_by ?: 'product';
 
         $baseQuery = \App\Models\TransactionDetail::query()
-            ->select([
-                'transaction_details.product_id',
-                DB::raw('SUM(transaction_details.qty) as total_qty'),
-                DB::raw('SUM(transaction_details.subtotal) as total_omzet'),
-                DB::raw('SUM(transaction_details.admin_fee) as total_admin_fee'),
-                DB::raw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total_cost'),
-            ])
             ->join('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
             ->whereNotNull('transaction_details.ppob_cost')
             ->where('transactions.payment_status', 'paid')
@@ -69,23 +62,51 @@ class PpobReportController extends Controller
                     });
             });
 
-        if ($groupBy === 'date') {
-            $baseQuery->addSelect(
-                DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at)) as sale_date')
-            );
-            $baseQuery->groupBy(
-                DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at))'),
-                'transaction_details.product_id'
-            );
-        } else {
-            $baseQuery->groupBy('transaction_details.product_id');
-        }
+        if ($groupBy === 'cashier') {
+            $baseQuery
+                ->join('users', 'users.id', '=', 'transactions.cashier_id')
+                ->select([
+                    'transactions.cashier_id',
+                    DB::raw('COUNT(DISTINCT transactions.id) as total_transactions'),
+                    DB::raw("COALESCE(users.name, '-') as cashier_name"),
+                    DB::raw('SUM(transaction_details.qty) as total_qty'),
+                    DB::raw('SUM(transaction_details.subtotal) as total_omzet'),
+                    DB::raw('SUM(transaction_details.admin_fee) as total_admin_fee'),
+                    DB::raw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total_cost'),
+                ])
+                ->groupBy('transactions.cashier_id', 'users.name');
 
-        $ppobData = (clone $baseQuery)
-            ->with(['product:id,title,barcode'])
-            ->orderByDesc('total_omzet')
-            ->paginate(20)
-            ->withQueryString();
+            $ppobData = (clone $baseQuery)
+                ->orderByDesc('total_omzet')
+                ->paginate(20)
+                ->withQueryString();
+        } else {
+            $baseQuery->select([
+                'transaction_details.product_id',
+                DB::raw('SUM(transaction_details.qty) as total_qty'),
+                DB::raw('SUM(transaction_details.subtotal) as total_omzet'),
+                DB::raw('SUM(transaction_details.admin_fee) as total_admin_fee'),
+                DB::raw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total_cost'),
+            ]);
+
+            if ($groupBy === 'date') {
+                $baseQuery->addSelect(
+                    DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at)) as sale_date')
+                );
+                $baseQuery->groupBy(
+                    DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at))'),
+                    'transaction_details.product_id'
+                );
+            } else {
+                $baseQuery->groupBy('transaction_details.product_id');
+            }
+
+            $ppobData = (clone $baseQuery)
+                ->with(['product:id,title,barcode'])
+                ->orderByDesc('total_omzet')
+                ->paginate(20)
+                ->withQueryString();
+        }
 
         // Enrich: laba = total_admin_fee
         $ppobData->getCollection()->transform(function ($item) {
@@ -155,7 +176,7 @@ class PpobReportController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'cashier_id' => 'nullable|exists:users,id',
-            'group_by' => 'nullable|in:product,date',
+            'group_by' => 'nullable|in:product,date,cashier',
         ]);
 
         $filters = [

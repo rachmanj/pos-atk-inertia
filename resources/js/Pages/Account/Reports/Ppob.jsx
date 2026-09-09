@@ -108,12 +108,30 @@ export default function PpobReport() {
                   },
               ]
             : []),
-        {
-            title: "Produk",
-            render: (_, item) => (
-                <Text strong>{item.product?.title ?? "-"}</Text>
-            ),
-        },
+        ...(groupBy === "cashier"
+            ? [
+                  {
+                      title: "Kasir",
+                      render: (_, item) => (
+                          <Text strong>{item.cashier_name ?? "-"}</Text>
+                      ),
+                  },
+                  {
+                      title: "Transaksi",
+                      align: "center",
+                      render: (_, item) => (
+                          <Text strong>{item.total_transactions}</Text>
+                      ),
+                  },
+              ]
+            : [
+                  {
+                      title: "Produk",
+                      render: (_, item) => (
+                          <Text strong>{item.product?.title ?? "-"}</Text>
+                      ),
+                  },
+              ]),
         {
             title: "Qty",
             align: "center",
@@ -235,6 +253,10 @@ export default function PpobReport() {
                                             value: "date",
                                             label: "Group Tanggal",
                                         },
+                                        {
+                                            value: "cashier",
+                                            label: "Group Kasir",
+                                        },
                                     ]}
                                 />
                             </Col>
@@ -316,7 +338,9 @@ export default function PpobReport() {
 
                     <Table
                         rowKey={(item, index) =>
-                            `${item.product_id}-${item.sale_date ?? index}`
+                            groupBy === "cashier"
+                                ? `${item.cashier_id}-${index}`
+                                : `${item.product_id}-${item.sale_date ?? index}`
                         }
                         columns={columns}
                         dataSource={ppobData.data}
