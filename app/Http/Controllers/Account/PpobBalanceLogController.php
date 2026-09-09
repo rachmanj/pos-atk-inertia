@@ -31,13 +31,13 @@ class PpobBalanceLogController extends Controller
 
         $startDate = $request->start_date
             ? Carbon::parse($request->start_date)->startOfDay()
-            : Carbon::now()->startOfMonth();
+            : Carbon::now()->startOfDay();
 
         $endDate = $request->end_date
             ? Carbon::parse($request->end_date)->endOfDay()
             : Carbon::now()->endOfDay();
 
-        $logs = PpobBalanceLog::query()
+        $baseQuery = PpobBalanceLog::query()
             ->with(['ppobAccount:id,name', 'user:id,name', 'cashierShift:id,opened_at'])
             ->when(filled($request->ppob_account_id), function ($query) use ($request) {
                 $query->where('ppob_account_id', $request->ppob_account_id);
@@ -48,9 +48,15 @@ class PpobBalanceLogController extends Controller
             ->when(filled($request->user_id), function ($query) use ($request) {
                 $query->where('user_id', $request->user_id);
             })
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->latest('id')
-            ->paginate(15);
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        $summary = [
+            'total' => (clone $baseQuery)->count(),
+            'masuk' => (int) (clone $baseQuery)->where('amount', '>', 0)->sum('amount'),
+            'keluar' => (int) (clone $baseQuery)->where('amount', '<', 0)->sum('amount'),
+        ];
+
+        $logs = (clone $baseQuery)->latest('id')->paginate(15);
 
         $logs->appends([
             'ppob_account_id' => $request->ppob_account_id,
@@ -62,6 +68,7 @@ class PpobBalanceLogController extends Controller
 
         return Inertia::render('Account/Ppob/BalanceLogs/Index', [
             'logs' => $logs,
+            'summary' => $summary,
             'accounts' => PpobAccount::query()->orderBy('name')->get(['id', 'name', 'current_balance', 'is_active']),
             'users' => User::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [

@@ -32,8 +32,14 @@ const typeLabels = {
 };
 
 export default function PpobBalanceLogIndex() {
-    const { logs, accounts = [], users = [], filters = {}, auth = {} } =
-        usePage().props;
+    const {
+        logs,
+        accounts = [],
+        users = [],
+        filters = {},
+        summary = {},
+        auth = {},
+    } = usePage().props;
     const permissions = auth.permissions || {};
     const isAdmin = hasAnyPermission(["ppob-accounts.edit"], permissions);
 
@@ -317,6 +323,52 @@ export default function PpobBalanceLogIndex() {
                             </Button>
                         </Col>
                     </Row>
+
+                    <Card
+                        size="small"
+                        style={{ marginBottom: 16 }}
+                        styles={{ body: { padding: "8px 12px" } }}
+                    >
+                        <Row align="middle" gutter={[16, 4]}>
+                            <Col xs={24} sm={8}>
+                                <Text>
+                                    Transaksi:{" "}
+                                    <Text strong>
+                                        {summary.total ?? 0}
+                                    </Text>
+                                </Text>
+                            </Col>
+                            <Col xs={24} sm={8}>
+                                <Text>
+                                    Masuk:{" "}
+                                    <Text strong className="text-success">
+                                        {formatRupiah(summary.masuk ?? 0)}
+                                    </Text>
+                                </Text>
+                            </Col>
+                            <Col xs={24} sm={8}>
+                                <Text>
+                                    Keluar:{" "}
+                                    <Text strong className="text-danger">
+                                        {formatRupiah(
+                                            Math.abs(summary.keluar ?? 0),
+                                        )}
+                                    </Text>
+                                </Text>
+                            </Col>
+                            <Col xs={24}>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    {dayjs(filters.start_date).format(
+                                        "DD/MM/YYYY",
+                                    )}{" "}
+                                    –{" "}
+                                    {dayjs(filters.end_date).format(
+                                        "DD/MM/YYYY",
+                                    )}
+                                </Text>
+                            </Col>
+                        </Row>
+                    </Card>
 
                     {hasAnyPermission(
                         ["ppob-balance-logs.store"],
