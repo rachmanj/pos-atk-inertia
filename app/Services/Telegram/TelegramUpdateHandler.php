@@ -2,10 +2,13 @@
 
 namespace App\Services\Telegram;
 
+use App\Models\PpobAccount;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\PpobBalanceService;
 use DomainException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use InvalidArgumentException;
@@ -19,6 +22,7 @@ class TelegramUpdateHandler
         protected PpobProductMatcher $productMatcher,
         protected TelegramPpobSaleService $saleService,
         protected TelegramPosQueryService $posQueryService,
+        protected PpobBalanceService $ppobBalanceService,
     ) {}
 
     public function handle(array $update): void
@@ -100,6 +104,13 @@ class TelegramUpdateHandler
                 $chatId,
                 $this->userResolver->getStatusMessage(null, $telegramId)
             );
+            $this->markUpdateProcessed($updateId);
+
+            return;
+        }
+
+        if ($command === '/topup') {
+            $this->handleTopupCommand($chatId, $telegramId, $user, $text);
             $this->markUpdateProcessed($updateId);
 
             return;
@@ -267,6 +278,57 @@ class TelegramUpdateHandler
             return true;
         }
 
+        if (($pending['kind'] ?? null) === 'topup') {
+            try {
+                $amount = (int) ($pending['amount'] ?? 0);
+                $account = null;
+
+                DB::transaction(function () use ($pending, $user, $amount, &$account) {
+                    $account = PpobAccount::query()
+                        ->whereKey($pending['account_id'] ?? null)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $note = 'Top Up via Telegram';
+                    if (filled($pending['note'] ?? null)) {
+                        $note .= ' — ' . trim($pending['note']);
+                    }
+
+                    $this->ppobBalanceService->recordMovement(
+                        account: $account,
+                        userId: $user->id,
+                        type: 'top_up',
+                        amount: $amount,
+                        cashierShiftId: null,
+                        note: $note,
+                    );
+                });
+
+                $this->botClient->sendMessage(
+                    $chatId,
+                    "✅ Top Up berhasil\n"
+                    . 'Akun: ' . e($account->name) . "\n"
+                    . 'Jumlah: ' . TelegramFormatter::idr($amount) . "\n"
+                    . 'Saldo sekarang: <b>' . TelegramFormatter::idr((int) $account->current_balance) . '</b>'
+                );
+
+                Log::info('Telegram PPOB top up completed', [
+                    'telegram_id' => $telegramId,
+                    'user_id' => $user->id,
+                    'account_id' => $account->id,
+                    'amount' => $amount,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Telegram topup confirmation failed', [
+                    'telegram_id' => $telegramId,
+                    'error' => $e->getMessage(),
+                ]);
+                $this->botClient->sendMessage($chatId, 'Terjadi kesalahan sistem.');
+            }
+
+            return true;
+        }
+
         $product = Product::query()->find($pending['product_id'] ?? null);
 
         if (! $product || ! $product->isPpob() || ! $product->is_active) {
@@ -351,12 +413,55 @@ beli &lt;produk&gt; &lt;qty&gt; [di &lt;ref&gt;] @&lt;biaya per unit&gt;
 /produk — daftar produk acak
 /transaksi — transaksi terakhir hari ini
 /saldo — cek saldo PPOB
+/topup &lt;nominal&gt; [catatan] — top up saldo PPOB (admin)
 /shift — status shift saat ini
 /laporan — ringkasan penjualan hari ini
 /batal — batalkan pending
 
 Gunakan <b>total</b> untuk biaya keseluruhan atau <b>@</b> untuk biaya per unit.
 HTML;
+    }
+
+    protected function handleTopupCommand(int|string $chatId, int $telegramId, User $user, string $text): void
+    {
+        if (! $user->can('ppob-accounts.edit')) {
+            $this->botClient->sendMessage($chatId, 'Perintah ini khusus admin.');
+
+            return;
+        }
+
+        $ppobAccount = PpobAccount::activeAccount();
+
+        if (! $ppobAccount) {
+            $this->botClient->sendMessage($chatId, '❌ Akun PPOB aktif belum dikonfigurasi.');
+
+            return;
+        }
+
+        try {
+            $parsed = $this->commandParser->parseTopupCommand($text);
+            $this->storePendingTopupConfirmation(
+                $telegramId,
+                $parsed['amount'],
+                $parsed['note'],
+                $ppobAccount->id
+            );
+
+            $this->botClient->sendMessage(
+                $chatId,
+                'Top Up saldo PPOB (' . e($ppobAccount->name) . ') sebesar '
+                . TelegramFormatter::idr($parsed['amount']) . "?\n"
+                . 'Balas <b>ya</b> untuk konfirmasi / <b>tidak</b> untuk batal.'
+            );
+        } catch (InvalidArgumentException $e) {
+            $this->botClient->sendMessage($chatId, $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Telegram topup command failed', [
+                'telegram_id' => $telegramId,
+                'error' => $e->getMessage(),
+            ]);
+            $this->botClient->sendMessage($chatId, 'Terjadi kesalahan sistem.');
+        }
     }
 
     protected function handlePosCommand(int|string $chatId, User $user, string $command, string $text): bool
@@ -416,6 +521,18 @@ HTML;
         Cache::put($this->pendingConfirmationKey($telegramId), [
             'intent' => $intent->toArray(),
             'product_id' => $productId,
+        ], $ttl);
+    }
+
+    protected function storePendingTopupConfirmation(int $telegramId, int $amount, ?string $note, int $accountId): void
+    {
+        $ttl = (int) config('telegram.pending_intent_ttl', 300);
+
+        Cache::put($this->pendingConfirmationKey($telegramId), [
+            'kind' => 'topup',
+            'amount' => $amount,
+            'note' => $note,
+            'account_id' => $accountId,
         ], $ttl);
     }
 

@@ -124,4 +124,41 @@ class TelegramCommandParser
 
         return $normalizedRef;
     }
+
+    public function parseTopupCommand(string $text): array
+    {
+        $normalized = mb_strtolower(trim($text));
+
+        if (! preg_match('/^\/topup\s+(.+)$/iu', $normalized, $intentMatch)) {
+            throw new InvalidArgumentException(
+                "Format: /topup <nominal> [catatan]\nContoh: /topup 500rb atau /topup 1jt stok bulan ini"
+            );
+        }
+
+        $body = trim($intentMatch[1]);
+
+        if ($body === '') {
+            throw new InvalidArgumentException('Nominal top up wajib diisi.');
+        }
+
+        if (! preg_match(
+            '/^([\d.,]+(?:\s*(?:rb|ribu|jt|juta))?|rp\.?\s*[\d.,]+(?:\s*(?:rb|ribu|jt|juta))?)\s*(.*)$/iu',
+            $body,
+            $matches
+        )) {
+            throw new InvalidArgumentException('Format nominal tidak valid. Contoh: 500000, 500rb, 1jt');
+        }
+
+        $amount = $this->moneyParser->parse(trim($matches[1]));
+        $note = filled($matches[2] ?? '') ? trim($matches[2]) : null;
+
+        if ($note !== null && mb_strlen($note) > 1000) {
+            throw new InvalidArgumentException('Catatan maksimal 1000 karakter.');
+        }
+
+        return [
+            'amount' => $amount,
+            'note' => $note,
+        ];
+    }
 }
