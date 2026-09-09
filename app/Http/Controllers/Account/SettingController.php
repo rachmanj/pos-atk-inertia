@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Throwable;
 
 class SettingController extends Controller
 {
@@ -15,11 +17,16 @@ class SettingController extends Controller
         return Inertia::render('Account/Settings/Index', [
             'store' => Setting::storeSettings(),
             'ppob' => Setting::ppobSettings(),
+            'whatsapp' => Setting::whatsappSettings(),
         ]);
     }
 
     public function update(Request $request)
     {
+        if ($request->hasAny(['whatsapp_admin_number', 'whatsapp_nontunai_enabled'])) {
+            return $this->updateWhatsapp($request);
+        }
+
         $request->validate([
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:500',
@@ -67,6 +74,46 @@ class SettingController extends Controller
             ->with('success', 'Pengaturan toko berhasil diperbarui.');
     }
 
+    public function testWhatsapp(WhatsAppService $whatsAppService)
+    {
+        $adminNumber = Setting::value(
+            'whatsapp.admin_number',
+            config('services.whatsapp.admin_number'),
+        );
+
+        try {
+            $whatsAppService->sendText($adminNumber, 'Test WA dari VASIA POS');
+
+            return redirect()
+                ->route('account.settings.index')
+                ->with('success', 'Pesan uji WhatsApp berhasil dikirim.');
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('account.settings.index')
+                ->with('error', 'Gagal mengirim pesan uji WhatsApp. Periksa nomor admin dan konfigurasi WA-Hub.');
+        }
+    }
+
+    protected function updateWhatsapp(Request $request)
+    {
+        $validated = $request->validate([
+            'whatsapp_admin_number' => 'required|string|max:20',
+            'whatsapp_nontunai_enabled' => 'nullable|boolean',
+        ]);
+
+        $this->setWhatsappValue('whatsapp.admin_number', $validated['whatsapp_admin_number']);
+        $this->setWhatsappValue(
+            'whatsapp.nontunai_enabled',
+            $request->boolean('whatsapp_nontunai_enabled') ? '1' : '0',
+        );
+
+        return redirect()
+            ->route('account.settings.index')
+            ->with('success', 'Pengaturan notifikasi WhatsApp berhasil diperbarui.');
+    }
+
     protected function setStoreValue(string $key, ?string $value): void
     {
         Setting::updateOrCreate(
@@ -85,6 +132,17 @@ class SettingController extends Controller
             [
                 'value' => filled($value) ? trim($value) : null,
                 'group' => 'ppob',
+            ],
+        );
+    }
+
+    protected function setWhatsappValue(string $key, ?string $value): void
+    {
+        Setting::updateOrCreate(
+            ['key' => $key],
+            [
+                'value' => filled($value) ? trim($value) : null,
+                'group' => 'whatsapp',
             ],
         );
     }

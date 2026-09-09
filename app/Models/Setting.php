@@ -51,4 +51,28 @@ class Setting extends Model
     {
         return static::query()->where('key', $key)->value('value') ?? $default;
     }
+
+    public static function value(string $key, mixed $default = null): mixed
+    {
+        return static::getValue($key, $default);
+    }
+
+    public static function whatsappSettings(): array
+    {
+        $settings = static::query()
+            ->where('group', 'whatsapp')
+            ->pluck('value', 'key');
+
+        $adminNumber = $settings->get('whatsapp.admin_number')
+            ?: config('services.whatsapp.admin_number', '628115428871');
+
+        $nontunaiEnabled = $settings->has('whatsapp.nontunai_enabled')
+            ? filter_var($settings->get('whatsapp.nontunai_enabled'), FILTER_VALIDATE_BOOLEAN)
+            : true;
+
+        return [
+            'admin_number' => $adminNumber,
+            'nontunai_enabled' => $nontunaiEnabled,
+        ];
+    }
 }

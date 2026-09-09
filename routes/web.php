@@ -118,6 +118,10 @@ Route::middleware(['auth'])
             ->middleware('permission:settings.edit')
             ->name('settings.update');
 
+        Route::post('/settings/whatsapp/test', [SettingController::class, 'testWhatsapp'])
+            ->middleware('permission:settings.edit')
+            ->name('settings.whatsapp.test');
+
         Route::resource('categories', CategoryController::class)
             ->except(['show'])
             ->middlewareFor('index', 'permission:categories.index')

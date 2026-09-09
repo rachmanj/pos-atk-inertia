@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, router, usePage } from "@inertiajs/react";
 import {
@@ -12,11 +12,13 @@ import {
     Radio,
     Row,
     Space,
+    Switch,
     Typography,
     Upload,
     notification,
 } from "antd";
 import {
+    MessageOutlined,
     ReloadOutlined,
     SaveOutlined,
     ShopOutlined,
@@ -28,7 +30,13 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 export default function SettingIndex() {
-    const { errors = {}, store = {}, ppob = {} } = usePage().props;
+    const {
+        errors = {},
+        store = {},
+        ppob = {},
+        whatsapp = {},
+        flash = {},
+    } = usePage().props;
 
     const logoInputRef = useRef(null);
 
@@ -45,9 +53,35 @@ export default function SettingIndex() {
     const [ppobMinBalanceDefault, setPpobMinBalanceDefault] = useState(
         Number(ppob.ppob_min_balance_default || 100000),
     );
+    const [whatsappAdminNumber, setWhatsappAdminNumber] = useState(
+        whatsapp.admin_number || "",
+    );
+    const [whatsappNontunaiEnabled, setWhatsappNontunaiEnabled] = useState(
+        whatsapp.nontunai_enabled ?? true,
+    );
     const [logo, setLogo] = useState(null);
     const [removeLogo, setRemoveLogo] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [savingWhatsapp, setSavingWhatsapp] = useState(false);
+    const [testingWhatsapp, setTestingWhatsapp] = useState(false);
+
+    useEffect(() => {
+        if (flash.success) {
+            notification.success({
+                message: "Berhasil",
+                description: flash.success,
+                duration: 3,
+            });
+        }
+
+        if (flash.error) {
+            notification.error({
+                message: "Gagal",
+                description: flash.error,
+                duration: 4,
+            });
+        }
+    }, [flash.success, flash.error]);
 
     const updateSettings = (e) => {
         e.preventDefault();
@@ -104,6 +138,40 @@ export default function SettingIndex() {
         if (logoInputRef.current) {
             logoInputRef.current.value = "";
         }
+    };
+
+    const resetWhatsappForm = () => {
+        setWhatsappAdminNumber(whatsapp.admin_number || "");
+        setWhatsappNontunaiEnabled(whatsapp.nontunai_enabled ?? true);
+    };
+
+    const saveWhatsappSettings = (e) => {
+        e.preventDefault();
+        setSavingWhatsapp(true);
+
+        router.post(
+            "/account/settings",
+            {
+                _method: "PUT",
+                whatsapp_admin_number: whatsappAdminNumber,
+                whatsapp_nontunai_enabled: whatsappNontunaiEnabled,
+            },
+            {
+                onFinish: () => setSavingWhatsapp(false),
+            },
+        );
+    };
+
+    const testWhatsapp = () => {
+        setTestingWhatsapp(true);
+
+        router.post(
+            "/account/settings/whatsapp/test",
+            {},
+            {
+                onFinish: () => setTestingWhatsapp(false),
+            },
+        );
     };
 
     const logoPreview =
@@ -384,6 +452,74 @@ export default function SettingIndex() {
                             <Button
                                 icon={<ReloadOutlined />}
                                 onClick={resetForm}
+                            >
+                                RESET
+                            </Button>
+                        </Space>
+                    </form>
+                </Card>
+
+                <Card style={{ marginTop: 24 }}>
+                    <Space direction="vertical" size={4} style={{ marginBottom: 24 }}>
+                        <Title level={4} style={{ margin: 0 }}>
+                            <MessageOutlined style={{ marginRight: 8 }} />
+                            NOTIFIKASI WHATSAPP
+                        </Title>
+                        <Text type="secondary">
+                            Pengaturan nomor admin dan notifikasi otomatis
+                            transaksi non-tunai via WA-Hub.
+                        </Text>
+                    </Space>
+
+                    <form onSubmit={saveWhatsappSettings}>
+                        <Form.Item
+                            label="Nomor Admin WhatsApp"
+                            validateStatus={
+                                errors.whatsapp_admin_number ? "error" : ""
+                            }
+                            help={
+                                errors.whatsapp_admin_number ||
+                                "Format 628xxx atau 08xxx diterima."
+                            }
+                        >
+                            <Input
+                                value={whatsappAdminNumber}
+                                onChange={(e) =>
+                                    setWhatsappAdminNumber(e.target.value)
+                                }
+                                placeholder="628xxxxxxxxxx"
+                            />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Notifikasi otomatis transaksi non-tunai"
+                            help="Kirim notifikasi ke admin saat transaksi QRIS, transfer, atau digital berhasil."
+                        >
+                            <Switch
+                                checked={whatsappNontunaiEnabled}
+                                onChange={setWhatsappNontunaiEnabled}
+                            />
+                        </Form.Item>
+
+                        <Space style={{ marginTop: 16 }}>
+                            <Button
+                                type="primary"
+                                htmlType="submit"
+                                icon={<SaveOutlined />}
+                                loading={savingWhatsapp}
+                            >
+                                SIMPAN
+                            </Button>
+                            <Button
+                                icon={<MessageOutlined />}
+                                loading={testingWhatsapp}
+                                onClick={testWhatsapp}
+                            >
+                                KIRIM WA UJI
+                            </Button>
+                            <Button
+                                icon={<ReloadOutlined />}
+                                onClick={resetWhatsappForm}
                             >
                                 RESET
                             </Button>
