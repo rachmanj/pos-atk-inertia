@@ -7,13 +7,25 @@ use App\Models\CashierShift;
 use App\Models\PpobAccount;
 use App\Models\PpobBalanceLog;
 use App\Models\ReturnTransaction;
+use App\Models\Setting;
 use App\Models\Transaction;
+use App\Models\WhatsappOutboundLog;
+use App\Services\ShiftReportBuilder;
+use App\Services\WhatsAppService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Throwable;
 
 class CashierShiftController extends Controller
 {
+    public function __construct(
+        protected ShiftReportBuilder $shiftReportBuilder,
+        protected WhatsAppService $whatsAppService,
+    ) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -132,6 +144,27 @@ class CashierShiftController extends Controller
 
         $summary = $this->buildShiftSummary($cashierShift);
 
+        $canSendWaReport = $cashierShift->status === 'closed';
+
+        $whatsappLogs = WhatsappOutboundLog::query()
+            ->where('cashier_shift_id', $cashierShift->id)
+            ->where('purpose', 'shift_report')
+            ->with('createdBy:id,name')
+            ->latest()
+            ->get()
+            ->map(fn (WhatsappOutboundLog $log) => [
+                'id' => $log->id,
+                'created_at' => $log->created_at,
+                'status' => $log->status,
+                'message_text' => $log->message_text,
+                'wa_message_id' => $log->wa_message_id,
+                'error' => $log->error,
+                'created_by' => $log->createdBy ? [
+                    'id' => $log->createdBy->id,
+                    'name' => $log->createdBy->name,
+                ] : null,
+            ]);
+
         return Inertia::render('Account/CashierShifts/Show', [
             'shift' => [
                 'id'                 => $cashierShift->id,
@@ -150,7 +183,106 @@ class CashierShiftController extends Controller
                 'status'             => $cashierShift->status,
                 'summary'            => $summary,
             ],
+            'canSendWaReport' => $canSendWaReport,
+            'whatsappLogs' => $whatsappLogs,
         ]);
+    }
+
+    public function waReportPreview(Request $request, CashierShift $cashierShift): JsonResponse
+    {
+        $this->authorizeView($request, $cashierShift);
+
+        if ($cashierShift->status !== 'closed') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Rekap shift hanya dapat dikirim untuk shift yang sudah ditutup.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'expense_amount' => 'nullable|integer|min:0',
+            'expense_note' => 'nullable|string|max:255',
+        ]);
+
+        $expenseAmount = (int) ($validated['expense_amount'] ?? 0);
+        $expenseNote = filled($validated['expense_note'] ?? null) ? trim($validated['expense_note']) : null;
+
+        $report = $this->shiftReportBuilder->build($cashierShift, $expenseAmount, $expenseNote);
+
+        return response()->json([
+            'ok' => true,
+            'text' => $report['messageText'],
+        ]);
+    }
+
+    public function waReportSend(Request $request, CashierShift $cashierShift): JsonResponse
+    {
+        $this->authorizeView($request, $cashierShift);
+
+        if ($cashierShift->status !== 'closed') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Rekap shift hanya dapat dikirim untuk shift yang sudah ditutup.',
+            ], 422);
+        }
+
+        $adminNumber = Setting::value('whatsapp.admin_number')
+            ?: config('services.whatsapp.admin_number');
+
+        if (blank($adminNumber)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Nomor admin WhatsApp belum dikonfigurasi. Atur di menu Pengaturan.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'expense_amount' => 'nullable|integer|min:0',
+            'expense_note' => 'nullable|string|max:255',
+        ]);
+
+        $expenseAmount = (int) ($validated['expense_amount'] ?? 0);
+        $expenseNote = filled($validated['expense_note'] ?? null) ? trim($validated['expense_note']) : null;
+
+        $report = $this->shiftReportBuilder->build($cashierShift, $expenseAmount, $expenseNote);
+        $message = $report['messageText'];
+
+        $log = WhatsappOutboundLog::create([
+            'purpose' => 'shift_report',
+            'cashier_shift_id' => $cashierShift->id,
+            'to_number' => $adminNumber,
+            'message_text' => $message,
+            'status' => 'queued',
+            'created_by' => $request->user()->id,
+        ]);
+
+        try {
+            $messageId = $this->whatsAppService->sendText($adminNumber, $message);
+
+            $log->update([
+                'status' => 'sent',
+                'wa_message_id' => $messageId,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'status' => $log->status,
+                'wa_message_id' => $log->wa_message_id,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            $log->update([
+                'status' => 'failed',
+                'error' => Str::limit($e->getMessage(), 500),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'status' => $log->status,
+                'message' => $log->error,
+            ], 422);
+        }
     }
 
     public function close(Request $request, CashierShift $cashierShift)

@@ -174,3 +174,9 @@
 **Solution**: `BarcodeScanner.jsx` — viewfinder tidak boleh `display:none` saat init (html5-qrcode butuh elemen visible); start dengan `{ facingMode: "environment" }` dulu (hindari `getCameras()` ganda); fallback kamera + tombol "Aktifkan Kamera" untuk retry dengan user gesture (wajib iOS); `useLayoutEffect` + cleanup `stop()`+`clear()`; qrbox responsif. `useMobile` tambah `(hover: none) and (pointer: coarse)`.  
 **Key Learning**: Kamera hanya di secure context (HTTPS); iOS menolak `getUserMedia` tanpa user gesture — tombol retry di dalam modal jika auto-start gagal.
 
+### POS-025 Kirim rekap shift ke WA (2026-09-09) ✅ COMPLETE
+
+**Challenge/Decision**: Kasir/admin perlu kirim ringkasan shift closed ke nomor admin WA secara manual.  
+**Solution**: `ShiftReportBuilder` susun teks rekap (total penjualan, non-tunai, retur tunai, pengeluaran opsional, tunai disetor, rincian non-tunai, PPOB tunai). `CashierShiftController::waReportPreview` / `waReportSend` + log `whatsapp_outbound_logs` purpose `shift_report`. UI tombol + modal pratinjau/kirim + riwayat di `CashierShifts/Show.jsx`.  
+**Key Learning**: Total penjualan = semua transaksi non-voided dalam rentang shift (termasuk transfer pending); non-tunai = qris/transfer/digital; akses sama seperti `show()` (kasir shift sendiri, admin semua).
+

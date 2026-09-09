@@ -215,6 +215,14 @@ Route::middleware(['auth'])
             ->middleware('permission:cashier_shifts.close')
             ->name('cashier-shifts.close');
 
+        Route::post('/cashier-shifts/{cashierShift}/wa-report/preview', [CashierShiftController::class, 'waReportPreview'])
+            ->middleware('permission:cashier_shifts.index')
+            ->name('cashier-shifts.wa-report.preview');
+
+        Route::post('/cashier-shifts/{cashierShift}/wa-report/send', [CashierShiftController::class, 'waReportSend'])
+            ->middleware('permission:cashier_shifts.index')
+            ->name('cashier-shifts.wa-report.send');
+
         Route::post('/carts', [CartController::class, 'store'])
             ->middleware('permission:transactions.create')
             ->name('carts.store');
