@@ -60,9 +60,22 @@ const waStatusColors = {
     failed: "error",
 };
 
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
-}
+const readCsrfToken = () => {
+    const match = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="));
+    if (match) {
+        try {
+            return decodeURIComponent(match.split("=")[1]);
+        } catch {
+            // fallthrough ke meta
+        }
+    }
+    return (
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") ||
+        ""
+    );
+};
 
 export default function CashierShiftShow() {
     const { shift, flash, errors, auth, canSendWaReport = false, whatsappLogs = [] } = usePage().props;
@@ -99,7 +112,7 @@ export default function CashierShiftShow() {
                     expense_amount: expenseAmount || 0,
                     expense_note: expenseNote || null,
                 },
-                { headers: { "X-CSRF-TOKEN": getCsrfToken() } },
+                { headers: { "X-XSRF-TOKEN": readCsrfToken() } },
             );
 
             if (response.data?.ok) {
@@ -152,7 +165,7 @@ export default function CashierShiftShow() {
                     expense_amount: expenseAmount || 0,
                     expense_note: expenseNote || null,
                 },
-                { headers: { "X-CSRF-TOKEN": getCsrfToken() } },
+                { headers: { "X-XSRF-TOKEN": readCsrfToken() } },
             );
 
             if (response.data?.ok) {
