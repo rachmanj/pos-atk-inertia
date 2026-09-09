@@ -25,7 +25,6 @@ import {
     TeamOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { SEMANTIC } from "../../../theme/colors";
 
 const { Title, Text } = Typography;
 
@@ -122,7 +121,7 @@ export default function CustomerReport() {
             title: "Omzet",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: SEMANTIC.success }}>
+                <Text style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(item.total_omzet)}
                 </Text>
             ),
@@ -131,7 +130,7 @@ export default function CustomerReport() {
             title: "Rata-rata",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: SEMANTIC.info }}>
+                <Text style={{ color: "var(--semantic-info)" }}>
                     {formatRupiah(item.average_transaction)}
                 </Text>
             ),
@@ -266,7 +265,7 @@ export default function CustomerReport() {
                                 <Statistic
                                     title="Total Omzet"
                                     value={formatRupiah(summary.total_omzet)}
-                                    valueStyle={{ color: SEMANTIC.success, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-success)", fontSize: 18 }}
                                 />
                             </Card>
                         </Col>
@@ -275,7 +274,7 @@ export default function CustomerReport() {
                                 <Statistic
                                     title="Rata-rata per Pelanggan"
                                     value={formatRupiah(summary.avg_per_customer)}
-                                    valueStyle={{ color: SEMANTIC.info, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-info)", fontSize: 18 }}
                                 />
                             </Card>
                         </Col>

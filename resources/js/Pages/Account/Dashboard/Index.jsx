@@ -1,7 +1,7 @@
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage } from "@inertiajs/react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL, SEMANTIC } from "../../../theme/colors";
+import { BRAND, NEUTRAL } from "../../../theme/colors";
 import {
     Alert,
     Card,
@@ -65,8 +65,8 @@ const formatDateTime = (value) => {
 const statIconColors = {
     primary: BRAND.primary,
     info: BRAND.primary,
-    success: SEMANTIC.success,
-    danger: SEMANTIC.error,
+    success: "var(--semantic-success)",
+    danger: "var(--semantic-error)",
     secondary: NEUTRAL.slate400,
 };
 
@@ -229,7 +229,7 @@ export default function Dashboard() {
                                 <Card
                                     style={
                                         ppobAccount.is_low_balance
-                                            ? { borderColor: SEMANTIC.error }
+                                            ? { borderColor: "var(--semantic-error)" }
                                             : undefined
                                     }
                                 >
@@ -251,7 +251,7 @@ export default function Dashboard() {
                                         prefix={<WalletOutlined />}
                                         valueStyle={{
                                             color: ppobAccount.is_low_balance
-                                                ? SEMANTIC.error
+                                                ? "var(--semantic-error)"
                                                 : undefined,
                                             fontWeight: 700,
                                         }}
@@ -307,7 +307,7 @@ export default function Dashboard() {
                                                     level={5}
                                                     style={{
                                                         margin: 0,
-                                                        color: SEMANTIC.success,
+                                                        color: "var(--semantic-success)",
                                                     }}
                                                 >
                                                     Aktif
@@ -349,7 +349,7 @@ export default function Dashboard() {
                                                         <Text
                                                             strong
                                                             style={{
-                                                                color: SEMANTIC.success,
+                                                                color: "var(--semantic-success)",
                                                             }}
                                                         >
                                                             {formatRupiah(
@@ -388,7 +388,7 @@ export default function Dashboard() {
                                 title={
                                     <Space>
                                         <PieChartOutlined
-                                            style={{ color: SEMANTIC.info }}
+                                            style={{ color: "var(--semantic-info)" }}
                                         />
                                         Pantauan Cepat
                                     </Space>

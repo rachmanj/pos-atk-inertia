@@ -5,7 +5,7 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL, SEMANTIC } from "../../../theme/colors";
+import { BRAND, NEUTRAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -155,7 +155,7 @@ export default function Index() {
                         style={{
                             color:
                                 record.status === "voided"
-                                    ? SEMANTIC.error
+                                    ? "var(--semantic-error)"
                                     : BRAND.primary,
                         }}
                     >
@@ -208,7 +208,7 @@ export default function Index() {
             align: "right",
             dataIndex: "grand_total",
             render: (value) => (
-                <Text strong style={{ color: SEMANTIC.success }}>
+                <Text strong style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(value)}
                 </Text>
             ),

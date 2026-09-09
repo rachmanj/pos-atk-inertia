@@ -2545,3 +2545,18 @@ body.printing-receipt .transaction-show-page {
         border-color: #C9C4B4 !important;
     }
 }
+
+/* ===== Semantic text colors: dark-mode-aware ===== */
+:root {
+    --semantic-success: #2F6F4E;
+    --semantic-warning: #8F5F22;
+    --semantic-error: #8B2E3B;
+    --semantic-info: #2A3B8F;
+}
+
+[data-theme="dark"] {
+    --semantic-success: #69CB92;
+    --semantic-warning: #E5AC5C;
+    --semantic-error: #F48F9B;
+    --semantic-info: #9AADF2;
+}

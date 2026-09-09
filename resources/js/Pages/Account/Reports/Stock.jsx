@@ -27,7 +27,6 @@ import {
     ReloadOutlined,
     SlidersOutlined,
 } from "@ant-design/icons";
-import { SEMANTIC } from "../../../theme/colors";
 
 const { Title, Text } = Typography;
 
@@ -119,7 +118,7 @@ export default function StockReport() {
             title: "Produk",
             render: (_, product) => (
                 <>
-                    <Text strong style={{ color: SEMANTIC.info }}>
+                    <Text strong style={{ color: "var(--semantic-info)" }}>
                         {product.title}
                     </Text>
                     <div>
@@ -158,7 +157,7 @@ export default function StockReport() {
             title: "Nilai Modal",
             align: "right",
             render: (_, product) => (
-                <Text strong style={{ color: SEMANTIC.success }}>
+                <Text strong style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(product.inventory_cost_value)}
                 </Text>
             ),
@@ -440,7 +439,7 @@ export default function StockReport() {
                                         summary.inventory_cost_value,
                                     )}
                                     valueStyle={{
-                                        color: SEMANTIC.success,
+                                        color: "var(--semantic-success)",
                                         fontSize: 16,
                                     }}
                                 />
@@ -457,7 +456,7 @@ export default function StockReport() {
                                         title="Stok Habis"
                                         value={summary.out_of_stock_products}
                                         valueStyle={{
-                                            color: SEMANTIC.error,
+                                            color: "var(--semantic-error)",
                                             fontSize: 18,
                                         }}
                                     />
@@ -476,7 +475,7 @@ export default function StockReport() {
                                         title="Produk Menipis"
                                         value={summary.low_stock_products}
                                         valueStyle={{
-                                            color: SEMANTIC.warning,
+                                            color: "var(--semantic-warning)",
                                             fontSize: 18,
                                         }}
                                     />

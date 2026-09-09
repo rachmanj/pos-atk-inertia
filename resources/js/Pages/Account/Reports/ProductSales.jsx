@@ -26,7 +26,6 @@ import {
     StarOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { SEMANTIC } from "../../../theme/colors";
 
 const { Title, Text } = Typography;
 
@@ -135,7 +134,7 @@ export default function ProductSalesReport() {
             title: "Omzet",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: SEMANTIC.success }}>
+                <Text style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(item.total_omzet)}
                 </Text>
             ),
@@ -144,7 +143,7 @@ export default function ProductSalesReport() {
             title: "HPP",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: SEMANTIC.warning }}>
+                <Text style={{ color: "var(--semantic-warning)" }}>
                     {formatRupiah(item.total_cogs)}
                 </Text>
             ),
@@ -153,7 +152,7 @@ export default function ProductSalesReport() {
             title: "Laba",
             align: "right",
             render: (_, item) => (
-                <Text strong style={{ color: SEMANTIC.info }}>
+                <Text strong style={{ color: "var(--semantic-info)" }}>
                     {formatRupiah(item.total_laba)}
                 </Text>
             ),
@@ -288,7 +287,7 @@ export default function ProductSalesReport() {
                                 <Statistic
                                     title="Total Omzet"
                                     value={formatRupiah(summary.total_omzet)}
-                                    valueStyle={{ color: SEMANTIC.success, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-success)", fontSize: 18 }}
                                 />
                             </Card>
                         </Col>
@@ -297,7 +296,7 @@ export default function ProductSalesReport() {
                                 <Statistic
                                     title="Laba Kotor"
                                     value={formatRupiah(summary.total_laba)}
-                                    valueStyle={{ color: SEMANTIC.info, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-info)", fontSize: 18 }}
                                 />
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                     Margin: {summary.margin}%
@@ -309,7 +308,7 @@ export default function ProductSalesReport() {
                                 <Statistic
                                     title="Total HPP"
                                     value={formatRupiah(summary.total_cogs)}
-                                    valueStyle={{ color: SEMANTIC.warning, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-warning)", fontSize: 18 }}
                                 />
                             </Card>
                         </Col>

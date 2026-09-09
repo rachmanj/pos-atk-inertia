@@ -5,7 +5,7 @@ import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, SEMANTIC } from "../../../theme/colors";
+import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -121,7 +121,7 @@ export default function Index() {
             align: "right",
             dataIndex: "total_refund",
             render: (value) => (
-                <Text strong style={{ color: SEMANTIC.success }}>
+                <Text strong style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(value)}
                 </Text>
             ),

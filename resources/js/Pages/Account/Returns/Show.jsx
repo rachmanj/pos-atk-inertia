@@ -4,7 +4,7 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useEffect } from "react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, SEMANTIC } from "../../../theme/colors";
+import { BRAND } from "../../../theme/colors";
 import {
     Button,
     Card,
@@ -148,7 +148,7 @@ export default function Show() {
             align: "right",
             dataIndex: "subtotal",
             render: (value) => (
-                <Text strong style={{ color: SEMANTIC.success }}>
+                <Text strong style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(value)}
                 </Text>
             ),
@@ -251,7 +251,7 @@ export default function Show() {
                                 <InfoCard label="Total Refund">
                                     <Text
                                         strong
-                                        style={{ color: SEMANTIC.success }}
+                                        style={{ color: "var(--semantic-success)" }}
                                     >
                                         {formatRupiah(returnData.total_refund)}
                                     </Text>
@@ -343,7 +343,7 @@ export default function Show() {
                                             <br />
                                             <Text
                                                 strong
-                                                style={{ color: SEMANTIC.success }}
+                                                style={{ color: "var(--semantic-success)" }}
                                             >
                                                 {formatRupiah(
                                                     returnData.transaction
@@ -438,7 +438,7 @@ export default function Show() {
                                         <Table.Summary.Cell index={1} align="right">
                                             <Text
                                                 strong
-                                                style={{ color: SEMANTIC.success }}
+                                                style={{ color: "var(--semantic-success)" }}
                                             >
                                                 {formatRupiah(
                                                     returnData.total_refund,

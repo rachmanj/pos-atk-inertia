@@ -29,7 +29,6 @@ import {
     UnorderedListOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { SEMANTIC } from "../../../theme/colors";
 import {
     BarChart,
     Bar,
@@ -125,7 +124,7 @@ export default function ExpenseReport() {
         {
             title: "Kode",
             dataIndex: "code",
-            render: (code) => <Text style={{ color: SEMANTIC.info }}>{code}</Text>,
+            render: (code) => <Text style={{ color: "var(--semantic-info)" }}>{code}</Text>,
         },
         {
             title: "Tanggal",
@@ -277,7 +276,7 @@ export default function ExpenseReport() {
                                 <Statistic
                                     title="Total Pengeluaran"
                                     value={formatRupiah(summary.total_amount)}
-                                    valueStyle={{ color: SEMANTIC.error, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-error)", fontSize: 18 }}
                                 />
                             </Card>
                         </Col>
@@ -340,7 +339,7 @@ export default function ExpenseReport() {
                                             />
                                             <Bar
                                                 dataKey="total_amount"
-                                                fill={SEMANTIC.error}
+                                                fill={"var(--semantic-error)"}
                                                 name="Total"
                                                 radius={[0, 4, 4, 0]}
                                             />
@@ -392,7 +391,7 @@ export default function ExpenseReport() {
                                             />
                                             <Bar
                                                 dataKey="total_amount"
-                                                fill={SEMANTIC.warning}
+                                                fill={"var(--semantic-warning)"}
                                                 name="Total"
                                                 radius={[4, 4, 0, 0]}
                                             />

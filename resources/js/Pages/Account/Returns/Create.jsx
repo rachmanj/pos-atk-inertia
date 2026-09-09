@@ -3,7 +3,7 @@ import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, SEMANTIC } from "../../../theme/colors";
+import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -314,7 +314,7 @@ export default function Create() {
                                         level={5}
                                         style={{
                                             margin: 0,
-                                            color: SEMANTIC.success,
+                                            color: "var(--semantic-success)",
                                         }}
                                     >
                                         {formatRupiah(transaction.grand_total)}
@@ -376,7 +376,7 @@ export default function Create() {
                                             <Text
                                                 strong
                                                 style={{
-                                                    color: SEMANTIC.success,
+                                                    color: "var(--semantic-success)",
                                                 }}
                                             >
                                                 {formatRupiah(

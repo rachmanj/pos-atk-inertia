@@ -5,7 +5,7 @@ import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, SEMANTIC } from "../../../theme/colors";
+import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -124,7 +124,7 @@ export default function PurchaseIndex() {
             align: "right",
             dataIndex: "total_amount",
             render: (value) => (
-                <Text strong style={{ color: SEMANTIC.success }}>
+                <Text strong style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(value)}
                 </Text>
             ),

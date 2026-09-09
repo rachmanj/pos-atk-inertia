@@ -25,7 +25,6 @@ import {
     ReloadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { SEMANTIC } from "../../../theme/colors";
 
 const { Title, Text } = Typography;
 
@@ -113,7 +112,7 @@ export default function PpobReport() {
             dataIndex: "total_harga_dasar",
             align: "right",
             render: (value) => (
-                <Text style={{ color: SEMANTIC.warning }}>
+                <Text style={{ color: "var(--semantic-warning)" }}>
                     {formatRupiah(value)}
                 </Text>
             ),
@@ -123,7 +122,7 @@ export default function PpobReport() {
             dataIndex: "total_penjualan",
             align: "right",
             render: (value) => (
-                <Text style={{ color: SEMANTIC.success }}>
+                <Text style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(value)}
                 </Text>
             ),
@@ -179,7 +178,7 @@ export default function PpobReport() {
             title: "Omzet",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: SEMANTIC.success }}>
+                <Text style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(item.total_omzet)}
                 </Text>
             ),
@@ -188,7 +187,7 @@ export default function PpobReport() {
             title: "Admin Fee",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: SEMANTIC.info }}>
+                <Text style={{ color: "var(--semantic-info)" }}>
                     {formatRupiah(item.total_admin_fee)}
                 </Text>
             ),
@@ -197,7 +196,7 @@ export default function PpobReport() {
             title: "Modal (Cost)",
             align: "right",
             render: (_, item) => (
-                <Text style={{ color: SEMANTIC.warning }}>
+                <Text style={{ color: "var(--semantic-warning)" }}>
                     {formatRupiah(item.total_cost)}
                 </Text>
             ),
@@ -206,7 +205,7 @@ export default function PpobReport() {
             title: "Laba",
             align: "right",
             render: (_, item) => (
-                <Text strong style={{ color: SEMANTIC.success }}>
+                <Text strong style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(item.total_laba)}
                 </Text>
             ),
@@ -342,7 +341,7 @@ export default function PpobReport() {
                                 <Statistic
                                     title="Total Omzet PPOB"
                                     value={formatRupiah(summary.total_omzet)}
-                                    valueStyle={{ color: SEMANTIC.success, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-success)", fontSize: 18 }}
                                 />
                             </Card>
                         </Col>
@@ -351,7 +350,7 @@ export default function PpobReport() {
                                 <Statistic
                                     title="Total Admin Fee"
                                     value={formatRupiah(summary.total_admin_fee)}
-                                    valueStyle={{ color: SEMANTIC.info, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-info)", fontSize: 18 }}
                                 />
                             </Card>
                         </Col>
@@ -360,7 +359,7 @@ export default function PpobReport() {
                                 <Statistic
                                     title="Total Modal (Cost)"
                                     value={formatRupiah(summary.total_cost)}
-                                    valueStyle={{ color: SEMANTIC.warning, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-warning)", fontSize: 18 }}
                                 />
                             </Card>
                         </Col>
@@ -396,7 +395,7 @@ export default function PpobReport() {
                                         <Table.Summary.Cell index={1} align="right">
                                             <Text
                                                 strong
-                                                style={{ color: SEMANTIC.warning }}
+                                                style={{ color: "var(--semantic-warning)" }}
                                             >
                                                 {formatRupiah(totalRekapHargaDasar)}
                                             </Text>
@@ -404,7 +403,7 @@ export default function PpobReport() {
                                         <Table.Summary.Cell index={2} align="right">
                                             <Text
                                                 strong
-                                                style={{ color: SEMANTIC.success }}
+                                                style={{ color: "var(--semantic-success)" }}
                                             >
                                                 {formatRupiah(totalRekapPenjualan)}
                                             </Text>

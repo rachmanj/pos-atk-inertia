@@ -26,7 +26,6 @@ import {
     ReloadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { SEMANTIC } from "../../../theme/colors";
 
 const { Title, Text } = Typography;
 
@@ -101,7 +100,7 @@ export default function ProfitReport() {
         {
             title: "Invoice",
             render: (_, profit) => (
-                <Text strong style={{ color: SEMANTIC.info }}>
+                <Text strong style={{ color: "var(--semantic-info)" }}>
                     {profit.transaction?.invoice || "-"}
                 </Text>
             ),
@@ -127,7 +126,7 @@ export default function ProfitReport() {
             title: "Pendapatan",
             align: "right",
             render: (_, profit) => (
-                <Text strong style={{ color: SEMANTIC.success }}>
+                <Text strong style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(profit.total_revenue)}
                 </Text>
             ),
@@ -147,7 +146,7 @@ export default function ProfitReport() {
                     strong
                     style={{
                         color:
-                            profit.profit_amount >= 0 ? SEMANTIC.info : SEMANTIC.error,
+                            profit.profit_amount >= 0 ? "var(--semantic-info)" : "var(--semantic-error)",
                     }}
                 >
                     {formatRupiah(profit.profit_amount)}
@@ -286,7 +285,7 @@ export default function ProfitReport() {
                                         title="Pendapatan"
                                         value={formatRupiah(summary.total_revenue)}
                                         valueStyle={{
-                                            color: SEMANTIC.success,
+                                            color: "var(--semantic-success)",
                                             fontSize: 18,
                                         }}
                                     />
@@ -308,7 +307,7 @@ export default function ProfitReport() {
                                 <Statistic
                                     title="HPP"
                                     value={formatRupiah(summary.total_cost)}
-                                    valueStyle={{ color: SEMANTIC.error, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-error)", fontSize: 18 }}
                                 />
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                     Margin: {summary.profit_margin}%
@@ -323,7 +322,7 @@ export default function ProfitReport() {
                                 <Statistic
                                     title="Laba Kotor"
                                     value={formatRupiah(summary.gross_profit)}
-                                    valueStyle={{ color: SEMANTIC.info, fontSize: 18 }}
+                                    valueStyle={{ color: "var(--semantic-info)", fontSize: 18 }}
                                 />
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                     Sebelum expense
@@ -338,8 +337,8 @@ export default function ProfitReport() {
                                     valueStyle={{
                                         color:
                                             summary.net_profit >= 0
-                                                ? SEMANTIC.success
-                                                : SEMANTIC.error,
+                                                ? "var(--semantic-success)"
+                                                : "var(--semantic-error)",
                                         fontSize: 18,
                                     }}
                                 />

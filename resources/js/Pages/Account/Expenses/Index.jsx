@@ -6,7 +6,7 @@ import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useMemo, useState } from "react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, SEMANTIC } from "../../../theme/colors";
+import { BRAND } from "../../../theme/colors";
 import {
     Button,
     Card,
@@ -129,7 +129,7 @@ export default function ExpenseIndex() {
             align: "right",
             dataIndex: "amount",
             render: (value) => (
-                <Text strong style={{ color: SEMANTIC.error }}>
+                <Text strong style={{ color: "var(--semantic-error)" }}>
                     {formatRupiah(value)}
                 </Text>
             ),
@@ -287,7 +287,7 @@ export default function ExpenseIndex() {
                                         formatter={(value) =>
                                             formatRupiah(value)
                                         }
-                                        valueStyle={{ color: SEMANTIC.error }}
+                                        valueStyle={{ color: "var(--semantic-error)" }}
                                     />
                                 </Card>
                             </Col>

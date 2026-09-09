@@ -3,7 +3,7 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, SEMANTIC } from "../../../theme/colors";
+import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -82,7 +82,7 @@ export default function SupplierReturnShow() {
             align: "right",
             dataIndex: "subtotal",
             render: (value) => (
-                <Text strong style={{ color: SEMANTIC.error }}>
+                <Text strong style={{ color: "var(--semantic-error)" }}>
                     {formatRupiah(value)}
                 </Text>
             ),
@@ -157,7 +157,7 @@ export default function SupplierReturnShow() {
                                     <Text
                                         strong
                                         style={{
-                                            color: SEMANTIC.error,
+                                            color: "var(--semantic-error)",
                                             fontSize: 16,
                                             display: "block",
                                             marginBottom: 12,
@@ -243,7 +243,7 @@ export default function SupplierReturnShow() {
                                     <Text
                                         strong
                                         style={{
-                                            color: SEMANTIC.error,
+                                            color: "var(--semantic-error)",
                                             fontSize: 16,
                                             display: "block",
                                             marginBottom: 8,

@@ -5,7 +5,7 @@ import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL, SEMANTIC, TEAL } from "../../../theme/colors";
+import { BRAND, NEUTRAL, TEAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -38,8 +38,8 @@ const statusColors = { open: "success", closed: "default" };
 const statusLabels = { open: "BUKA", closed: "TUTUP" };
 
 const statIconColors = {
-    primary: SEMANTIC.info,
-    success: SEMANTIC.success,
+    primary: "var(--semantic-info)",
+    success: "var(--semantic-success)",
     teal: BRAND.primary,
 };
 
@@ -318,7 +318,7 @@ export default function CashierShiftIndex() {
                                             title="Penjualan Tunai"
                                             value={activeShift.summary?.cash_sales || 0}
                                             prefix={<RiseOutlined />}
-                                            valueStyle={{ color: SEMANTIC.success }}
+                                            valueStyle={{ color: "var(--semantic-success)" }}
                                             formatter={(v) => formatRupiah(v)}
                                         />
                                     </Card>
@@ -329,7 +329,7 @@ export default function CashierShiftIndex() {
                                             title="Refund Tunai"
                                             value={activeShift.summary?.cash_refunds || 0}
                                             prefix={<FallOutlined />}
-                                            valueStyle={{ color: SEMANTIC.error }}
+                                            valueStyle={{ color: "var(--semantic-error)" }}
                                             formatter={(v) => formatRupiah(v)}
                                         />
                                     </Card>

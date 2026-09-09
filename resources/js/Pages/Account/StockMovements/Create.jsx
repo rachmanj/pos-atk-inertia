@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL, SEMANTIC } from "../../../theme/colors";
+import { BRAND, NEUTRAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -277,7 +277,7 @@ export default function StockMovementCreate() {
                                                             }
                                                             suffix={unit}
                                                             valueStyle={{
-                                                                color: SEMANTIC.success,
+                                                                color: "var(--semantic-success)",
                                                             }}
                                                         />
                                                     </Card>

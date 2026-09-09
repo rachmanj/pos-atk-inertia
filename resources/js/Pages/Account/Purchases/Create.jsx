@@ -4,7 +4,7 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL, SEMANTIC } from "../../../theme/colors";
+import { BRAND, NEUTRAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -295,7 +295,7 @@ export default function PurchaseCreate() {
             align: "right",
             width: 120,
             render: (_, item) => (
-                <Text strong style={{ color: SEMANTIC.success }}>
+                <Text strong style={{ color: "var(--semantic-success)" }}>
                     {formatRupiah(
                         Number(item.qty || 0) * Number(item.buy_price || 0),
                     )}
@@ -485,7 +485,7 @@ export default function PurchaseCreate() {
                                             <Text
                                                 strong
                                                 style={{
-                                                    color: SEMANTIC.success,
+                                                    color: "var(--semantic-success)",
                                                 }}
                                             >
                                                 {formatRupiah(totalAmount)}
