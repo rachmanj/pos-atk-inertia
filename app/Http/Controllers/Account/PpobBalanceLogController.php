@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Models\PpobAccount;
 use App\Models\PpobBalanceLog;
+use App\Models\User;
 use App\Services\PpobBalanceService;
 use DomainException;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class PpobBalanceLogController extends Controller
         $request->validate([
             'ppob_account_id' => 'nullable|exists:ppob_accounts,id',
             'type' => 'nullable|in:opening_balance,top_up,sale,adjustment',
+            'user_id' => 'nullable|exists:users,id',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
@@ -43,6 +45,9 @@ class PpobBalanceLogController extends Controller
             ->when(filled($request->type), function ($query) use ($request) {
                 $query->where('type', $request->type);
             })
+            ->when(filled($request->user_id), function ($query) use ($request) {
+                $query->where('user_id', $request->user_id);
+            })
             ->whereBetween('created_at', [$startDate, $endDate])
             ->latest('id')
             ->paginate(15);
@@ -50,6 +55,7 @@ class PpobBalanceLogController extends Controller
         $logs->appends([
             'ppob_account_id' => $request->ppob_account_id,
             'type' => $request->type,
+            'user_id' => $request->user_id,
             'start_date' => $startDate->toDateString(),
             'end_date' => $endDate->toDateString(),
         ]);
@@ -57,9 +63,11 @@ class PpobBalanceLogController extends Controller
         return Inertia::render('Account/Ppob/BalanceLogs/Index', [
             'logs' => $logs,
             'accounts' => PpobAccount::query()->orderBy('name')->get(['id', 'name', 'current_balance', 'is_active']),
+            'users' => User::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'ppob_account_id' => $request->ppob_account_id ?? '',
                 'type' => $request->type ?? '',
+                'user_id' => $request->user_id ?? '',
                 'start_date' => $startDate->toDateString(),
                 'end_date' => $endDate->toDateString(),
             ],

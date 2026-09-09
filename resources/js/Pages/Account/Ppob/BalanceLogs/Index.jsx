@@ -32,7 +32,8 @@ const typeLabels = {
 };
 
 export default function PpobBalanceLogIndex() {
-    const { logs, accounts = [], filters = {}, auth = {} } = usePage().props;
+    const { logs, accounts = [], users = [], filters = {}, auth = {} } =
+        usePage().props;
     const permissions = auth.permissions || {};
     const isAdmin = hasAnyPermission(["ppob-accounts.edit"], permissions);
 
@@ -40,6 +41,7 @@ export default function PpobBalanceLogIndex() {
         filters.ppob_account_id || "",
     );
     const [type, setType] = useState(filters.type || "");
+    const [userId, setUserId] = useState(filters.user_id || "");
     const [startDate, setStartDate] = useState(filters.start_date || "");
     const [endDate, setEndDate] = useState(filters.end_date || "");
     const [topUpAccountId, setTopUpAccountId] = useState(
@@ -57,6 +59,7 @@ export default function PpobBalanceLogIndex() {
             {
                 ppob_account_id: ppobAccountId,
                 type,
+                user_id: userId,
                 start_date: startDate,
                 end_date: endDate,
             },
@@ -142,7 +145,7 @@ export default function PpobBalanceLogIndex() {
         },
         {
             title: "Kasir",
-            render: (_, log) => log.user?.name,
+            render: (_, log) => log.user?.name || "-",
         },
         {
             title: "Catatan",
@@ -255,6 +258,19 @@ export default function PpobBalanceLogIndex() {
                                         label,
                                     }),
                                 )}
+                            />
+                        </Col>
+                        <Col xs={24} md={4}>
+                            <Select
+                                style={{ width: "100%", minWidth: 160 }}
+                                value={userId || undefined}
+                                onChange={(value) => setUserId(value || "")}
+                                placeholder="-- Semua Kasir --"
+                                allowClear
+                                options={users.map((user) => ({
+                                    value: String(user.id),
+                                    label: user.name,
+                                }))}
                             />
                         </Col>
                         <Col xs={24} md={4}>
