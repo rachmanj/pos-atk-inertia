@@ -16,6 +16,23 @@ import PosQuickCustomerModal from "../../../Components/Pos/PosQuickCustomerModal
 import BarcodeScanner from "../../../Components/BarcodeScanner";
 import { lineNet } from "../../../Components/Pos/posUtils";
 
+const readCsrfToken = () => {
+    const match = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("XSRF-TOKEN="));
+    if (match) {
+        try {
+            return decodeURIComponent(match.split("=")[1]);
+        } catch {
+            // fallthrough ke meta
+        }
+    }
+    return (
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") ||
+        ""
+    );
+};
+
 export default function TransactionCreate() {
     const {
         products = { data: [], links: [] },
@@ -254,10 +271,7 @@ export default function TransactionCreate() {
                     {
                         headers: {
                             Accept: "application/json",
-                            "X-CSRF-TOKEN":
-                                document
-                                    .querySelector('meta[name="csrf-token"]')
-                                    ?.getAttribute("content") || "",
+                            "X-XSRF-TOKEN": readCsrfToken(),
                         },
                     },
                 );
@@ -298,10 +312,7 @@ export default function TransactionCreate() {
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json",
-                    "X-CSRF-TOKEN":
-                        document
-                            .querySelector('meta[name="csrf-token"]')
-                            ?.getAttribute("content") || "",
+                    "X-XSRF-TOKEN": readCsrfToken(),
                 },
                 body: JSON.stringify({
                     name: quickCustomerName.trim(),
@@ -315,10 +326,7 @@ export default function TransactionCreate() {
                     {
                         headers: {
                             Accept: "application/json",
-                            "X-CSRF-TOKEN":
-                                document
-                                    .querySelector('meta[name="csrf-token"]')
-                                    ?.getAttribute("content") || "",
+                            "X-XSRF-TOKEN": readCsrfToken(),
                         },
                     },
                 );
@@ -761,10 +769,7 @@ export default function TransactionCreate() {
                         headers: {
                             Accept: "application/json",
                             "Content-Type": "application/json",
-                            "X-CSRF-TOKEN":
-                                document
-                                    .querySelector('meta[name="csrf-token"]')
-                                    ?.getAttribute("content") || "",
+                            "X-XSRF-TOKEN": readCsrfToken(),
                         },
                         credentials: "same-origin",
                         body: JSON.stringify({
@@ -777,6 +782,17 @@ export default function TransactionCreate() {
                     });
 
                     const data = await response.json().catch(() => ({}));
+
+                    if (response.status === 419) {
+                        notification.error({
+                            message: "Sesi berakhir",
+                            description:
+                                "Token keamanan kedaluwarsa. Halaman akan dimuat ulang — item keranjang aman. Silakan tekan Bayar sekali lagi.",
+                            duration: 3,
+                        });
+                        setTimeout(() => window.location.reload(), 1800);
+                        return;
+                    }
 
                     if (!response.ok || !data.success) {
                         throw new Error(
