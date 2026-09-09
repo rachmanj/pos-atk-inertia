@@ -16,6 +16,13 @@ import PosQuickCustomerModal from "../../../Components/Pos/PosQuickCustomerModal
 import BarcodeScanner from "../../../Components/BarcodeScanner";
 import { lineNet } from "../../../Components/Pos/posUtils";
 
+const getTempAge = (cart) => {
+    const id = String(cart.id);
+    if (!id.startsWith("temp-")) return 0;
+    const ts = Number(id.split("-")[1]) || 0;
+    return Date.now() - ts;
+};
+
 const readCsrfToken = () => {
     const match = document.cookie
         .split("; ")
@@ -723,7 +730,25 @@ export default function TransactionCreate() {
             return;
         }
 
-        if (activeCarts.some((cart) => String(cart.id).startsWith("temp-"))) {
+        const tempItems = activeCarts.filter((cart) =>
+            String(cart.id).startsWith("temp-"),
+        );
+        if (tempItems.length) {
+            const stale = tempItems.some((cart) => getTempAge(cart) > 4000);
+            if (stale) {
+                notification.info({
+                    message: "Sinkronisasi Keranjang",
+                    description:
+                        "Ada item yang belum tersimpan ke server. Keranjang disinkronkan dari server. Silakan tekan Bayar sekali lagi.",
+                    duration: 2.5,
+                });
+                router.get(
+                    "/account/transactions/create",
+                    {},
+                    { preserveState: true, preserveScroll: true, only: ["carts"] },
+                );
+                return;
+            }
             notification.info({
                 message: "Sebentar...",
                 description:
