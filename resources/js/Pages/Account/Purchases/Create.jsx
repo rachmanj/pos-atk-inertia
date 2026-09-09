@@ -4,7 +4,6 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -330,7 +329,7 @@ export default function PurchaseCreate() {
                         title={
                             <Space>
                                 <ShoppingCartOutlined
-                                    style={{ color: BRAND.primary }}
+                                    style={{ color: "var(--brand-primary)" }}
                                 />
                                 <Title level={4} style={{ margin: 0 }}>
                                     TAMBAH PEMBELIAN
@@ -460,7 +459,7 @@ export default function PurchaseCreate() {
                                         <Card
                                             size="small"
                                             style={{
-                                                background: NEUTRAL.slate50,
+                                                background: "var(--bg-subtle)",
                                             }}
                                         >
                                             <Text

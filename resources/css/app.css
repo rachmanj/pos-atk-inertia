@@ -2552,6 +2552,10 @@ body.printing-receipt .transaction-show-page {
     --semantic-warning: #8F5F22;
     --semantic-error: #8B2E3B;
     --semantic-info: #2A3B8F;
+    --brand-primary: #2A3B8F;
+    --bg-subtle: #f8fafc;
+    --border-subtle: #e2e8f0;
+    --icon-muted: #64748b;
 }
 
 [data-theme="dark"] {
@@ -2559,4 +2563,8 @@ body.printing-receipt .transaction-show-page {
     --semantic-warning: #E5AC5C;
     --semantic-error: #F48F9B;
     --semantic-info: #9AADF2;
+    --brand-primary: #93A6F0;
+    --bg-subtle: #33312b;
+    --border-subtle: #3a362f;
+    --icon-muted: #94a3b8;
 }

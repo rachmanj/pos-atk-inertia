@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router } from "@inertiajs/react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Button,
     Card,
@@ -68,7 +67,7 @@ export default function ChangePassword() {
                                         <KeyOutlined
                                             style={{
                                                 marginRight: 8,
-                                                color: BRAND.primary,
+                                                color: "var(--brand-primary)",
                                             }}
                                         />
                                         UBAH KATA SANDI

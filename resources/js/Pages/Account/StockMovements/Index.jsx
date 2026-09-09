@@ -4,7 +4,6 @@ import { Head, usePage, Link, router } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -178,7 +177,7 @@ export default function StockMovementIndex() {
                         title={
                             <Space>
                                 <AppstoreOutlined
-                                    style={{ color: BRAND.primary }}
+                                    style={{ color: "var(--brand-primary)" }}
                                 />
                                 <Title level={4} style={{ margin: 0 }}>
                                     MUTASI STOK

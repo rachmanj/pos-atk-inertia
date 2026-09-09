@@ -5,7 +5,6 @@ import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -81,7 +80,7 @@ export default function Index() {
             title: "Invoice Retur",
             dataIndex: "invoice",
             render: (value) => (
-                <Text strong style={{ color: BRAND.primary }}>
+                <Text strong style={{ color: "var(--brand-primary)" }}>
                     {value}
                 </Text>
             ),
@@ -153,7 +152,7 @@ export default function Index() {
                         title={
                             <Space>
                                 <UndoOutlined
-                                    style={{ color: BRAND.primary }}
+                                    style={{ color: "var(--brand-primary)" }}
                                 />
                                 <Title level={4} style={{ margin: 0 }}>
                                     RETUR PENJUALAN

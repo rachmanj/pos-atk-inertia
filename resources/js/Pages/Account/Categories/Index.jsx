@@ -7,7 +7,7 @@ import Search from "../../../Shared/Search";
 import Delete from "../../../Shared/Delete";
 import hasAnyPermission from "../../../Utils/Permissions";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL } from "../../../theme/colors";
+import { NEUTRAL } from "../../../theme/colors";
 
 const { Title } = Typography;
 
@@ -49,7 +49,7 @@ export default function CategoryIndex() {
                             width: 50,
                             height: 50,
                             borderRadius: 8,
-                            background: NEUTRAL.slate50,
+                            background: "var(--bg-subtle)",
                             color: NEUTRAL.slate400,
                             display: "inline-flex",
                             alignItems: "center",
@@ -102,7 +102,7 @@ export default function CategoryIndex() {
                         title={
                             <Space>
                                 <FolderOutlined
-                                    style={{ color: BRAND.primary }}
+                                    style={{ color: "var(--brand-primary)" }}
                                 />
                                 <Title level={4} style={{ margin: 0 }}>
                                     KATEGORI

@@ -4,7 +4,6 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useEffect } from "react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Button,
     Card,
@@ -187,7 +186,7 @@ export default function Show() {
                         >
                             <Space>
                                 <UndoOutlined
-                                    style={{ fontSize: 20, color: BRAND.primary }}
+                                    style={{ fontSize: 20, color: "var(--brand-primary)" }}
                                 />
                                 <div>
                                     <Title level={4} style={{ margin: 0 }}>

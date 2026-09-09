@@ -5,7 +5,6 @@ import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -88,7 +87,7 @@ export default function PurchaseIndex() {
             title: "Invoice",
             dataIndex: "invoice",
             render: (value) => (
-                <Text strong style={{ color: BRAND.primary }}>
+                <Text strong style={{ color: "var(--brand-primary)" }}>
                     {value}
                 </Text>
             ),
@@ -156,7 +155,7 @@ export default function PurchaseIndex() {
                         title={
                             <Space>
                                 <ShoppingOutlined
-                                    style={{ color: BRAND.primary }}
+                                    style={{ color: "var(--brand-primary)" }}
                                 />
                                 <Title level={4} style={{ margin: 0 }}>
                                     PEMBELIAN

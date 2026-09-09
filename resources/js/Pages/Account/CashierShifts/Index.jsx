@@ -5,7 +5,7 @@ import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL, TEAL } from "../../../theme/colors";
+import { BRAND, TEAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -216,7 +216,7 @@ export default function CashierShiftIndex() {
                     <Row align="middle" gutter={[16, 16]}>
                         <Col flex="auto">
                             <Space>
-                                <ClockCircleOutlined style={{ fontSize: 24, color: BRAND.primary }} />
+                                <ClockCircleOutlined style={{ fontSize: 24, color: "var(--brand-primary)" }} />
                                 <div>
                                     <Title level={4} style={{ margin: 0 }}>
                                         Shift Kasir
@@ -281,7 +281,7 @@ export default function CashierShiftIndex() {
                                 wrap
                             >
                                 <Space>
-                                    <CheckCircleOutlined style={{ fontSize: 28, color: BRAND.primary }} />
+                                    <CheckCircleOutlined style={{ fontSize: 28, color: "var(--brand-primary)" }} />
                                     <div>
                                         <Text strong style={{ color: TEAL[700], fontSize: 13 }}>
                                             SHIFT AKTIF
@@ -340,7 +340,7 @@ export default function CashierShiftIndex() {
                                             title="Kas Seharusnya"
                                             value={activeShift.summary?.expected_cash || 0}
                                             prefix={<DollarOutlined />}
-                                            valueStyle={{ color: BRAND.primary }}
+                                            valueStyle={{ color: "var(--brand-primary)" }}
                                             formatter={(v) => formatRupiah(v)}
                                         />
                                     </Card>
@@ -359,7 +359,7 @@ export default function CashierShiftIndex() {
                     <Card
                         title={
                             <Space>
-                                <UnorderedListOutlined style={{ color: NEUTRAL.slate500 }} />
+                                <UnorderedListOutlined style={{ color: "var(--icon-muted)" }} />
                                 <span>Histori Shift</span>
                             </Space>
                         }

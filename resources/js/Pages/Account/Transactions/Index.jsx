@@ -5,7 +5,6 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -156,7 +155,7 @@ export default function Index() {
                             color:
                                 record.status === "voided"
                                     ? "var(--semantic-error)"
-                                    : BRAND.primary,
+                                    : "var(--brand-primary)",
                         }}
                     >
                         {invoice}
@@ -389,7 +388,7 @@ export default function Index() {
                                 record.status === "voided"
                                     ? {
                                           style: {
-                                              background: NEUTRAL.slate50,
+                                              background: "var(--bg-subtle)",
                                           },
                                       }
                                     : {}

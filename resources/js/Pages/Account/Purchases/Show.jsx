@@ -4,7 +4,6 @@ import { Head, Link, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Button,
     Card,
@@ -106,7 +105,7 @@ export default function PurchaseShow() {
                         >
                             <Space>
                                 <FileTextOutlined
-                                    style={{ fontSize: 20, color: BRAND.primary }}
+                                    style={{ fontSize: 20, color: "var(--brand-primary)" }}
                                 />
                                 <div>
                                     <Title level={4} style={{ margin: 0 }}>
@@ -160,7 +159,7 @@ export default function PurchaseShow() {
                                     <Text
                                         strong
                                         style={{
-                                            color: BRAND.primary,
+                                            color: "var(--brand-primary)",
                                             fontSize: 16,
                                             display: "block",
                                             marginBottom: 12,

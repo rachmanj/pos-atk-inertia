@@ -6,7 +6,6 @@ import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useMemo, useState } from "react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Button,
     Card,
@@ -100,7 +99,7 @@ export default function ExpenseIndex() {
             title: "Kode",
             dataIndex: "code",
             render: (value) => (
-                <Text strong style={{ color: BRAND.primary }}>
+                <Text strong style={{ color: "var(--brand-primary)" }}>
                     {value}
                 </Text>
             ),

@@ -3,7 +3,6 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -257,7 +256,7 @@ export default function StockOpnameCreate() {
                         title={
                             <Space>
                                 <CheckOutlined
-                                    style={{ color: BRAND.primary }}
+                                    style={{ color: "var(--brand-primary)" }}
                                 />
                                 <Title level={4} style={{ margin: 0 }}>
                                     STOCK OPNAME BARU
@@ -341,7 +340,7 @@ export default function StockOpnameCreate() {
                                         <Card
                                             size="small"
                                             style={{
-                                                background: NEUTRAL.slate50,
+                                                background: "var(--bg-subtle)",
                                             }}
                                         >
                                             <Text strong>{totalItems}</Text>
@@ -353,7 +352,7 @@ export default function StockOpnameCreate() {
                                         <Card
                                             size="small"
                                             style={{
-                                                background: NEUTRAL.slate50,
+                                                background: "var(--bg-subtle)",
                                             }}
                                         >
                                             <Text

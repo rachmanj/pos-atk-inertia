@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND, NEUTRAL } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -104,7 +103,7 @@ export default function StockMovementCreate() {
                         title={
                             <Space>
                                 <AppstoreOutlined
-                                    style={{ color: BRAND.primary }}
+                                    style={{ color: "var(--brand-primary)" }}
                                 />
                                 <Title level={4} style={{ margin: 0 }}>
                                     KOREKSI STOK
@@ -226,7 +225,7 @@ export default function StockMovementCreate() {
                                         size="small"
                                         title="PRATINJAU STOK"
                                         style={{
-                                            background: NEUTRAL.slate50,
+                                            background: "var(--bg-subtle)",
                                         }}
                                     >
                                         <Space

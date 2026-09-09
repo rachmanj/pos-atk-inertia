@@ -247,7 +247,7 @@ export default function SettingIndex() {
                                                     width: 120,
                                                     height: 120,
                                                     borderRadius: 8,
-                                                    border: `1px solid ${NEUTRAL.slate200}`,
+                                                    border: "1px solid var(--border-subtle)",
                                                     objectFit: "cover",
                                                 }}
                                             />
@@ -257,8 +257,8 @@ export default function SettingIndex() {
                                                     width: 120,
                                                     height: 120,
                                                     borderRadius: 8,
-                                                    background: NEUTRAL.slate50,
-                                                    border: `1px solid ${NEUTRAL.slate200}`,
+                                                    background: "var(--bg-subtle)",
+                                                    border: "1px solid var(--border-subtle)",
                                                     display: "inline-flex",
                                                     alignItems: "center",
                                                     justifyContent: "center",

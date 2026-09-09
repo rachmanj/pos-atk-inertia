@@ -3,7 +3,6 @@ import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -244,7 +243,7 @@ export default function Create() {
                         title={
                             <Space>
                                 <UndoOutlined
-                                    style={{ color: BRAND.primary }}
+                                    style={{ color: "var(--brand-primary)" }}
                                 />
                                 <div>
                                     <Title level={4} style={{ margin: 0 }}>

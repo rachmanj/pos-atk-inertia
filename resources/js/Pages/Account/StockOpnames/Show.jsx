@@ -3,7 +3,6 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Button,
     Card,
@@ -115,7 +114,7 @@ export default function StockOpnameShow() {
                         >
                             <Space>
                                 <ProfileOutlined
-                                    style={{ fontSize: 20, color: BRAND.primary }}
+                                    style={{ fontSize: 20, color: "var(--brand-primary)" }}
                                 />
                                 <Title level={4} style={{ margin: 0 }}>
                                     DETAIL STOCK OPNAME
@@ -149,7 +148,7 @@ export default function StockOpnameShow() {
                                     <Text
                                         strong
                                         style={{
-                                            color: BRAND.primary,
+                                            color: "var(--brand-primary)",
                                             fontSize: 16,
                                             display: "block",
                                             marginBottom: 12,

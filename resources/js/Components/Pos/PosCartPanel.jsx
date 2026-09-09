@@ -20,8 +20,6 @@ import { formatRupiah } from "../../Utils/format";
 import { lineDiscountAmount, lineNet } from "./posUtils";
 import useMobile from "../../Hooks/useMobile";
 import { numericMobileInputProps } from "../../Utils/responsive";
-import { NEUTRAL } from "../../theme/colors";
-
 const { Text } = Typography;
 
 function CartRow({
@@ -317,7 +315,7 @@ export default function PosCartPanel({
                                             <div
                                                 style={{
                                                     fontSize: 12,
-                                                    color: NEUTRAL.slate500,
+                                                    color: "var(--icon-muted)",
                                                 }}
                                             >
                                                 {c.no_telp}

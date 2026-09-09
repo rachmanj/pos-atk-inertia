@@ -82,7 +82,7 @@ export default function CashierShiftShow() {
                 <Space direction="vertical" size="large" style={{ width: "100%" }}>
                     <Space style={{ width: "100%", justifyContent: "space-between" }} wrap>
                         <Space>
-                            <ClockCircleOutlined style={{ color: BRAND.primary, fontSize: 20 }} />
+                            <ClockCircleOutlined style={{ color: "var(--brand-primary)", fontSize: 20 }} />
                             <div>
                                 <Title level={4} style={{ margin: 0 }}>DETAIL SHIFT #{shift.id}</Title>
                                 <Text type="secondary">
@@ -128,7 +128,7 @@ export default function CashierShiftShow() {
                         </Row>
                     </Card>
 
-                    <Card title={<Space><DollarOutlined style={{ color: BRAND.primary }} />Ringkasan Keuangan</Space>}>
+                    <Card title={<Space><DollarOutlined style={{ color: "var(--brand-primary)" }} />Ringkasan Keuangan</Space>}>
                         <Row gutter={[16, 16]}>
                             <Col xs={12} sm={12} md={6}>
                                 <Card size="small"><Statistic title="Kas Awal" value={shift.cash_in_hand} prefix={<MoneyCollectOutlined />} formatter={v => formatRupiah(v)} /></Card>
@@ -140,7 +140,7 @@ export default function CashierShiftShow() {
                                 <Card size="small"><Statistic title="Non Tunai" value={shift.summary?.non_cash_sales || 0} prefix={<WalletOutlined />} valueStyle={{ color: "var(--semantic-info)" }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
-                                <Card size="small"><Statistic title="Kas Seharusnya" value={shift.summary?.expected_cash || 0} prefix={<DollarOutlined />} valueStyle={{ color: BRAND.primary }} formatter={v => formatRupiah(v)} /></Card>
+                                <Card size="small"><Statistic title="Kas Seharusnya" value={shift.summary?.expected_cash || 0} prefix={<DollarOutlined />} valueStyle={{ color: "var(--brand-primary)" }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
                                 <Card size="small"><Statistic title="Refund Tunai" value={shift.summary?.cash_refunds || 0} prefix={<FallOutlined />} valueStyle={{ color: "var(--semantic-error)" }} formatter={v => formatRupiah(v)} /></Card>

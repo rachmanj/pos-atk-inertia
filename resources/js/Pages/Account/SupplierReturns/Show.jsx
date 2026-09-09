@@ -3,7 +3,6 @@ import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Alert,
     Button,
@@ -111,7 +110,7 @@ export default function SupplierReturnShow() {
                         >
                             <Space>
                                 <ExportOutlined
-                                    style={{ fontSize: 20, color: BRAND.primary }}
+                                    style={{ fontSize: 20, color: "var(--brand-primary)" }}
                                 />
                                 <Title level={4} style={{ margin: 0 }}>
                                     DETAIL RETUR SUPPLIER

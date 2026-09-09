@@ -2,7 +2,6 @@ import { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import {
     Button,
     Card,
@@ -72,7 +71,7 @@ export default function ExpenseEdit() {
                     <Card
                         title={
                             <Space>
-                                <EditOutlined style={{ color: BRAND.primary }} />
+                                <EditOutlined style={{ color: "var(--brand-primary)" }} />
                                 <div>
                                     <Title level={4} style={{ margin: 0 }}>
                                         EDIT PENGELUARAN

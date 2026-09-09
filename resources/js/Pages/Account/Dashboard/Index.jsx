@@ -273,7 +273,7 @@ export default function Dashboard() {
                                 title={
                                     <Space>
                                         <ClockCircleOutlined
-                                            style={{ color: BRAND.primary }}
+                                            style={{ color: "var(--brand-primary)" }}
                                         />
                                         Shift Kasir
                                     </Space>
