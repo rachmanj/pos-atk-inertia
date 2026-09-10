@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateCartRequest;
 use App\Models\Cart;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class CartController extends Controller
 {
@@ -40,14 +41,23 @@ class CartController extends Controller
     {
         $this->authorizeCartOwner($request, $cart);
 
+        if ($request->filled('price') && $cart->ppob_cost !== null) {
+            throw ValidationException::withMessages([
+                'price' => 'Harga item PPOB tidak bisa diubah di keranjang.',
+            ]);
+        }
+
         $product = Product::with(['productUnits'])->findOrFail($cart->product_id);
         $qty = (int) $request->qty;
         $discountPayload = $this->discountPayload($request, $cart);
+        $manualPrice = $request->filled('price') ? (int) $request->price : null;
 
         if ($product->isPpob() || $product->isService()) {
             $payload = array_merge(['qty' => $qty], $discountPayload);
 
-            if ($product->isService()) {
+            if ($manualPrice !== null) {
+                $payload['price'] = $manualPrice;
+            } elseif ($product->isService()) {
                 $productUnit = $product->productUnits->firstWhere('unit_id', $cart->unit_id)
                     ?? $product->productUnits->firstWhere('is_default_sell', true);
 
@@ -66,12 +76,16 @@ class CartController extends Controller
             return back()->with('error', 'Qty keranjang melebihi stok tersedia.');
         }
 
-        $productUnit = $product->productUnits->firstWhere('unit_id', $cart->unit_id);
+        $payload = array_merge(['qty' => $qty], $discountPayload);
 
-        $cart->update(array_merge([
-            'qty' => $qty,
-            'price' => $productUnit?->sell_price ?? $product->sell_price,
-        ], $discountPayload));
+        if ($manualPrice !== null) {
+            $payload['price'] = $manualPrice;
+        } else {
+            $productUnit = $product->productUnits->firstWhere('unit_id', $cart->unit_id);
+            $payload['price'] = $productUnit?->sell_price ?? $product->sell_price;
+        }
+
+        $cart->update($payload);
 
         return back();
     }

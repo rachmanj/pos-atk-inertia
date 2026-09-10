@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     AutoComplete,
     Button,
@@ -29,14 +29,58 @@ function CartRow({
     onDelete,
     onToggleHold,
     onDiscountChange,
+    onUpdatePrice,
     isMobile,
 }) {
     const [showDiscount, setShowDiscount] = useState(
         Number(cart.discount || 0) > 0,
     );
+    const [editingPrice, setEditingPrice] = useState(false);
+    const [draftPrice, setDraftPrice] = useState(cart.price ?? 0);
+    const skipBlurSave = useRef(false);
     const itemDiscount = lineDiscountAmount(cart);
     const net = lineNet(cart);
     const isPpob = cart.ppob_cost != null;
+    const canEditPrice = !isPpob && !held && onUpdatePrice;
+
+    useEffect(() => {
+        if (!editingPrice) {
+            setDraftPrice(cart.price ?? 0);
+        }
+    }, [cart.price, editingPrice]);
+
+    const cancelPriceEdit = () => {
+        skipBlurSave.current = true;
+        setDraftPrice(cart.price ?? 0);
+        setEditingPrice(false);
+    };
+
+    const commitPriceEdit = () => {
+        skipBlurSave.current = true;
+        const next = Math.max(0, Math.round(Number(draftPrice) || 0));
+        setEditingPrice(false);
+        if (next !== Number(cart.price ?? 0)) {
+            onUpdatePrice?.(cart.id, next);
+        }
+    };
+
+    const handlePriceBlur = () => {
+        if (skipBlurSave.current) {
+            skipBlurSave.current = false;
+            return;
+        }
+        commitPriceEdit();
+    };
+
+    const handlePriceKeyDown = (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            commitPriceEdit();
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            cancelPriceEdit();
+        }
+    };
 
     return (
         <div className={`pos-cart-row${held ? " pos-cart-row--held" : ""}`}>
@@ -67,7 +111,37 @@ function CartRow({
                     ) : (
                         <>
                             {cart.unit?.abbreviation || cart.product?.unit} ·{" "}
-                            {formatRupiah(cart.price)}
+                            {canEditPrice && editingPrice ? (
+                                <InputNumber
+                                    autoFocus
+                                    className="pos-cart-unit-price-input"
+                                    min={0}
+                                    size="small"
+                                    controls={false}
+                                    value={draftPrice}
+                                    onChange={(value) =>
+                                        setDraftPrice(value ?? 0)
+                                    }
+                                    onBlur={handlePriceBlur}
+                                    onKeyDown={handlePriceKeyDown}
+                                    {...numericMobileInputProps(isMobile)}
+                                />
+                            ) : canEditPrice ? (
+                                <button
+                                    type="button"
+                                    className="pos-cart-unit-price-btn"
+                                    onClick={() => {
+                                        setDraftPrice(cart.price ?? 0);
+                                        setEditingPrice(true);
+                                    }}
+                                    title="Klik untuk ubah harga"
+                                    aria-label="Ubah harga"
+                                >
+                                    {formatRupiah(cart.price)}
+                                </button>
+                            ) : (
+                                formatRupiah(cart.price)
+                            )}
                         </>
                     )}
                     {cart.customer_ref && (
@@ -209,6 +283,7 @@ export default function PosCartPanel({
     onDelete,
     onToggleHold,
     onDiscountChange,
+    onUpdatePrice,
 }) {
     const isMobile = useMobile();
 
@@ -255,6 +330,7 @@ export default function PosCartPanel({
                                 onDelete={onDelete}
                                 onToggleHold={onToggleHold}
                                 onDiscountChange={onDiscountChange}
+                                onUpdatePrice={onUpdatePrice}
                             />
                         ))}
                         {heldCarts.length > 0 && (
@@ -273,6 +349,7 @@ export default function PosCartPanel({
                                         onDelete={onDelete}
                                         onToggleHold={onToggleHold}
                                         onDiscountChange={onDiscountChange}
+                                        onUpdatePrice={onUpdatePrice}
                                     />
                                 ))}
                             </div>

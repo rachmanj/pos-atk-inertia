@@ -638,6 +638,87 @@ export default function TransactionCreate() {
         );
     };
 
+    const updatePrice = async (cartId, price) => {
+        const priceVal = Math.max(0, Math.round(Number(price) || 0));
+
+        if (String(cartId).startsWith("temp-")) {
+            setLocalCarts((prev) =>
+                prev.map((cart) =>
+                    cart.id === cartId ? { ...cart, price: priceVal } : cart,
+                ),
+            );
+            return;
+        }
+
+        const snapshot = localCarts;
+        const current = localCarts.find((cart) => cart.id === cartId);
+
+        setLocalCarts((prev) =>
+            prev.map((cart) =>
+                cart.id === cartId ? { ...cart, price: priceVal } : cart,
+            ),
+        );
+
+        try {
+            const response = await fetch(`/account/carts/${cartId}`, {
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": readCsrfToken(),
+                },
+                credentials: "same-origin",
+                body: JSON.stringify({
+                    qty: current?.qty || 1,
+                    price: priceVal,
+                    discount: current?.discount ?? 0,
+                    discount_type: current?.discount_type || "nominal",
+                }),
+            });
+
+            if (response.status === 422) {
+                const data = await response.json().catch(() => ({}));
+                setLocalCarts(snapshot);
+                notification.error({
+                    message: "Gagal",
+                    description:
+                        data.errors?.price?.[0] ||
+                        data.message ||
+                        "Harga tidak valid.",
+                    duration: 2,
+                });
+                return;
+            }
+
+            if (!response.ok) {
+                setLocalCarts(snapshot);
+                notification.error({
+                    message: "Gagal",
+                    description: "Gagal mengubah harga.",
+                    duration: 2,
+                });
+                return;
+            }
+
+            router.reload({
+                only: ["carts"],
+                preserveState: true,
+                preserveScroll: true,
+            });
+            notification.success({
+                message: "Harga diubah",
+                duration: 1.2,
+            });
+        } catch {
+            setLocalCarts(snapshot);
+            notification.error({
+                message: "Gagal",
+                description: "Gagal mengubah harga.",
+                duration: 2,
+            });
+        }
+    };
+
     const handleDiscountChange = (cartId, rawValue, type) => {
         const value =
             typeof rawValue === "number"
@@ -912,6 +993,7 @@ export default function TransactionCreate() {
         onDelete: deleteCart,
         onToggleHold: toggleCartHold,
         onDiscountChange: handleDiscountChange,
+        onUpdatePrice: updatePrice,
     };
 
     const paymentSummaryProps = {
