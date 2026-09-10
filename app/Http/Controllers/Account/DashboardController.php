@@ -10,6 +10,7 @@ use App\Models\Profit;
 use App\Models\PpobAccount;
 use App\Models\ReturnTransaction;
 use App\Models\Transaction;
+use App\Models\TransactionDetail;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -33,6 +34,8 @@ class DashboardController extends Controller
         $this->applyPaidTransactionPeriod($paidTransactionsToday, $user, $todayStart, $todayEnd);
 
         $totalSalesToday = (int) (clone $paidTransactionsToday)->sum('grand_total');
+        $todayStoreSales = $this->sumTodayDetailSubtotal($user, $todayStart, $todayEnd, false);
+        $todayPpobSales = $this->sumTodayDetailSubtotal($user, $todayStart, $todayEnd, true);
         $totalTransactionsToday = (int) (clone $paidTransactionsToday)->count();
         $averageSaleToday = $totalTransactionsToday > 0
             ? (int) round($totalSalesToday / $totalTransactionsToday)
@@ -81,6 +84,8 @@ class DashboardController extends Controller
         return Inertia::render('Account/Dashboard/Index', [
             'summary' => [
                 'today_sales'              => $totalSalesToday,
+                'today_store_sales'        => $todayStoreSales,
+                'today_ppob_sales'         => $todayPpobSales,
                 'today_transactions'       => $totalTransactionsToday,
                 'today_average_sale'       => $averageSaleToday,
                 'today_gross_profit'       => $grossProfitToday,
@@ -106,6 +111,27 @@ class DashboardController extends Controller
                 'is_low_balance' => $ppobAccount->isLowBalance(),
             ] : null,
         ]);
+    }
+
+    protected function sumTodayDetailSubtotal(
+        User $user,
+        Carbon $startDate,
+        Carbon $endDate,
+        bool $ppobOnly
+    ): int {
+        $query = TransactionDetail::query()
+            ->join('products', 'transaction_details.product_id', '=', 'products.id')
+            ->whereHas('transaction', function (Builder $query) use ($user, $startDate, $endDate) {
+                $this->applyPaidTransactionPeriod($query, $user, $startDate, $endDate);
+            });
+
+        if ($ppobOnly) {
+            $query->where('products.product_type', 'ppob');
+        } else {
+            $query->where('products.product_type', '<>', 'ppob');
+        }
+
+        return (int) $query->sum('transaction_details.subtotal');
     }
 
     protected function applyPaidTransactionPeriod(

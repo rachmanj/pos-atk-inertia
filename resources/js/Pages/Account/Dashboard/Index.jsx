@@ -26,7 +26,7 @@ import {
     ShoppingOutlined,
     WalletOutlined,
 } from "@ant-design/icons";
-import { formatRupiah } from "../../../Utils/format";
+import { formatRupiah, formatRupiahCompact } from "../../../Utils/format";
 
 const { Title, Text } = Typography;
 
@@ -70,7 +70,7 @@ const statIconColors = {
     secondary: NEUTRAL.slate400,
 };
 
-function StatCard({ title, value, subtitle, icon, color }) {
+function StatCard({ title, value, detail, subtitle, icon, color }) {
     const iconColor = statIconColors[color] || statIconColors.primary;
 
     return (
@@ -106,6 +106,11 @@ function StatCard({ title, value, subtitle, icon, color }) {
                     {icon}
                 </div>
             </Space>
+            {detail && (
+                <Text type="secondary" style={{ fontSize: 11, display: "block", marginBottom: 4 }}>
+                    {detail}
+                </Text>
+            )}
             <Text type="secondary" style={{ fontSize: 12 }}>
                 {subtitle}
             </Text>
@@ -131,8 +136,9 @@ export default function Dashboard() {
 
     const stats = [
         {
-            title: "Penjualan Bruto Hari Ini",
-            value: formatRupiah(summary.today_sales || 0),
+            title: "Penjualan Toko Hari Ini",
+            value: formatRupiahCompact(summary.today_store_sales || 0),
+            detail: `PPOB: ${formatRupiahCompact(summary.today_ppob_sales || 0)}`,
             subtitle: `${summary.today_transactions || 0} transaksi lunas aktif, tidak termasuk void`,
             icon: <DollarOutlined />,
             color: "primary",
