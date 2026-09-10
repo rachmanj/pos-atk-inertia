@@ -1,4 +1,14 @@
-import { Alert, Form, Input, InputNumber, Modal } from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
+import {
+    Alert,
+    Button,
+    Form,
+    Input,
+    InputNumber,
+    Modal,
+    Space,
+    Tooltip,
+} from "antd";
 import { formatRupiah } from "../../Utils/format";
 import useMobile from "../../Hooks/useMobile";
 import {
@@ -60,16 +70,28 @@ export default function PosPpobModal({
                     />
                 </Form.Item>
                 <Form.Item label="Admin Fee" required>
-                    <InputNumber
-                        min={0}
-                        className="w-full"
-                        style={{ width: "100%" }}
-                        value={adminFee === "" ? null : Number(adminFee)}
-                        onChange={(value) =>
-                            onAdminFeeChange(value != null ? String(value) : "")
-                        }
-                        {...numericMobileInputProps(isMobile)}
-                    />
+                    <Space.Compact style={{ width: "100%" }}>
+                        <InputNumber
+                            min={0}
+                            className="w-full"
+                            style={{ width: "100%" }}
+                            value={adminFee === "" ? null : Number(adminFee)}
+                            onChange={(value) =>
+                                onAdminFeeChange(
+                                    value != null ? String(value) : "",
+                                )
+                            }
+                            {...numericMobileInputProps(isMobile)}
+                        />
+                        <Tooltip title="Nolkan admin fee (Rp 0)">
+                            <Button
+                                type="default"
+                                icon={<DeleteOutlined />}
+                                aria-label="Nolkan admin fee"
+                                onClick={() => onAdminFeeChange("0")}
+                            />
+                        </Tooltip>
+                    </Space.Compact>
                 </Form.Item>
                 <Alert
                     type="info"
