@@ -85,6 +85,8 @@ export default function CashierShiftShow() {
     const [actualCash, setActualCash] = useState(
         shift.status === "open" ? shift.summary?.expected_cash || 0 : shift.actual_cash,
     );
+    const [cashOverage, setCashOverage] = useState(0);
+    const [overageNote, setOverageNote] = useState("");
     const [note, setNote] = useState("");
 
     const [waModalOpen, setWaModalOpen] = useState(false);
@@ -96,10 +98,22 @@ export default function CashierShiftShow() {
     const [sendLoading, setSendLoading] = useState(false);
     const [viewMessageLog, setViewMessageLog] = useState(null);
 
-    const estimatedDifference = useMemo(() => {
-        const value = Number(actualCash || 0) - Number(shift.summary?.expected_cash || 0);
+    const physicalCash = useMemo(() => {
+        const value = Number(actualCash || 0) + Number(cashOverage || 0);
         return Number.isNaN(value) ? 0 : value;
-    }, [actualCash, shift.summary?.expected_cash]);
+    }, [actualCash, cashOverage]);
+
+    const estimatedDifference = useMemo(() => {
+        const value = physicalCash - Number(shift.summary?.expected_cash || 0);
+        return Number.isNaN(value) ? 0 : value;
+    }, [physicalCash, shift.summary?.expected_cash]);
+
+    const countedCash = useMemo(() => {
+        if (shift.status !== "closed" || !shift.cash_overage) {
+            return shift.actual_cash;
+        }
+        return Number(shift.actual_cash || 0) - Number(shift.cash_overage || 0);
+    }, [shift.status, shift.actual_cash, shift.cash_overage]);
 
     const loadPreview = useCallback(async () => {
         setPreviewLoading(true);
@@ -194,7 +208,12 @@ export default function CashierShiftShow() {
     const closeShift = () => {
         router.put(
             `/account/cashier-shifts/${shift.id}/close`,
-            { actual_cash: actualCash, note },
+            {
+                actual_cash: actualCash,
+                cash_overage: cashOverage || 0,
+                overage_note: cashOverage > 0 ? overageNote : null,
+                note,
+            },
             {
                 onError: () => {
                     notification.error({
@@ -354,14 +373,71 @@ export default function CashierShiftShow() {
                                         </Form.Item>
                                     </Col>
                                     <Col xs={24} md={8}>
+                                        <Form.Item
+                                            label="Kelebihan Uang (Rp)"
+                                            validateStatus={errors.cash_overage ? "error" : ""}
+                                            help={errors.cash_overage}
+                                        >
+                                            <InputNumber
+                                                min={0}
+                                                style={{ width: "100%" }}
+                                                value={cashOverage}
+                                                onChange={v => {
+                                                    const next = v || 0;
+                                                    setCashOverage(next);
+                                                    if (next === 0) {
+                                                        setOverageNote("");
+                                                    }
+                                                }}
+                                                formatter={v => formatRupiah(v)}
+                                                parser={v => v?.replace(/\D/g, "")}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    {cashOverage > 0 && (
+                                        <Col xs={24} md={8}>
+                                            <Form.Item
+                                                label="Keterangan Kelebihan"
+                                                required
+                                                validateStatus={errors.overage_note ? "error" : ""}
+                                                help={errors.overage_note}
+                                            >
+                                                <Input
+                                                    value={overageNote}
+                                                    onChange={e => setOverageNote(e.target.value)}
+                                                    placeholder="Contoh: uang kembalian pelanggan tertinggal"
+                                                    maxLength={255}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    )}
+                                    <Col xs={24} md={8}>
+                                        <Form.Item label="Total Fisik Kas">
+                                            <InputNumber
+                                                style={{ width: "100%" }}
+                                                value={physicalCash}
+                                                disabled
+                                                formatter={v => formatRupiah(v)}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} md={8}>
                                         <Form.Item label="Perkiraan Selisih">
                                             <InputNumber
-                                                style={{ width: "100%", color: estimatedDifference < 0 ? "var(--semantic-error)" : "var(--semantic-success)" }}
+                                                style={{ width: "100%", color: estimatedDifference < 0 ? "var(--semantic-error)" : estimatedDifference > 0 ? "var(--semantic-warning)" : "var(--semantic-success)" }}
                                                 value={estimatedDifference}
                                                 disabled
                                                 formatter={v => formatRupiah(v)}
                                             />
                                         </Form.Item>
+                                    </Col>
+                                    <Col xs={24}>
+                                        <Alert
+                                            type="info"
+                                            showIcon
+                                            message={`Kas Aktual + Kelebihan = ${formatRupiah(physicalCash)} (Total Fisik Kas)`}
+                                            description={`Selisih terhadap kas seharusnya: ${formatRupiah(estimatedDifference)}`}
+                                        />
                                     </Col>
                                     <Col xs={24}>
                                         <Form.Item label="Catatan Penutupan" validateStatus={errors.note ? "error" : ""} help={errors.note}>
@@ -379,10 +455,41 @@ export default function CashierShiftShow() {
                             <Card title="Hasil Penutupan">
                                 <Row gutter={[16, 16]}>
                                     <Col xs={24} sm={8}>
-                                        <Statistic title="Kas Aktual" value={shift.actual_cash} formatter={v => formatRupiah(v)} prefix={<MoneyCollectOutlined />} />
+                                        <Statistic
+                                            title={shift.cash_overage > 0 ? "Kas Aktual (Dihitung)" : "Kas Aktual"}
+                                            value={countedCash}
+                                            formatter={v => formatRupiah(v)}
+                                            prefix={<MoneyCollectOutlined />}
+                                        />
                                     </Col>
+                                    {shift.cash_overage > 0 && (
+                                        <Col xs={24} sm={8}>
+                                            <Statistic
+                                                title="Kelebihan Uang"
+                                                value={shift.cash_overage}
+                                                formatter={v => formatRupiah(v)}
+                                                valueStyle={{ color: "var(--semantic-warning)" }}
+                                                prefix={<RiseOutlined />}
+                                            />
+                                            {shift.overage_note && (
+                                                <Text type="secondary" style={{ display: "block", marginTop: 4, fontSize: 12 }}>
+                                                    {shift.overage_note}
+                                                </Text>
+                                            )}
+                                        </Col>
+                                    )}
+                                    {shift.cash_overage > 0 && (
+                                        <Col xs={24} sm={8}>
+                                            <Statistic
+                                                title="Total Fisik Kas"
+                                                value={shift.actual_cash}
+                                                formatter={v => formatRupiah(v)}
+                                                prefix={<WalletOutlined />}
+                                            />
+                                        </Col>
+                                    )}
                                     <Col xs={24} sm={8}>
-                                        <Statistic title="Selisih" value={shift.difference} formatter={v => formatRupiah(v)} valueStyle={{ color: shift.difference < 0 ? "var(--semantic-error)" : "var(--semantic-success)" }} prefix={<SwapOutlined />} />
+                                        <Statistic title="Selisih" value={shift.difference} formatter={v => formatRupiah(v)} valueStyle={{ color: shift.difference < 0 ? "var(--semantic-error)" : shift.difference > 0 ? "var(--semantic-warning)" : "var(--semantic-success)" }} prefix={<SwapOutlined />} />
                                     </Col>
                                     <Col xs={24} sm={8}>
                                         <Statistic title="Total Transaksi" value={shift.total_transactions} prefix={<ShoppingCartOutlined />} />

@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Throwable;
 
@@ -176,6 +177,8 @@ class CashierShiftController extends Controller
                 'ppob_expected_balance' => $cashierShift->ppob_expected_balance,
                 'expected_cash'      => $cashierShift->isOpen() ? $summary['expected_cash'] : $cashierShift->expected_cash,
                 'actual_cash'        => $cashierShift->actual_cash,
+                'cash_overage'       => $cashierShift->cash_overage,
+                'overage_note'       => $cashierShift->overage_note,
                 'difference'         => $cashierShift->difference,
                 'total_transactions' => $cashierShift->isOpen() ? $summary['total_transactions'] : $cashierShift->total_transactions,
                 'note'               => $cashierShift->note,
@@ -307,8 +310,10 @@ class CashierShiftController extends Controller
     public function close(Request $request, CashierShift $cashierShift)
     {
         $request->validate([
-            'actual_cash' => 'required|integer|min:0',
-            'note'        => 'nullable|string|max:1000',
+            'actual_cash'  => 'required|integer|min:0',
+            'cash_overage' => 'nullable|integer|min:0',
+            'overage_note' => 'nullable|string|max:255',
+            'note'         => 'nullable|string|max:1000',
         ]);
 
         $this->authorizeClose($request, $cashierShift);
@@ -319,8 +324,18 @@ class CashierShiftController extends Controller
                 ->with('error', 'Shift ini sudah ditutup sebelumnya.');
         }
 
+        $cashOverage = (int) ($request->cash_overage ?? 0);
+        $overageNote = filled($request->overage_note) ? trim($request->overage_note) : null;
+
+        if ($cashOverage > 0 && !filled($overageNote)) {
+            throw ValidationException::withMessages([
+                'overage_note' => 'Keterangan kelebihan uang wajib diisi.',
+            ]);
+        }
+
         $summary = $this->buildShiftSummary($cashierShift);
         $actualCash = (int) $request->actual_cash;
+        $physicalCash = $actualCash + $cashOverage;
         $expectedCash = $summary['expected_cash'];
         $closeNote = filled($request->note) ? trim($request->note) : null;
 
@@ -329,8 +344,10 @@ class CashierShiftController extends Controller
         $cashierShift->update([
             'closed_at'          => now(),
             'expected_cash'      => $expectedCash,
-            'actual_cash'        => $actualCash,
-            'difference'         => $actualCash - $expectedCash,
+            'actual_cash'        => $physicalCash,
+            'cash_overage'       => $cashOverage,
+            'overage_note'       => $overageNote,
+            'difference'         => $physicalCash - $expectedCash,
             'total_transactions' => $summary['total_transactions'],
             'ppob_expected_balance' => $summary['ppob_expected_balance'],
             'note'               => $this->mergeNotes($cashierShift->note, $closeNote),

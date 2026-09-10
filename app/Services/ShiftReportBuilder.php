@@ -136,6 +136,14 @@ class ShiftReportBuilder
             $lines[] = $expenseLine;
         }
 
+        $cashOverage = (int) ($shift->cash_overage ?? 0);
+        if ($cashOverage > 0) {
+            $lines[] = 'Kelebihan Uang       : ' . TelegramFormatter::idr($cashOverage);
+            if (filled($shift->overage_note)) {
+                $lines[] = '  ' . trim($shift->overage_note);
+            }
+        }
+
         $lines[] = '';
         $lines[] = 'Tunai Disetor        : ' . TelegramFormatter::idr($tunaiDisetor);
         $lines[] = '';
