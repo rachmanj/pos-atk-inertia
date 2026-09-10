@@ -313,6 +313,10 @@ Route::middleware(['auth'])
             ->middleware('permission:reports.product_sales')
             ->name('reports.product_sales');
 
+        Route::get('/reports/product-sales/{product}/detail', [ProductSalesReportController::class, 'detail'])
+            ->middleware('permission:reports.product_sales')
+            ->name('reports.product_sales.detail');
+
         Route::get('/reports/product-sales/export', [ProductSalesReportController::class, 'export'])
             ->middleware('permission:reports.export')
             ->name('reports.product_sales.export');

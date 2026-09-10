@@ -3,8 +3,9 @@ import Pagination from "../../../Shared/Pagination";
 import DatePreset from "../../../Shared/DatePreset";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
-import { Head, router, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
+import { useCallback, useEffect, useState } from "react";
+import axios from "axios";
 import {
     Button,
     Card,
@@ -14,6 +15,7 @@ import {
     Row,
     Select,
     Space,
+    Spin,
     Statistic,
     Table,
     Tag,
@@ -51,6 +53,138 @@ export default function ProductSalesReport() {
     const [cashierId, setCashierId] = useState(
         filters.cashier_id || undefined,
     );
+    const [detailCache, setDetailCache] = useState({});
+    const [loadingDetails, setLoadingDetails] = useState({});
+    const [expandedRowKeys, setExpandedRowKeys] = useState([]);
+
+    useEffect(() => {
+        setDetailCache({});
+        setLoadingDetails({});
+        setExpandedRowKeys([]);
+    }, [
+        filters.start_date,
+        filters.end_date,
+        filters.category_id,
+        filters.cashier_id,
+    ]);
+
+    const fetchProductDetail = useCallback(
+        async (productId) => {
+            if (detailCache[productId] || loadingDetails[productId]) {
+                return;
+            }
+
+            setLoadingDetails((prev) => ({ ...prev, [productId]: true }));
+
+            try {
+                const { data } = await axios.get(
+                    `/account/reports/product-sales/${productId}/detail`,
+                    {
+                        params: {
+                            start_date: filters.start_date,
+                            end_date: filters.end_date,
+                            category_id: filters.category_id || "",
+                            cashier_id: filters.cashier_id || "",
+                        },
+                    },
+                );
+
+                setDetailCache((prev) => ({ ...prev, [productId]: data }));
+            } finally {
+                setLoadingDetails((prev) => ({ ...prev, [productId]: false }));
+            }
+        },
+        [
+            detailCache,
+            loadingDetails,
+            filters.start_date,
+            filters.end_date,
+            filters.category_id,
+            filters.cashier_id,
+        ],
+    );
+
+    const handleExpand = (expanded, record) => {
+        if (expanded) {
+            fetchProductDetail(record.product_id);
+            setExpandedRowKeys((prev) => [...prev, record.product_id]);
+        } else {
+            setExpandedRowKeys((prev) =>
+                prev.filter((key) => key !== record.product_id),
+            );
+        }
+    };
+
+    const detailColumns = [
+        { title: "Waktu", dataIndex: "tanggal", width: 140 },
+        {
+            title: "No. Invoice",
+            dataIndex: "invoice",
+            render: (invoice) => (
+                <Link href={`/account/transactions/${invoice}`}>
+                    {invoice}
+                </Link>
+            ),
+        },
+        { title: "Kasir", dataIndex: "kasir" },
+        {
+            title: "Qty",
+            dataIndex: "qty",
+            align: "center",
+            width: 70,
+        },
+        {
+            title: "Harga Satuan",
+            dataIndex: "harga_satuan",
+            align: "right",
+            render: (value) => formatRupiah(value),
+        },
+        {
+            title: "Subtotal",
+            dataIndex: "subtotal",
+            align: "right",
+            render: (value) => formatRupiah(value),
+        },
+    ];
+
+    const renderExpandedRow = (record) => {
+        const productId = record.product_id;
+        const isLoading = loadingDetails[productId];
+        const detail = detailCache[productId];
+
+        if (isLoading) {
+            return (
+                <div style={{ padding: 16, textAlign: "center" }}>
+                    <Spin />
+                </div>
+            );
+        }
+
+        if (!detail || detail.items.length === 0) {
+            return (
+                <Text type="secondary" style={{ padding: 8, display: "block" }}>
+                    Belum ada transaksi pada periode ini.
+                </Text>
+            );
+        }
+
+        return (
+            <div style={{ padding: "8px 0" }}>
+                <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
+                    {detail.jumlah_transaksi} transaksi · Total {detail.total_qty}{" "}
+                    pcs · {formatRupiah(detail.total_omzet)}
+                </Text>
+                <Table
+                    rowKey={(row) => `${row.invoice}-${row.tanggal}`}
+                    columns={detailColumns}
+                    dataSource={detail.items}
+                    size="small"
+                    pagination={false}
+                    scroll={{ x: "max-content" }}
+                />
+            </div>
+        );
+    };
 
     const handleFilter = (e) => {
         e.preventDefault();
@@ -328,6 +462,11 @@ export default function ProductSalesReport() {
                         dataSource={productSales.data}
                         pagination={false}
                         scroll={{ x: 'max-content' }}
+                        expandable={{
+                            expandedRowKeys,
+                            onExpand: handleExpand,
+                            expandedRowRender: renderExpandedRow,
+                        }}
                         locale={{
                             emptyText:
                                 "Belum ada data penjualan produk untuk filter ini.",

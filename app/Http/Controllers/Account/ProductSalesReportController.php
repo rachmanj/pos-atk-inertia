@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Exports\ProductSalesReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\TransactionDetail;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -140,6 +141,95 @@ class ProductSalesReportController extends Controller
                     ->get(['id', 'name'])
                 : [],
             'isAdmin' => $user->isAdminUser(),
+        ]);
+    }
+
+    public function detail(Request $request, Product $product)
+    {
+        $user = $request->user();
+
+        abort_unless($user->can('reports.product_sales'), 403);
+
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'cashier_id' => 'nullable|exists:users,id',
+            'category_id' => 'nullable|exists:categories,id',
+        ]);
+
+        $startDate = $request->start_date
+            ? Carbon::parse($request->start_date)->startOfDay()
+            : Carbon::now()->startOfMonth();
+
+        $endDate = $request->end_date
+            ? Carbon::parse($request->end_date)->endOfDay()
+            : Carbon::now()->endOfDay();
+
+        $categoryId = $request->category_id;
+
+        if (filled($categoryId) && (int) $product->category_id !== (int) $categoryId) {
+            return response()->json([
+                'items' => [],
+                'total_qty' => 0,
+                'total_omzet' => 0,
+                'jumlah_transaksi' => 0,
+            ]);
+        }
+
+        $baseQuery = TransactionDetail::query()
+            ->join('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
+            ->join('users', 'transactions.cashier_id', '=', 'users.id')
+            ->where('transaction_details.product_id', $product->id)
+            ->where('transactions.payment_status', 'paid')
+            ->where('transactions.status', '!=', 'voided')
+            ->whereBetween(
+                DB::raw('COALESCE(transactions.paid_at, transactions.created_at)'),
+                [$startDate, $endDate]
+            )
+            ->when(!$user->isAdminUser(), function (Builder $query) use ($user) {
+                $query->where('transactions.cashier_id', $user->id);
+            })
+            ->when($user->isAdminUser() && filled($request->cashier_id), function (Builder $query) use ($request) {
+                $query->where('transactions.cashier_id', $request->cashier_id);
+            });
+
+        $aggregate = (clone $baseQuery)
+            ->selectRaw('SUM(transaction_details.qty) as total_qty')
+            ->selectRaw('SUM(transaction_details.subtotal) as total_omzet')
+            ->selectRaw('COUNT(DISTINCT transactions.id) as jumlah_transaksi')
+            ->first();
+
+        $rows = (clone $baseQuery)
+            ->select([
+                'transaction_details.qty',
+                'transaction_details.price',
+                'transaction_details.subtotal',
+                'transactions.invoice',
+                'transactions.status',
+                'users.name as cashier_name',
+                DB::raw('COALESCE(transactions.paid_at, transactions.created_at) as tanggal_raw'),
+            ])
+            ->orderByDesc(DB::raw('COALESCE(transactions.paid_at, transactions.created_at)'))
+            ->limit(200)
+            ->get();
+
+        $items = $rows->map(function ($row) {
+            return [
+                'tanggal' => Carbon::parse($row->tanggal_raw)->format('d/m/Y H:i'),
+                'invoice' => $row->invoice,
+                'kasir' => $row->cashier_name,
+                'qty' => (int) $row->qty,
+                'harga_satuan' => (int) $row->price,
+                'subtotal' => (int) $row->subtotal,
+                'status' => $row->status,
+            ];
+        })->values();
+
+        return response()->json([
+            'items' => $items,
+            'total_qty' => (int) ($aggregate->total_qty ?? 0),
+            'total_omzet' => (int) ($aggregate->total_omzet ?? 0),
+            'jumlah_transaksi' => (int) ($aggregate->jumlah_transaksi ?? 0),
         ]);
     }
 
