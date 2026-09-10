@@ -42,12 +42,17 @@ export default function PpobReport() {
     const permissions = auth.permissions || {};
 
     const [search, setSearch] = useState(filters.q || "");
-    const [startDate, setStartDate] = useState(filters.start_date || "");
-    const [endDate, setEndDate] = useState(filters.end_date || "");
+    const [dateRange, setDateRange] = useState([
+        dayjs(filters.start_date),
+        dayjs(filters.end_date),
+    ]);
     const [cashierId, setCashierId] = useState(
         filters.cashier_id || undefined,
     );
     const [groupBy, setGroupBy] = useState(filters.group_by || "product");
+
+    const startDate = dateRange?.[0]?.format("YYYY-MM-DD");
+    const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
 
     const handleFilter = (e) => {
         e.preventDefault();
@@ -61,17 +66,19 @@ export default function PpobReport() {
     };
 
     const handleReset = () => {
+        const defaultRange = [dayjs().startOf("month"), dayjs()];
         setSearch("");
-        setStartDate("");
-        setEndDate("");
+        setDateRange(defaultRange);
         setCashierId(undefined);
         setGroupBy("product");
-        router.get("/account/reports/ppob");
+        router.get("/account/reports/ppob", {
+            start_date: defaultRange[0].format("YYYY-MM-DD"),
+            end_date: defaultRange[1].format("YYYY-MM-DD"),
+        });
     };
 
     const handleDatePreset = (start, end) => {
-        setStartDate(start);
-        setEndDate(end);
+        setDateRange([dayjs(start), dayjs(end)]);
         router.get("/account/reports/ppob", {
             q: search,
             start_date: start,
@@ -246,34 +253,13 @@ export default function PpobReport() {
                                     allowClear
                                 />
                             </Col>
-                            <Col xs={12} lg={4}>
-                                <DatePicker
+                            <Col xs={24} lg={8}>
+                                <DatePicker.RangePicker
                                     style={{ width: "100%" }}
-                                    placeholder="Tanggal mulai"
                                     format="DD/MM/YYYY"
-                                    value={startDate ? dayjs(startDate) : null}
-                                    onChange={(date) =>
-                                        setStartDate(
-                                            date
-                                                ? date.format("YYYY-MM-DD")
-                                                : "",
-                                        )
-                                    }
-                                />
-                            </Col>
-                            <Col xs={12} lg={4}>
-                                <DatePicker
-                                    style={{ width: "100%" }}
-                                    placeholder="Tanggal akhir"
-                                    format="DD/MM/YYYY"
-                                    value={endDate ? dayjs(endDate) : null}
-                                    onChange={(date) =>
-                                        setEndDate(
-                                            date
-                                                ? date.format("YYYY-MM-DD")
-                                                : "",
-                                        )
-                                    }
+                                    allowClear={false}
+                                    value={dateRange}
+                                    onChange={(v) => setDateRange(v)}
                                 />
                             </Col>
                             <Col xs={24} lg={4}>
