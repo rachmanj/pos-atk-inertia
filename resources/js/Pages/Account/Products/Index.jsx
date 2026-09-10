@@ -181,6 +181,17 @@ export default function ProductIndex() {
             align: "center",
             render: (_, product) => (
                 <Space>
+                    {hasAnyPermission(["products.index"], allPermissions) && (
+                        <Link
+                            href={`/account/products/${product.id}/sales-history`}
+                        >
+                            <Button
+                                size="small"
+                                icon={<HistoryOutlined />}
+                                title="Riwayat Penjualan"
+                            />
+                        </Link>
+                    )}
                     {hasAnyPermission(
                         ["stock_movements.create"],
                         allPermissions,

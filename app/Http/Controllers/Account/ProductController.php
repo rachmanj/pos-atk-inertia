@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Exports\ProductSalesHistoryExport;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
@@ -9,12 +10,16 @@ use App\Models\ProductComponent;
 use App\Models\ProductUnit;
 use App\Models\StockMovement;
 use App\Models\Unit;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
@@ -259,6 +264,93 @@ class ProductController extends Controller
         return redirect()->route('account.products.index');
     }
 
+    public function salesHistory(Request $request, Product $product)
+    {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'cashier_id' => 'nullable|exists:users,id',
+        ]);
+
+        $filters = $this->salesHistoryFilters($request);
+        $baseQuery = $this->salesHistoryQuery($product, $filters);
+
+        $summaryRow = (clone $baseQuery)
+            ->reorder()
+            ->select([
+                DB::raw('COUNT(DISTINCT transactions.id) as total_transaksi'),
+                DB::raw('SUM(transaction_details.qty) as total_qty'),
+                DB::raw('SUM(transaction_details.subtotal) as total_omzet'),
+                DB::raw('SUM(transaction_details.subtotal - transaction_details.buy_price * transaction_details.qty) as total_laba'),
+            ])
+            ->first();
+
+        $transactions = (clone $baseQuery)
+            ->paginate(50)
+            ->withQueryString();
+
+        $transactions->getCollection()->transform(function ($row) {
+            return [
+                'id' => $row->id,
+                'waktu' => Carbon::parse($row->waktu_raw)->format('d/m/Y H:i'),
+                'invoice' => $row->invoice,
+                'cashier' => $row->cashier_name,
+                'qty' => (int) $row->qty,
+                'harga_satuan' => (int) $row->price,
+                'subtotal' => (int) $row->subtotal,
+                'laba' => (int) ($row->subtotal - ($row->buy_price * $row->qty)),
+            ];
+        });
+
+        $product->load('category:id,name');
+
+        return Inertia::render('Account/Products/SalesHistory', [
+            'product' => [
+                'id' => $product->id,
+                'title' => $product->title,
+                'barcode' => $product->barcode,
+                'unit' => $product->unit,
+                'category' => $product->category?->name,
+                'stock' => (int) $product->stock,
+                'sell_price' => (int) $product->sell_price,
+            ],
+            'filters' => $filters,
+            'cashiers' => User::query()
+                ->whereHas('transactions', function ($query) use ($product) {
+                    $query->where('payment_status', 'paid')
+                        ->where('status', '!=', 'voided')
+                        ->whereHas('details', function ($detailQuery) use ($product) {
+                            $detailQuery->where('product_id', $product->id);
+                        });
+                })
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'summary' => [
+                'total_transaksi' => (int) ($summaryRow->total_transaksi ?? 0),
+                'total_qty' => (int) ($summaryRow->total_qty ?? 0),
+                'total_omzet' => (int) ($summaryRow->total_omzet ?? 0),
+                'total_laba' => (int) ($summaryRow->total_laba ?? 0),
+            ],
+            'transactions' => $transactions,
+        ]);
+    }
+
+    public function salesHistoryExport(Request $request, Product $product)
+    {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'cashier_id' => 'nullable|exists:users,id',
+        ]);
+
+        $filters = $this->salesHistoryFilters($request);
+
+        return Excel::download(
+            new ProductSalesHistoryExport($product, $filters),
+            'riwayat-penjualan-' . $product->barcode . '-' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+
     public function printBarcodes(Request $request)
     {
         $request->validate([
@@ -269,6 +361,20 @@ class ProductController extends Controller
         $products = Product::whereIn('id', $request->product_ids)->get();
 
         return view('print.barcode', compact('products'));
+    }
+
+    private function salesHistoryFilters(Request $request): array
+    {
+        return [
+            'start_date' => $request->start_date ?? '',
+            'end_date' => $request->end_date ?? '',
+            'cashier_id' => $request->cashier_id ?? '',
+        ];
+    }
+
+    private function salesHistoryQuery(Product $product, array $filters): Builder
+    {
+        return ProductSalesHistoryExport::baseQuery($product, $filters);
     }
 
     protected function parseProductUnits(Request $request): array

@@ -159,6 +159,14 @@ Route::middleware(['auth'])
             ->middleware('permission:products.create')
             ->name('products.import');
 
+        Route::get('products/{product}/sales-history', [ProductController::class, 'salesHistory'])
+            ->middleware('permission:products.index')
+            ->name('products.sales-history');
+
+        Route::get('products/{product}/sales-history/export', [ProductController::class, 'salesHistoryExport'])
+            ->middleware('permission:products.index')
+            ->name('products.sales-history.export');
+
         Route::resource('products', ProductController::class)
             ->except(['show'])
             ->middlewareFor('index', 'permission:products.index')
