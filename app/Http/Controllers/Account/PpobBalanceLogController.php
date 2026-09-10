@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Models\PpobAccount;
 use App\Models\PpobBalanceLog;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\PpobBalanceService;
 use DomainException;
@@ -27,6 +28,7 @@ class PpobBalanceLogController extends Controller
             'user_id' => 'nullable|exists:users,id',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
+            'search' => 'nullable|string|max:100',
         ]);
 
         $startDate = $request->start_date
@@ -48,6 +50,20 @@ class PpobBalanceLogController extends Controller
             ->when(filled($request->user_id), function ($query) use ($request) {
                 $query->where('user_id', $request->user_id);
             })
+            ->when(filled($request->search), function ($query) use ($request) {
+                $search = trim($request->search);
+                $query->where(function ($query) use ($search) {
+                    $query->where('note', 'like', '%' . $search . '%')
+                        ->orWhere(function ($query) use ($search) {
+                            $query->where('reference_type', Transaction::class)
+                                ->whereIn('reference_id', function ($subquery) use ($search) {
+                                    $subquery->select('id')
+                                        ->from('transactions')
+                                        ->where('invoice', 'like', '%' . $search . '%');
+                                });
+                        });
+                });
+            })
             ->whereBetween('created_at', [$startDate, $endDate]);
 
         $summary = [
@@ -64,6 +80,7 @@ class PpobBalanceLogController extends Controller
             'user_id' => $request->user_id,
             'start_date' => $startDate->toDateString(),
             'end_date' => $endDate->toDateString(),
+            'search' => $request->search,
         ]);
 
         return Inertia::render('Account/Ppob/BalanceLogs/Index', [
@@ -77,6 +94,7 @@ class PpobBalanceLogController extends Controller
                 'user_id' => $request->user_id ?? '',
                 'start_date' => $startDate->toDateString(),
                 'end_date' => $endDate->toDateString(),
+                'search' => $request->search ?? '',
             ],
         ]);
     }

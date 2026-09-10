@@ -50,6 +50,7 @@ export default function PpobBalanceLogIndex() {
     const [userId, setUserId] = useState(filters.user_id || "");
     const [startDate, setStartDate] = useState(filters.start_date || "");
     const [endDate, setEndDate] = useState(filters.end_date || "");
+    const [search, setSearch] = useState(filters.search || "");
     const [topUpAccountId, setTopUpAccountId] = useState(
         accounts[0]?.id ? String(accounts[0].id) : "",
     );
@@ -68,6 +69,7 @@ export default function PpobBalanceLogIndex() {
                 user_id: userId,
                 start_date: startDate,
                 end_date: endDate,
+                search,
             },
             { onFinish: () => setFiltering(false) },
         );
@@ -234,6 +236,15 @@ export default function PpobBalanceLogIndex() {
                     )}
 
                     <Row gutter={[8, 8]} style={{ marginBottom: 16 }}>
+                        <Col xs={24} md={8}>
+                            <Input
+                                style={{ width: "100%" }}
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Cari nomor transaksi (TRX-…)"
+                                allowClear
+                            />
+                        </Col>
                         <Col xs={24} md={6}>
                             <Select
                                 style={{ width: "100%" }}
