@@ -88,7 +88,7 @@ class StockMovementController extends Controller
             'product_id'   => 'required|exists:products,id',
             'type'         => 'nullable|in:adjustment',
             'target_stock' => 'required|integer|min:0',
-            'note'         => 'required|string|max:1000',
+            'note'         => 'nullable|string|max:1000',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -107,6 +107,11 @@ class StockMovementController extends Controller
 
             $qty = abs($targetStock - $stockBefore);
 
+            $note = trim((string) $request->note);
+            if ($note === '') {
+                $note = 'Koreksi stok manual';
+            }
+
             $product->update([
                 'stock' => $targetStock,
             ]);
@@ -120,7 +125,7 @@ class StockMovementController extends Controller
                 'stock_after'    => $targetStock,
                 'reference_type' => null,
                 'reference_id'   => null,
-                'note'           => trim($request->note),
+                'note'           => $note,
             ]);
         });
 

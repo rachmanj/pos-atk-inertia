@@ -191,7 +191,7 @@ export default function StockMovementCreate() {
                                     </Form.Item>
 
                                     <Form.Item
-                                        label="Catatan"
+                                        label="Catatan (opsional)"
                                         validateStatus={
                                             errors.note ? "error" : ""
                                         }
