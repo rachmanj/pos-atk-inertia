@@ -296,6 +296,8 @@ class ProductController extends Controller
                 'invoice' => $row->invoice,
                 'cashier' => $row->cashier_name,
                 'qty' => (int) $row->qty,
+                'stock_before' => $row->stock_before !== null ? (int) $row->stock_before : null,
+                'stock_after' => $row->stock_after !== null ? (int) $row->stock_after : null,
                 'harga_satuan' => (int) $row->price,
                 'subtotal' => (int) $row->subtotal,
                 'laba' => (int) ($row->subtotal - ($row->buy_price * $row->qty)),

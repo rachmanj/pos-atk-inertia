@@ -92,6 +92,20 @@ export default function ProductSalesHistory() {
             width: 70,
         },
         {
+            title: "Stok Sebelum",
+            dataIndex: "stock_before",
+            align: "center",
+            width: 100,
+            render: (value) => (value !== null && value !== undefined ? value : "-"),
+        },
+        {
+            title: "Stok Sesudah",
+            dataIndex: "stock_after",
+            align: "center",
+            width: 100,
+            render: (value) => (value !== null && value !== undefined ? value : "-"),
+        },
+        {
             title: "Harga Satuan",
             dataIndex: "harga_satuan",
             align: "right",

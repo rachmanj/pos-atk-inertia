@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Product;
+use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -23,6 +24,16 @@ class ProductSalesHistoryExport implements FromQuery, WithHeadings, WithMapping,
 
     public static function baseQuery(Product $product, array $filters): Builder
     {
+        $stockMovementPick = DB::table('stock_movements')
+            ->select([
+                'product_id',
+                'reference_id',
+                DB::raw('MIN(id) as id'),
+            ])
+            ->where('reference_type', Transaction::class)
+            ->where('type', 'out')
+            ->groupBy('product_id', 'reference_id');
+
         $query = TransactionDetail::query()
             ->select([
                 'transaction_details.id',
@@ -33,9 +44,16 @@ class ProductSalesHistoryExport implements FromQuery, WithHeadings, WithMapping,
                 'transactions.invoice',
                 'users.name as cashier_name',
                 DB::raw('COALESCE(transactions.paid_at, transactions.created_at) as waktu_raw'),
+                'sm.stock_before',
+                'sm.stock_after',
             ])
             ->join('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
             ->join('users', 'transactions.cashier_id', '=', 'users.id')
+            ->leftJoinSub($stockMovementPick, 'sm_pick', function ($join) {
+                $join->on('sm_pick.product_id', '=', 'transaction_details.product_id')
+                    ->on('sm_pick.reference_id', '=', 'transaction_details.transaction_id');
+            })
+            ->leftJoin('stock_movements as sm', 'sm.id', '=', 'sm_pick.id')
             ->where('transaction_details.product_id', $product->id)
             ->where('transactions.payment_status', 'paid')
             ->where('transactions.status', '!=', 'voided');
@@ -61,8 +79,8 @@ class ProductSalesHistoryExport implements FromQuery, WithHeadings, WithMapping,
         }
 
         return $query
-            ->orderByDesc('transactions.created_at')
-            ->orderByDesc('transaction_details.id');
+            ->orderBy(DB::raw('COALESCE(transactions.paid_at, transactions.created_at)'))
+            ->orderBy('transaction_details.id');
     }
 
     public function query()
@@ -77,6 +95,8 @@ class ProductSalesHistoryExport implements FromQuery, WithHeadings, WithMapping,
             'No. Invoice',
             'Kasir',
             'Qty',
+            'Stok Sebelum',
+            'Stok Sesudah',
             'Harga Satuan',
             'Subtotal',
             'Laba',
@@ -92,6 +112,8 @@ class ProductSalesHistoryExport implements FromQuery, WithHeadings, WithMapping,
             $row->invoice,
             $row->cashier_name,
             (int) $row->qty,
+            $row->stock_before !== null ? (int) $row->stock_before : '-',
+            $row->stock_after !== null ? (int) $row->stock_after : '-',
             (int) $row->price,
             (int) $row->subtotal,
             $laba,
