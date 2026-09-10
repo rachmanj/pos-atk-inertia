@@ -22,6 +22,8 @@ import useMobile from "../../Hooks/useMobile";
 import { numericMobileInputProps } from "../../Utils/responsive";
 const { Text } = Typography;
 
+const SHOW_HOLD_BUTTON = false; // sembunyikan sementara tombol Tahan (2026-09-10)
+
 function CartRow({
     cart,
     held = false,
@@ -230,23 +232,24 @@ function CartRow({
                 )}
 
                 <Space size={6}>
-                    {held ? (
-                        <Button
-                            type="default"
-                            className="pos-cart-tool-btn"
-                            icon={<PlayCircleOutlined />}
-                            onClick={() => onToggleHold(cart.id, false)}
-                            title="Lanjutkan"
-                        />
-                    ) : (
-                        <Button
-                            type="default"
-                            className="pos-cart-tool-btn"
-                            icon={<PauseOutlined />}
-                            onClick={() => onToggleHold(cart.id, true)}
-                            title="Tahan"
-                        />
-                    )}
+                    {SHOW_HOLD_BUTTON &&
+                        (held ? (
+                            <Button
+                                type="default"
+                                className="pos-cart-tool-btn"
+                                icon={<PlayCircleOutlined />}
+                                onClick={() => onToggleHold(cart.id, false)}
+                                title="Lanjutkan"
+                            />
+                        ) : (
+                            <Button
+                                type="default"
+                                className="pos-cart-tool-btn"
+                                icon={<PauseOutlined />}
+                                onClick={() => onToggleHold(cart.id, true)}
+                                title="Tahan"
+                            />
+                        ))}
                     <Button
                         type="text"
                         danger
