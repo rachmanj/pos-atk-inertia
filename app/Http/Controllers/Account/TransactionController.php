@@ -45,19 +45,46 @@ class TransactionController extends Controller
 
         $categories = Category::all();
 
-        $products = Product::with(['category', 'productUnits.unit', 'defaultSellUnit.unit', 'components.componentProduct'])
+        $searchQuery = trim((string) $request->q);
+        $searchTerms = $searchQuery !== ''
+            ? array_slice(preg_split('/\s+/', $searchQuery, -1, PREG_SPLIT_NO_EMPTY) ?: [], 0, 6)
+            : [];
+
+        $productsQuery = Product::with(['category', 'productUnits.unit', 'defaultSellUnit.unit', 'components.componentProduct'])
             ->where('is_active', true)
-            ->when($request->q, function ($query) use ($request) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('title', 'like', '%' . $request->q . '%')
-                        ->orWhere('barcode', 'like', '%' . $request->q . '%');
+            ->when($searchTerms !== [], function ($query) use ($searchTerms) {
+                $query->where(function ($group) use ($searchTerms) {
+                    foreach ($searchTerms as $term) {
+                        $escaped = addcslashes($term, '%_\\');
+                        $group->where(function ($sub) use ($escaped) {
+                            $sub->where('title', 'like', '%' . $escaped . '%')
+                                ->orWhere('barcode', 'like', '%' . $escaped . '%');
+                        });
+                    }
                 });
             })
             ->when($request->category_id, function ($query) use ($request) {
                 $query->where('category_id', $request->category_id);
-            })
-            ->latest()
-            ->paginate(12);
+            });
+
+        if ($searchQuery !== '') {
+            $escapedPhrase = addcslashes($searchQuery, '%_\\');
+            $productsQuery
+                ->orderByRaw(
+                    'CASE
+                        WHEN barcode = ? THEN 0
+                        WHEN title LIKE ? THEN 1
+                        WHEN title LIKE ? THEN 2
+                        ELSE 3
+                    END',
+                    [$searchQuery, $escapedPhrase . '%', '%' . $escapedPhrase . '%']
+                )
+                ->orderBy('title');
+        } else {
+            $productsQuery->latest();
+        }
+
+        $products = $productsQuery->paginate($searchQuery !== '' ? 50 : 12);
 
         $products->appends([
             'q' => $request->q,

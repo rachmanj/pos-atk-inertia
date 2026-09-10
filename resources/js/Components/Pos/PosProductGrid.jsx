@@ -8,7 +8,7 @@ import {
 } from "./posUtils";
 
 const SEARCH_DEBOUNCE_MS = 200;
-const MAX_RESULTS = 10;
+const MAX_RESULTS = 50;
 
 export default function PosProductGrid({
     searchInputRef,
@@ -26,6 +26,8 @@ export default function PosProductGrid({
     const visibleProducts = hasQuery
         ? products.data.slice(0, MAX_RESULTS)
         : [];
+    const totalFound = products.total ?? visibleProducts.length;
+    const shownCount = visibleProducts.length;
 
     useEffect(() => {
         if (debounceRef.current) {
@@ -123,7 +125,16 @@ export default function PosProductGrid({
                         &rsquo;
                     </p>
                 ) : (
-                    <ul className="pos-search-result-list" role="listbox">
+                    <>
+                        <p className="pos-search-hint">
+                            {totalFound} produk ditemukan
+                            {totalFound > shownCount
+                                ? ` — ${shownCount} ditampilkan`
+                                : ""}
+                            . Boleh beberapa kata, urutan bebas (mis: cover
+                            kecil).
+                        </p>
+                        <ul className="pos-search-result-list" role="listbox">
                         {visibleProducts.map((product) => {
                             const isPpob = product.product_type === "ppob";
                             const isService = product.product_type === "service";
@@ -173,7 +184,8 @@ export default function PosProductGrid({
                                 </li>
                             );
                         })}
-                    </ul>
+                        </ul>
+                    </>
                 )}
             </div>
         </section>
