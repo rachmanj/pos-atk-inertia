@@ -10,6 +10,7 @@ import {
     Button,
     Card,
     Col,
+    DatePicker,
     Input,
     Modal,
     Row,
@@ -21,6 +22,7 @@ import {
     Typography,
     notification,
 } from "antd";
+import dayjs from "dayjs";
 import {
     EyeOutlined,
     FilterOutlined,
@@ -113,6 +115,12 @@ export default function Index() {
     const [paymentStatus, setPaymentStatus] = useState(
         filters.payment_status || undefined,
     );
+    const [dateRange, setDateRange] = useState(() => {
+        const start = filters.start_date ? dayjs(filters.start_date) : null;
+        const end = filters.end_date ? dayjs(filters.end_date) : null;
+
+        return start || end ? [start, end] : null;
+    });
     const voidReasonRef = useRef("");
 
     const canVoidTransaction = (record) =>
@@ -204,6 +212,9 @@ export default function Index() {
         });
     };
 
+    const startDate = dateRange?.[0]?.format("YYYY-MM-DD") || null;
+    const endDate = dateRange?.[1]?.format("YYYY-MM-DD") || null;
+
     const handleFilter = (e) => {
         e.preventDefault();
 
@@ -211,6 +222,8 @@ export default function Index() {
             search,
             payment_method: paymentMethod || "",
             payment_status: paymentStatus || "",
+            start_date: startDate,
+            end_date: endDate,
         });
     };
 
@@ -218,6 +231,7 @@ export default function Index() {
         setSearch("");
         setPaymentMethod(undefined);
         setPaymentStatus(undefined);
+        setDateRange(null);
         router.get("/account/transactions");
     };
 
@@ -404,7 +418,7 @@ export default function Index() {
                             style={{ marginBottom: 16 }}
                         >
                             <Row gutter={[12, 12]}>
-                                <Col xs={24} lg={8}>
+                                <Col xs={24} lg={6}>
                                     <Input
                                         placeholder="Cari invoice, kasir, atau customer..."
                                         value={search}
@@ -413,7 +427,20 @@ export default function Index() {
                                         }
                                     />
                                 </Col>
-                                <Col xs={24} sm={12} lg={5}>
+                                <Col xs={24} sm={12} lg={6}>
+                                    <DatePicker.RangePicker
+                                        style={{ width: "100%" }}
+                                        format="DD/MM/YYYY"
+                                        allowClear
+                                        placeholder={[
+                                            "Tanggal awal",
+                                            "Tanggal akhir",
+                                        ]}
+                                        value={dateRange}
+                                        onChange={(value) => setDateRange(value)}
+                                    />
+                                </Col>
+                                <Col xs={24} sm={12} lg={4}>
                                     <Select
                                         allowClear
                                         placeholder="Semua Metode"
@@ -434,7 +461,7 @@ export default function Index() {
                                         ]}
                                     />
                                 </Col>
-                                <Col xs={24} sm={12} lg={5}>
+                                <Col xs={24} sm={12} lg={4}>
                                     <Select
                                         allowClear
                                         placeholder="Semua Pembayaran"
@@ -462,7 +489,7 @@ export default function Index() {
                                         ]}
                                     />
                                 </Col>
-                                <Col xs={24} lg={6}>
+                                <Col xs={24} lg={4}>
                                     <Space>
                                         <Button
                                             type="primary"

@@ -39,6 +39,8 @@ class TransactionHistoryController extends Controller
             ->when($request->payment_status, function ($query, $paymentStatus) {
                 $query->where('payment_status', $paymentStatus);
             })
+            ->when($request->start_date, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($request->end_date, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -49,6 +51,8 @@ class TransactionHistoryController extends Controller
                 'search' => $request->search,
                 'payment_method' => $request->payment_method,
                 'payment_status' => $request->payment_status,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
             ],
         ]);
     }
