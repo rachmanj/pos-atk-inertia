@@ -14,6 +14,11 @@ class TransactionHistoryController extends Controller
 
         $transactions = Transaction::query()
             ->with(['cashier', 'customer'])
+            ->withCount([
+                'returnTransactions as blocking_returns_count' => function ($query) {
+                    $query->whereIn('status', ['pending', 'approved']);
+                },
+            ])
             ->when(!$user->isAdminUser(), function ($query) use ($user) {
                 $query->where('cashier_id', $user->id);
             })

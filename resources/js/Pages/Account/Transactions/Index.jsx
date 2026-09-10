@@ -2,7 +2,7 @@ import Pagination from "../../../Shared/Pagination";
 import LayoutAccount from "../../../Layouts/Account";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
 import {
@@ -11,6 +11,7 @@ import {
     Card,
     Col,
     Input,
+    Modal,
     Row,
     Select,
     Space,
@@ -18,6 +19,7 @@ import {
     Table,
     Tag,
     Typography,
+    notification,
 } from "antd";
 import {
     EyeOutlined,
@@ -25,6 +27,7 @@ import {
     ReloadOutlined,
     ShoppingCartOutlined,
     CheckCircleOutlined,
+    StopOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
@@ -110,6 +113,96 @@ export default function Index() {
     const [paymentStatus, setPaymentStatus] = useState(
         filters.payment_status || undefined,
     );
+    const voidReasonRef = useRef("");
+
+    const canVoidTransaction = (record) =>
+        hasAnyPermission(["transactions.void"], permissions) &&
+        record.status === "completed" &&
+        record.payment_status === "paid" &&
+        Number(record.blocking_returns_count || 0) === 0;
+
+    const handleVoid = (record) => {
+        voidReasonRef.current = "";
+        Modal.confirm({
+            title: "Void transaksi?",
+            content: (
+                <div>
+                    <p>
+                        Transaksi akan dibatalkan, stok produk dikembalikan,
+                        dan profit transaksi dinolkan.
+                    </p>
+                    <Text strong style={{ display: "block", marginBottom: 4 }}>
+                        Alasan pembatalan (wajib)
+                    </Text>
+                    <Input.TextArea
+                        rows={3}
+                        placeholder="Tulis alasan void transaksi..."
+                        onChange={(e) => {
+                            voidReasonRef.current = e.target.value;
+                        }}
+                    />
+                </div>
+            ),
+            okText: "Ya, void transaksi",
+            cancelText: "Batal",
+            okButtonProps: { danger: true },
+            onOk: () => {
+                const reason = voidReasonRef.current.trim();
+                if (!reason) {
+                    notification.error({
+                        message: "Alasan void wajib diisi!",
+                    });
+                    return Promise.reject();
+                }
+
+                router.put(
+                    `/account/transactions/${record.invoice}/void`,
+                    { void_reason: reason },
+                    {
+                        preserveScroll: true,
+                        onSuccess: (page) => {
+                            if (page.props.flash?.error) {
+                                notification.error({
+                                    message: "Gagal",
+                                    description: page.props.flash.error,
+                                });
+                                return;
+                            }
+
+                            const successMessage =
+                                page.props.flash?.success ||
+                                "Transaksi berhasil di-void.";
+
+                            router.visit("/account/transactions", {
+                                only: ["transactions", "flash"],
+                                preserveState: true,
+                                preserveScroll: true,
+                                onSuccess: () => {
+                                    notification.success({
+                                        message: "Berhasil",
+                                        description: successMessage,
+                                    });
+                                },
+                            });
+                        },
+                        onError: (errors) => {
+                            const message =
+                                errors.void_reason ||
+                                Object.values(errors)[0] ||
+                                "Gagal void transaksi.";
+
+                            notification.error({
+                                message: "Gagal",
+                                description: Array.isArray(message)
+                                    ? message[0]
+                                    : message,
+                            });
+                        },
+                    },
+                );
+            },
+        });
+    };
 
     const handleFilter = (e) => {
         e.preventDefault();
@@ -214,7 +307,7 @@ export default function Index() {
         },
         {
             title: "Aksi",
-            width: 180,
+            width: 220,
             align: "center",
             render: (_, record) => (
                 <Space size="small">
@@ -243,6 +336,17 @@ export default function Index() {
                                 Konfirmasi
                             </Button>
                         )}
+                    {canVoidTransaction(record) && (
+                        <Button
+                            size="small"
+                            danger
+                            icon={<StopOutlined />}
+                            title="Void transaksi"
+                            onClick={() => handleVoid(record)}
+                        >
+                            Void
+                        </Button>
+                    )}
                 </Space>
             ),
         },
