@@ -106,6 +106,13 @@ export default function LayoutAccount({ children }) {
                     collapsedWidth={64}
                     width={240}
                     theme="dark"
+                    style={{
+                        position: "sticky",
+                        top: 0,
+                        height: "100vh",
+                        overflowX: "hidden",
+                        overflowY: "auto",
+                    }}
                 >
                     <Sidebar {...sidebarProps} />
                 </Sider>
@@ -138,6 +145,10 @@ export default function LayoutAccount({ children }) {
                         lineHeight: "normal",
                         height: "auto",
                         minHeight: 64,
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 30,
+                        borderBottom: `1px solid ${token.colorBorderSecondary}`,
                     }}
                 >
                     {isCompact ? (
