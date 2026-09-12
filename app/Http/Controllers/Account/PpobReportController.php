@@ -30,7 +30,7 @@ class PpobReportController extends Controller
 
         $startDate = $request->start_date
             ? Carbon::parse($request->start_date)->startOfDay()
-            : Carbon::now()->startOfMonth();
+            : Carbon::now()->startOfDay();
 
         $endDate = $request->end_date
             ? Carbon::parse($request->end_date)->endOfDay()
@@ -191,7 +191,7 @@ class PpobReportController extends Controller
 
         $filters = [
             'q' => $request->q,
-            'start_date' => $request->start_date ?: now()->startOfMonth()->toDateString(),
+            'start_date' => $request->start_date ?: now()->startOfDay()->toDateString(),
             'end_date' => $request->end_date ?: now()->toDateString(),
             'cashier_id' => $request->cashier_id,
             'group_by' => $request->group_by ?: 'product',

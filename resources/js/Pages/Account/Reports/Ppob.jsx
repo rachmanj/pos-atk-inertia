@@ -66,7 +66,7 @@ export default function PpobReport() {
     };
 
     const handleReset = () => {
-        const defaultRange = [dayjs().startOf("month"), dayjs()];
+        const defaultRange = [dayjs(), dayjs()];
         setSearch("");
         setDateRange(defaultRange);
         setCashierId(undefined);
