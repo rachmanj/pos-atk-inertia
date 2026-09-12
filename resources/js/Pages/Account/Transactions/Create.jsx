@@ -536,12 +536,19 @@ export default function TransactionCreate() {
         );
     };
 
+    // Harga manual per unit WAJIB ikut terkirim saat qty/diskon berubah; kalau tidak,
+    // backend menghitung ulang harga dari unit katalog dan harga manual kasir hilang.
+    // PPOB tidak boleh mengirim `price` (backend menolak 422).
+    const manualPricePayload = (cart) =>
+        cart && cart.ppob_cost == null && cart.price != null
+            ? { price: Math.max(0, Math.round(Number(cart.price) || 0)) }
+            : {};
+
     const updateCart = (cartId, newQty) => {
         if (newQty < 1) {
             deleteCart(cartId);
             return;
         }
-
         if (String(cartId).startsWith("temp-")) {
             setLocalCarts((prev) =>
                 prev.map((cart) =>
@@ -566,6 +573,7 @@ export default function TransactionCreate() {
                 qty: newQty,
                 discount: current?.discount ?? 0,
                 discount_type: current?.discount_type || "nominal",
+                ...manualPricePayload(current),
             },
             inertiaCartOptions(snapshot),
         );
@@ -633,6 +641,7 @@ export default function TransactionCreate() {
                 qty: current?.qty || 1,
                 discount: discountVal,
                 discount_type: type,
+                ...manualPricePayload(current),
             },
             inertiaCartOptions(snapshot),
         );

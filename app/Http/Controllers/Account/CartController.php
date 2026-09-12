@@ -66,13 +66,20 @@ class CartController extends Controller
 
             $cart->update($payload);
 
-            return back();
+            return $this->cartUpdateResponse($request, $cart);
         }
 
         $conversionFactor = $this->resolveConversionFactor($product, $cart->unit_id);
         $qtyInBase = (int) round($qty * $conversionFactor);
 
         if ((int) $product->stock > 0 && $qtyInBase > (int) $product->stock) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Qty keranjang melebihi stok tersedia.',
+                ], 422);
+            }
+
             return back()->with('error', 'Qty keranjang melebihi stok tersedia.');
         }
 
@@ -86,6 +93,35 @@ class CartController extends Controller
         }
 
         $cart->update($payload);
+
+        return $this->cartUpdateResponse($request, $cart);
+    }
+
+    /**
+     * Respon update keranjang.
+     *
+     * Padanan JSON wajib untuk pemanggil `fetch` (POS: edit harga per unit).
+     * `back()` = 302; bila diikuti `fetch` (redirect otomatis), method PUT ikut
+     * diteruskan ke URL halaman POS yang hanya menerima GET → 405, sehingga
+     * klien menandai "Gagal mengubah harga" padahal perubahan sudah tersimpan.
+     * Permintaan Inertia (Accept text/html) tetap memakai redirect seperti semula.
+     */
+    protected function cartUpdateResponse(Request $request, Cart $cart)
+    {
+        if ($request->wantsJson()) {
+            $cart->refresh();
+
+            return response()->json([
+                'success' => true,
+                'cart' => [
+                    'id' => (int) $cart->id,
+                    'qty' => (int) $cart->qty,
+                    'price' => (int) $cart->price,
+                    'discount' => (int) $cart->discount,
+                    'discount_type' => $cart->discount_type,
+                ],
+            ]);
+        }
 
         return back();
     }
