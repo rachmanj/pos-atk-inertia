@@ -7,38 +7,41 @@ export function getZenTheme(mode) {
     return {
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
-            colorPrimary: "#2A3B8F",
-            colorSuccess: SEMANTIC.success,
-            colorWarning: SEMANTIC.warning,
-            colorError: SEMANTIC.error,
-            colorInfo: SEMANTIC.info,
-            colorBgLayout: isDark ? "#0f172a" : "#EFEDE3",
-            colorBgContainer: isDark ? "#1e293b" : "#FFFFFF",
+            colorPrimary: isDark ? "#2DD4BF" : "#2A3B8F",
+            colorSuccess: isDark ? "#10B981" : SEMANTIC.success,
+            colorWarning: isDark ? "#F59E0B" : SEMANTIC.warning,
+            colorError: isDark ? "#EF4444" : SEMANTIC.error,
+            colorInfo: isDark ? "#0EA5E9" : SEMANTIC.info,
+            colorBgLayout: isDark ? "#090E1A" : "#EFEDE3",
+            colorBgContainer: isDark ? "#0E1525" : "#FFFFFF",
             borderRadius: 8,
             fontFamily: "'Plus Jakarta Sans', sans-serif",
         },
         components: {
             Layout: {
-                siderBg: "#1e293b",
-                triggerBg: "#1e293b",
+                siderBg: isDark ? "#0B111E" : "#1e293b",
+                triggerBg: isDark ? "#0B111E" : "#1e293b",
             },
             Menu: {
-                darkItemBg: "#1e293b",
-                darkItemSelectedBg: "#0f172a",
+                darkItemBg: isDark ? "#0B111E" : "#1e293b",
+                darkItemSelectedBg: isDark
+                    ? "rgba(45, 212, 191, 0.16)"
+                    : "#0f172a",
+                ...(isDark && { darkItemSelectedColor: "#2DD4BF" }),
             },
             Card: {
                 borderRadiusLG: 12,
             },
             Table: {
-                headerBg: isDark ? "#1e293b" : "#f8fafc",
-                headerColor: isDark ? "#f1f5f9" : "#0f172a",
-                borderColor: isDark ? "#334155" : "#e2e8f0",
+                headerBg: isDark ? "#0E1525" : "#f8fafc",
+                headerColor: isDark ? "#F8FAFC" : "#0f172a",
+                borderColor: isDark ? "#1D283A" : "#e2e8f0",
                 rowHoverBg: isDark ? "rgba(255, 255, 255, 0.04)" : "#f8fafc",
                 rowSelectedBg: isDark
-                    ? "rgba(42, 59, 143, 0.15)"
+                    ? "rgba(45, 212, 191, 0.14)"
                     : "rgba(42, 59, 143, 0.08)",
                 rowSelectedHoverBg: isDark
-                    ? "rgba(42, 59, 143, 0.22)"
+                    ? "rgba(45, 212, 191, 0.22)"
                     : "rgba(42, 59, 143, 0.12)",
             },
         },

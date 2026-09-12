@@ -349,13 +349,13 @@
 
 [data-theme="dark"] .menu-search-kbd {
     color: #94a3b8;
-    border-color: #334155;
-    background: #1e293b;
+    border-color: #1D283A;
+    background: #0E1525;
 }
 
 [data-theme="dark"] .menu-search-dropdown {
-    background: #1e293b;
-    border-color: #334155;
+    background: #0E1525;
+    border-color: #1D283A;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
@@ -368,13 +368,13 @@
 }
 
 [data-theme="dark"] .menu-search-item {
-    color: #f1f5f9;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .menu-search-item:hover,
 [data-theme="dark"] .menu-search-item--active {
-    background: #2A3B8F;
-    color: #fff;
+    background: #2DD4BF;
+    color: #0B111E;
 }
 
 /* -----------------------------------------------------------------------------
@@ -1557,8 +1557,8 @@ html {
 }
 
 [data-theme="dark"] .pos-cashier-page {
-    color: #f1f5f9;
-    background: #0f172a;
+    color: #F8FAFC;
+    background: #090E1A;
 }
 
 [data-theme="dark"] .pos-cashier-heading span,
@@ -1569,90 +1569,90 @@ html {
 [data-theme="dark"] .pos-sale-panel,
 [data-theme="dark"] .pos-checkout-panel,
 [data-theme="dark"] .pos-cashier-main {
-    background: #1e293b;
-    border-color: #334155;
+    background: #0E1525;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-search-section {
-    background: #1e293b;
-    border-bottom-color: #334155;
+    background: #0E1525;
+    border-bottom-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-search-hint,
 [data-theme="dark"] .pos-search-empty {
     color: #94a3b8;
-    background: #0f172a;
-    border-color: #334155;
+    background: #090E1A;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-search-result-list {
-    background: #1e293b;
-    border-color: #334155;
+    background: #0E1525;
+    border-color: #1D283A;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
 
 [data-theme="dark"] .pos-search-result-item {
-    background: #1e293b;
-    border-bottom-color: #334155;
+    background: #0E1525;
+    border-bottom-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-search-result-item:hover:not(:disabled) {
-    background: #0f172a;
+    background: #090E1A;
 }
 
 [data-theme="dark"] .pos-search-result-name {
-    color: #f1f5f9;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-search-result-price {
-    color: #93a3e8;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-search-bar {
-    border-bottom-color: #334155;
+    border-bottom-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-category-strip {
-    background: #1e293b;
+    background: #0E1525;
 }
 
 [data-theme="dark"] .pos-category-pill {
-    color: #cbd5e1;
-    background: #0f172a;
-    border-color: #334155;
+    color: #94A3B8;
+    background: #090E1A;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-category-pill.active,
 [data-theme="dark"] .pos-category-pill:hover {
-    color: #fff;
-    background: #2A3B8F;
-    border-color: #2A3B8F;
+    color: #0B111E;
+    background: #2DD4BF;
+    border-color: #2DD4BF;
 }
 
 [data-theme="dark"] .pos-torn-edge {
-    background: #0f172a;
+    background: #090E1A;
 }
 
 [data-theme="dark"] .pos-product-grid {
-    background: #1e293b;
+    background: #0E1525;
 }
 
 [data-theme="dark"] .pos-product-tile {
-    background: #1e293b;
-    border-color: #334155;
+    background: #0E1525;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-product-tile:hover:not(:disabled) {
-    border-color: #2A3B8F;
+    border-color: #2DD4BF;
 }
 
 [data-theme="dark"] .pos-product-image {
-    background: #0f172a;
-    border-color: #334155;
+    background: #090E1A;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-product-name {
-    color: #f1f5f9;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-product-meta span {
@@ -1660,24 +1660,24 @@ html {
 }
 
 [data-theme="dark"] .pos-product-meta strong {
-    color: #f1f5f9;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-product-list {
-    background: #1e293b;
+    background: #0E1525;
 }
 
 [data-theme="dark"] .pos-product-list-row {
-    background: #1e293b;
-    border-bottom-color: #334155;
+    background: #0E1525;
+    border-bottom-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-product-list-row:hover:not(:disabled) {
-    background: #0f172a;
+    background: #090E1A;
 }
 
 [data-theme="dark"] .pos-product-list-name {
-    color: #f1f5f9;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-product-list-meta {
@@ -1685,27 +1685,28 @@ html {
 }
 
 [data-theme="dark"] .pos-product-list-price {
-    color: #cbd5e1;
+    color: #94A3B8;
 }
 
 [data-theme="dark"] .pos-pagination {
-    border-top-color: #334155;
+    border-top-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-checkout-header {
-    border-bottom-color: #334155;
+    border-bottom-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-cart-count {
-    background: #2A3B8F;
+    background: #2DD4BF;
+    color: #0B111E !important;
 }
 
 [data-theme="dark"] .pos-cart-row {
-    border-bottom-color: #334155;
+    border-bottom-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-cart-name strong {
-    color: #f1f5f9;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-cart-meta-text {
@@ -1713,17 +1714,17 @@ html {
 }
 
 [data-theme="dark"] .pos-cart-price strong {
-    color: #f1f5f9;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-cart-discount-toggle {
-    color: #93a3e8;
-    border-color: #334155;
+    color: #F8FAFC;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-held-section {
-    background: rgba(51, 65, 85, 0.3);
-    border-top-color: #334155;
+    background: rgba(29, 40, 58, 0.3);
+    border-top-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-held-section-label {
@@ -1731,36 +1732,36 @@ html {
 }
 
 [data-theme="dark"] .pos-cart-customer {
-    border-top-color: #334155;
+    border-top-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-cart-tool-btn {
-    border-color: #334155;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-qty-stepper {
-    background: #0f172a;
-    border-color: #334155;
+    background: #090E1A;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-payment-form {
-    background: #0f172a;
-    border-top-color: #334155;
+    background: #090E1A;
+    border-top-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-cash-input {
-    color: #f1f5f9;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-cash-shortcuts button {
-    color: #cbd5e1;
-    background: #1e293b;
-    border-color: #334155;
+    color: #94A3B8;
+    background: #0E1525;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-summary-box {
-    background: #1e293b;
-    border-color: #334155;
+    background: #0E1525;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-summary-box span {
@@ -1768,15 +1769,15 @@ html {
 }
 
 [data-theme="dark"] .pos-summary-box strong {
-    color: #f1f5f9;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-summary-total {
-    border-top-color: #334155;
+    border-top-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-summary-total strong {
-    color: #93a3e8;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-pay-button.ant-btn-primary {
@@ -1796,8 +1797,8 @@ html {
 }
 
 [data-theme="dark"] .pos-mobile-cart-bar {
-    background: #1e293b;
-    border-top-color: #334155;
+    background: #0E1525;
+    border-top-color: #1D283A;
 }
 
 [data-theme="dark"] .pos-field-label {
@@ -1805,8 +1806,8 @@ html {
 }
 
 [data-theme="dark"] .barcode-scanner-panel {
-    background: #1e293b;
-    color: #f1f5f9;
+    background: #0E1525;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .barcode-scanner-header p {
@@ -1814,7 +1815,22 @@ html {
 }
 
 [data-theme="dark"] .barcode-scanner-message {
-    color: #cbd5e1;
+    color: #94A3B8;
+}
+
+
+[data-theme="dark"] .ant-layout-sider,
+[data-theme="dark"] .ant-layout-sider-trigger {
+    background: #0B111E !important;
+}
+
+[data-theme="dark"] .pos-mobile-drawer .ant-drawer-header {
+    background: #0B111E !important;
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .pos-mobile-drawer .ant-drawer-body > div {
+    background: #0B111E !important;
 }
 
 /* ===== Halaman Detail Transaksi (Show.jsx) ===== */
@@ -2400,16 +2416,16 @@ html {
 /* --- Dark mode --- */
 
 [data-theme="dark"] .transaction-show-page {
-    color: #f5f2ec;
-    background: #1a1814;
+    color: #F8FAFC;
+    background: #090E1A;
 }
 
 [data-theme="dark"] .transaction-back-button {
-    color: #f5f2ec !important;
+    color: #F8FAFC !important;
 }
 
 [data-theme="dark"] .transaction-back-button:hover {
-    background: rgba(245, 242, 236, 0.08) !important;
+    background: rgba(248, 250, 252, 0.08) !important;
 }
 
 [data-theme="dark"] .transaction-show-title > span,
@@ -2419,54 +2435,54 @@ html {
 [data-theme="dark"] .transaction-summary-row span,
 [data-theme="dark"] .transaction-receipt-panel__header span,
 [data-theme="dark"] .transaction-receipt-panel__header small {
-    color: #a8a090;
+    color: #94A3B8;
 }
 
 [data-theme="dark"] .transaction-show-title h4,
 [data-theme="dark"] .transaction-action-card__header strong,
 [data-theme="dark"] .transaction-summary-row strong {
-    color: #f5f2ec;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .transaction-action-card,
 [data-theme="dark"] .transaction-summary-card,
 [data-theme="dark"] .transaction-receipt-panel {
-    background: #26241f;
-    border-color: #3a362f;
+    background: #0E1525;
+    border-color: #1D283A;
 }
 
 [data-theme="dark"] .transaction-summary-row {
-    border-bottom-color: #3a362f;
+    border-bottom-color: #1D283A;
 }
 
 [data-theme="dark"] .transaction-summary-row:first-child strong {
-    color: #93a3e8;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .receipt-paper-size-options .ant-radio-button-wrapper {
-    background: #1a1814;
-    border-color: #3a362f !important;
-    color: #f5f2ec;
+    background: #090E1A;
+    border-color: #1D283A !important;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .receipt-paper-size-options .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-    background: #2A3B8F !important;
-    border-color: #2A3B8F !important;
-    color: #FFFFFF !important;
+    background: #2DD4BF !important;
+    border-color: #2DD4BF !important;
+    color: #0B111E !important;
 }
 
 [data-theme="dark"] .receipt-stage {
-    background: #1a1814;
+    background: #090E1A;
 }
 
 [data-theme="dark"] .receipt-paper {
-    background: #2a2822;
-    color: #f5f2ec;
+    background: #18212F;
+    color: #F8FAFC;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
 [data-theme="dark"] .receipt-store-name {
-    color: #f5f2ec;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .receipt-store-meta,
@@ -2476,19 +2492,19 @@ html {
 [data-theme="dark"] .receipt-footer__code,
 [data-theme="dark"] .receipt-meta-row > span:first-child,
 [data-theme="dark"] .receipt-section-title {
-    color: #a8a090;
+    color: #94A3B8;
 }
 
 [data-theme="dark"] .receipt-divider {
-    border-top-color: #3a362f;
+    border-top-color: #1D283A;
 }
 
 [data-theme="dark"] .receipt-summary-row--total {
-    border-top-color: #3a362f;
+    border-top-color: #1D283A;
 }
 
 [data-theme="dark"] .receipt-logo-placeholder {
-    color: #a8a090;
+    color: #94A3B8;
 }
 
 [data-theme="dark"] .receipt-paper.is-voided::before {
@@ -2591,13 +2607,13 @@ body.printing-receipt .transaction-show-page {
 }
 
 [data-theme="dark"] {
-    --semantic-success: #69CB92;
-    --semantic-warning: #E5AC5C;
-    --semantic-error: #F48F9B;
-    --semantic-info: #9AADF2;
-    --brand-primary: #93A6F0;
-    --bg-subtle: #33312b;
-    --text-primary: #f5f2ec;
-    --border-subtle: #3a362f;
-    --icon-muted: #94a3b8;
+    --semantic-success: #10B981;
+    --semantic-warning: #F59E0B;
+    --semantic-error: #EF4444;
+    --semantic-info: #0EA5E9;
+    --brand-primary: #2DD4BF;
+    --bg-subtle: #0E1525;
+    --text-primary: #F8FAFC;
+    --border-subtle: #1D283A;
+    --icon-muted: #94A3B8;
 }
