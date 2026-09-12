@@ -67,7 +67,8 @@ class ShiftReportBuilder
             ];
         })->values()->all();
 
-        $tunaiDisetor = $totalPenjualan - $nonTunai - $refundTunai - $expenseAmount;
+        $tunaiDariPenjualan = $totalPenjualan - $nonTunai - $refundTunai - $expenseAmount;
+        $tunaiDisetor = (int) ($shift->actual_cash ?? ($tunaiDariPenjualan + (int) ($shift->cash_overage ?? 0)));
 
         $shift->loadMissing('user:id,name');
 
@@ -80,6 +81,7 @@ class ShiftReportBuilder
             refundTunai: $refundTunai,
             expenseAmount: $expenseAmount,
             expenseNote: $expenseNote,
+            tunaiDariPenjualan: $tunaiDariPenjualan,
             tunaiDisetor: $tunaiDisetor,
             daftarNonTunai: $daftarNonTunai,
             ppobTunai: $ppobTunai,
@@ -93,6 +95,7 @@ class ShiftReportBuilder
             'ppobTunai' => $ppobTunai,
             'ppobTransaksi' => $ppobTransaksi,
             'daftarNonTunai' => $daftarNonTunai,
+            'tunaiDariPenjualan' => $tunaiDariPenjualan,
             'tunaiDisetor' => $tunaiDisetor,
             'messageText' => $messageText,
         ];
@@ -107,6 +110,7 @@ class ShiftReportBuilder
         int $refundTunai,
         int $expenseAmount,
         ?string $expenseNote,
+        int $tunaiDariPenjualan,
         int $tunaiDisetor,
         array $daftarNonTunai,
         int $ppobTunai,
@@ -136,12 +140,19 @@ class ShiftReportBuilder
             $lines[] = $expenseLine;
         }
 
+        $lines[] = 'Tunai dari Penjualan : ' . TelegramFormatter::idr($tunaiDariPenjualan);
+
         $cashOverage = (int) ($shift->cash_overage ?? 0);
         if ($cashOverage > 0) {
             $lines[] = 'Kelebihan Uang       : ' . TelegramFormatter::idr($cashOverage);
             if (filled($shift->overage_note)) {
                 $lines[] = '  ' . trim($shift->overage_note);
             }
+        }
+
+        $difference = (int) ($shift->difference ?? 0);
+        if ($difference < 0) {
+            $lines[] = 'Kurang Uang          : ' . TelegramFormatter::idr(abs($difference));
         }
 
         $lines[] = '';
