@@ -4,9 +4,8 @@ namespace App\Http\Controllers\Account;
 
 use App\Exports\ExpenseReportExport;
 use App\Http\Controllers\Controller;
-use App\Models\Expense;
+use App\Models\ExpenseLine;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -37,62 +36,47 @@ class ExpenseReportController extends Controller
             ? Carbon::parse($request->end_date)->endOfDay()
             : Carbon::now()->endOfDay();
 
-        // Group by category
-        $baseQuery = Expense::query()
-            ->whereBetween('expense_date', [
-                $startDate->toDateString(),
-                $endDate->toDateString(),
-            ])
-            ->when(!$user->isAdminUser(), function (Builder $query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->when($user->isAdminUser() && filled($request->cashier_id), function (Builder $query) use ($request) {
-                $query->where('user_id', $request->cashier_id);
-            })
-            ->when(filled($request->category), function (Builder $query) use ($request) {
-                $query->where('category', $request->category);
-            })
-            ->when(filled($request->q), function (Builder $query) use ($request) {
-                $search = trim($request->q);
-                $query->where(function (Builder $searchQuery) use ($search) {
-                    $searchQuery->where('title', 'like', '%' . $search . '%')
-                        ->orWhere('code', 'like', '%' . $search . '%')
-                        ->orWhere('note', 'like', '%' . $search . '%');
-                });
-            });
+        $filters = [
+            'q' => $request->q,
+            'start_date' => $startDate->toDateString(),
+            'end_date' => $endDate->toDateString(),
+            'category' => $request->category,
+            'cashier_id' => $user->isAdminUser() ? $request->cashier_id : $user->id,
+        ];
 
-        // By category breakdown
+        $baseQuery = ExpenseReportExport::baseQuery($filters, $user);
+
         $byCategory = (clone $baseQuery)
-            ->select('category', DB::raw('SUM(amount) as total_amount'), DB::raw('COUNT(*) as total_count'))
-            ->groupBy('category')
+            ->select(
+                'expense_lines.category',
+                DB::raw('SUM(expense_lines.amount) as total_amount'),
+                DB::raw('COUNT(*) as total_count')
+            )
+            ->groupBy('expense_lines.category')
             ->orderByDesc('total_amount')
             ->get();
 
-        // By month trend
         $byMonth = (clone $baseQuery)
             ->select(
-                DB::raw("DATE_FORMAT(expense_date, '%Y-%m') as month"),
-                DB::raw('SUM(amount) as total_amount'),
+                DB::raw("DATE_FORMAT(expenses.expense_date, '%Y-%m') as month"),
+                DB::raw('SUM(expense_lines.amount) as total_amount'),
                 DB::raw('COUNT(*) as total_count')
             )
-            ->groupBy(DB::raw("DATE_FORMAT(expense_date, '%Y-%m')"))
+            ->groupBy(DB::raw("DATE_FORMAT(expenses.expense_date, '%Y-%m')"))
             ->orderBy('month')
             ->get();
 
-        // Detail list (paginated)
         $expenses = (clone $baseQuery)
-            ->with(['user:id,name'])
-            ->orderByDesc('expense_date')
-            ->orderByDesc('id')
+            ->with(['expense.user:id,name'])
+            ->orderByDesc('expenses.expense_date')
+            ->orderByDesc('expense_lines.id')
             ->paginate(10)
             ->withQueryString();
 
-        // Summary totals
-        $totalAmount = (int) (clone $baseQuery)->sum('amount');
-        $totalCount = (int) (clone $baseQuery)->count();
+        $totalAmount = (int) (clone $baseQuery)->sum('expense_lines.amount');
+        $totalCount = (int) (clone $baseQuery)->count('expense_lines.id');
 
-        // Category list for filter dropdown
-        $categories = Expense::query()
+        $categories = ExpenseLine::query()
             ->select('category')
             ->distinct()
             ->orderBy('category')
@@ -151,7 +135,7 @@ class ExpenseReportController extends Controller
         ];
 
         return Excel::download(
-            new ExpenseReportExport($filters),
+            new ExpenseReportExport($filters, $user),
             'laporan-pengeluaran-' . now()->format('Ymd_His') . '.xlsx'
         );
     }

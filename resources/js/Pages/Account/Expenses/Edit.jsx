@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import LayoutAccount from "../../../Layouts/Account";
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
+import { formatRupiah } from "../../../Utils/format";
 import {
     Button,
     Card,
@@ -14,51 +15,188 @@ import {
     Select,
     Space,
     Spin,
+    Table,
     Typography,
     notification,
 } from "antd";
 import {
     ArrowLeftOutlined,
+    DeleteOutlined,
     EditOutlined,
+    PlusOutlined,
     SaveOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 
+const createEmptyLine = () => ({
+    category: undefined,
+    title: "",
+    amount: null,
+});
+
 export default function ExpenseEdit() {
-    const { errors = {}, expense = {}, categories = [] } = usePage().props;
+    const { expense = {}, categories = [] } = usePage().props;
     const loading = useInertiaLoading();
 
-    const [expenseDate, setExpenseDate] = useState(expense.expense_date || "");
-    const [category, setCategory] = useState(expense.category || "");
-    const [title, setTitle] = useState(expense.title || "");
-    const [amount, setAmount] = useState(expense.amount || "");
-    const [note, setNote] = useState(expense.note || "");
+    const { data, setData, put, processing, errors } = useForm({
+        expense_date: expense.expense_date || "",
+        note: expense.note || "",
+        lines:
+            expense.lines?.length > 0
+                ? expense.lines.map((line) => ({
+                      category: line.category,
+                      title: line.title,
+                      amount: line.amount,
+                  }))
+                : [createEmptyLine()],
+    });
+
+    const totalAmount = useMemo(
+        () =>
+            data.lines.reduce(
+                (sum, line) => sum + Number(line.amount || 0),
+                0,
+            ),
+        [data.lines],
+    );
+
+    const updateLine = (index, field, value) => {
+        setData(
+            "lines",
+            data.lines.map((line, lineIndex) =>
+                lineIndex === index ? { ...line, [field]: value } : line,
+            ),
+        );
+    };
+
+    const addLine = () => {
+        setData("lines", [...data.lines, createEmptyLine()]);
+    };
+
+    const removeLine = (index) => {
+        if (data.lines.length === 1) return;
+
+        setData(
+            "lines",
+            data.lines.filter((_, lineIndex) => lineIndex !== index),
+        );
+    };
+
+    const lineError = (index, field) => errors[`lines.${index}.${field}`];
 
     const updateExpense = (e) => {
         e.preventDefault();
 
-        router.put(
-            `/account/expenses/${expense.id}`,
-            {
-                expense_date: expenseDate,
-                category,
-                title,
-                amount,
-                note,
+        put(`/account/expenses/${expense.id}`, {
+            onSuccess: () => {
+                notification.success({
+                    message: "Berhasil",
+                    description: "Pengeluaran berhasil diperbarui.",
+                    duration: 1.5,
+                });
             },
-            {
-                onSuccess: () => {
-                    notification.success({
-                        message: "Berhasil",
-                        description: "Pengeluaran berhasil diperbarui.",
-                        duration: 1.5,
-                    });
-                },
-            },
-        );
+        });
     };
+
+    const columns = [
+        {
+            title: "Kategori",
+            width: 200,
+            render: (_, line, index) => (
+                <>
+                    <Select
+                        placeholder="Pilih Kategori"
+                        style={{ width: "100%" }}
+                        value={line.category || undefined}
+                        onChange={(value) =>
+                            updateLine(index, "category", value)
+                        }
+                        status={lineError(index, "category") ? "error" : undefined}
+                        options={categories.map((item) => ({
+                            value: item.value,
+                            label: item.label,
+                        }))}
+                    />
+                    {lineError(index, "category") && (
+                        <Text
+                            type="danger"
+                            style={{ fontSize: 12, display: "block" }}
+                        >
+                            {lineError(index, "category")}
+                        </Text>
+                    )}
+                </>
+            ),
+        },
+        {
+            title: "Judul",
+            render: (_, line, index) => (
+                <>
+                    <Input
+                        value={line.title}
+                        maxLength={150}
+                        placeholder="Contoh: Bayar listrik toko"
+                        onChange={(e) =>
+                            updateLine(index, "title", e.target.value)
+                        }
+                        status={lineError(index, "title") ? "error" : undefined}
+                    />
+                    {lineError(index, "title") && (
+                        <Text
+                            type="danger"
+                            style={{ fontSize: 12, display: "block" }}
+                        >
+                            {lineError(index, "title")}
+                        </Text>
+                    )}
+                </>
+            ),
+        },
+        {
+            title: "Nominal",
+            align: "right",
+            width: 160,
+            render: (_, line, index) => (
+                <>
+                    <InputNumber
+                        min={1}
+                        precision={0}
+                        style={{ width: "100%" }}
+                        placeholder="0"
+                        value={line.amount}
+                        onChange={(value) =>
+                            updateLine(index, "amount", value ?? null)
+                        }
+                        status={lineError(index, "amount") ? "error" : undefined}
+                    />
+                    {lineError(index, "amount") && (
+                        <Text
+                            type="danger"
+                            style={{ fontSize: 12, display: "block" }}
+                        >
+                            {lineError(index, "amount")}
+                        </Text>
+                    )}
+                </>
+            ),
+        },
+        {
+            title: "Aksi",
+            align: "center",
+            width: 70,
+            render: (_, __, index) => (
+                <Button
+                    danger
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    onClick={() => removeLine(index)}
+                    disabled={data.lines.length === 1}
+                />
+            ),
+        },
+    ];
 
     return (
         <>
@@ -67,11 +205,13 @@ export default function ExpenseEdit() {
             </Head>
 
             <LayoutAccount>
-                <Spin spinning={loading}>
+                <Spin spinning={loading || processing}>
                     <Card
                         title={
                             <Space>
-                                <EditOutlined style={{ color: "var(--brand-primary)" }} />
+                                <EditOutlined
+                                    style={{ color: "var(--brand-primary)" }}
+                                />
                                 <div>
                                     <Title level={4} style={{ margin: 0 }}>
                                         EDIT PENGELUARAN
@@ -105,94 +245,100 @@ export default function ExpenseEdit() {
                                             style={{ width: "100%" }}
                                             format="YYYY-MM-DD"
                                             value={
-                                                expenseDate
-                                                    ? dayjs(expenseDate)
+                                                data.expense_date
+                                                    ? dayjs(data.expense_date)
                                                     : null
                                             }
                                             onChange={(_, dateString) =>
-                                                setExpenseDate(dateString)
+                                                setData(
+                                                    "expense_date",
+                                                    dateString,
+                                                )
                                             }
                                         />
                                     </Form.Item>
                                 </Col>
                                 <Col xs={24} md={12}>
                                     <Form.Item
-                                        label="Kategori"
+                                        label="Keterangan"
                                         validateStatus={
-                                            errors.category ? "error" : ""
+                                            errors.note ? "error" : ""
                                         }
-                                        help={errors.category}
-                                        required
+                                        help={errors.note}
                                     >
-                                        <Select
-                                            placeholder="Pilih Kategori"
-                                            value={category || undefined}
-                                            onChange={setCategory}
-                                            options={categories.map((item) => ({
-                                                value: item.value,
-                                                label: item.label,
-                                            }))}
-                                        />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-
-                            <Row gutter={16}>
-                                <Col xs={24} md={16}>
-                                    <Form.Item
-                                        label="Judul Pengeluaran"
-                                        validateStatus={
-                                            errors.title ? "error" : ""
-                                        }
-                                        help={errors.title}
-                                        required
-                                    >
-                                        <Input
-                                            value={title}
+                                        <Input.TextArea
+                                            value={data.note}
                                             onChange={(e) =>
-                                                setTitle(e.target.value)
+                                                setData("note", e.target.value)
                                             }
-                                            placeholder="Contoh: Bayar listrik toko"
-                                        />
-                                    </Form.Item>
-                                </Col>
-                                <Col xs={24} md={8}>
-                                    <Form.Item
-                                        label="Nominal"
-                                        validateStatus={
-                                            errors.amount ? "error" : ""
-                                        }
-                                        help={errors.amount}
-                                        required
-                                    >
-                                        <InputNumber
-                                            min={1}
-                                            style={{ width: "100%" }}
-                                            placeholder="0"
-                                            value={amount}
-                                            onChange={setAmount}
+                                            rows={3}
+                                            placeholder="Keterangan tambahan (opsional)"
                                         />
                                     </Form.Item>
                                 </Col>
                             </Row>
 
-                            <Form.Item
-                                label="Catatan"
-                                validateStatus={errors.note ? "error" : ""}
-                                help={errors.note}
+                            {errors.lines && (
+                                <Text
+                                    type="danger"
+                                    style={{ display: "block", marginBottom: 12 }}
+                                >
+                                    {errors.lines}
+                                </Text>
+                            )}
+
+                            <Table
+                                rowKey={(_, index) => index}
+                                columns={columns}
+                                dataSource={data.lines}
+                                pagination={false}
+                                scroll={{ x: "max-content" }}
+                                style={{ marginBottom: 16 }}
+                            />
+
+                            <Row
+                                justify="space-between"
+                                align="middle"
+                                style={{ marginBottom: 16 }}
                             >
-                                <Input.TextArea
-                                    value={note}
-                                    onChange={(e) => setNote(e.target.value)}
-                                    rows={3}
-                                    placeholder="Catatan tambahan"
-                                />
-                            </Form.Item>
+                                <Col>
+                                    <Button
+                                        icon={<PlusOutlined />}
+                                        onClick={addLine}
+                                    >
+                                        Tambah Baris
+                                    </Button>
+                                </Col>
+                                <Col>
+                                    <Card
+                                        size="small"
+                                        style={{ background: "var(--bg-subtle)" }}
+                                    >
+                                        <Text
+                                            type="secondary"
+                                            style={{ fontSize: 12 }}
+                                        >
+                                            Total
+                                        </Text>
+                                        <div>
+                                            <Text
+                                                strong
+                                                style={{
+                                                    color: "var(--semantic-error)",
+                                                }}
+                                            >
+                                                {formatRupiah(totalAmount)}
+                                            </Text>
+                                        </div>
+                                    </Card>
+                                </Col>
+                            </Row>
 
                             <Button
                                 type="primary"
                                 htmlType="submit"
                                 icon={<SaveOutlined />}
+                                loading={processing}
                             >
                                 SIMPAN PERUBAHAN
                             </Button>

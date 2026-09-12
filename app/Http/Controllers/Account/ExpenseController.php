@@ -7,6 +7,7 @@ use App\Models\Expense;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -30,21 +31,30 @@ class ExpenseController extends Controller
 
         $expenses = (clone $baseQuery)
             ->with('user:id,name')
+            ->withCount('lines')
+            ->with('lines:id,expense_id,category')
             ->latest('expense_date')
             ->latest('id')
             ->paginate(10)
             ->withQueryString();
 
-        $expenses->through(function (Expense $expense) {
+        $expenses->through(function (Expense $expense) use ($categories) {
+            $categoryLabels = collect($expense->lines)
+                ->pluck('category')
+                ->unique()
+                ->map(fn (string $category) => $categories[$category] ?? $category)
+                ->values()
+                ->all();
+
             return [
-                'id'           => $expense->id,
-                'code'         => $expense->code,
-                'expense_date' => $expense->expense_date?->toDateString(),
-                'category'     => $expense->category,
-                'title'        => $expense->title,
-                'amount'       => $expense->amount,
-                'note'         => $expense->note,
-                'user'         => $expense->user,
+                'id'              => $expense->id,
+                'code'            => $expense->code,
+                'expense_date'    => $expense->expense_date?->toDateString(),
+                'amount'          => $expense->amount,
+                'note'            => $expense->note,
+                'user'            => $expense->user,
+                'lines_count'     => $expense->lines_count,
+                'category_labels' => $categoryLabels,
             ];
         });
 
@@ -83,23 +93,32 @@ class ExpenseController extends Controller
     {
         $categories = $this->expenseCategories();
 
-        $request->validate([
-            'expense_date' => 'required|date',
-            'category'     => ['required', Rule::in(array_keys($categories))],
-            'title'        => 'required|string|max:150',
-            'amount'       => 'required|integer|min:1',
-            'note'         => 'nullable|string|max:1000',
+        $validated = $request->validate([
+            'expense_date'       => 'required|date',
+            'note'               => 'nullable|string|max:1000',
+            'lines'              => 'required|array|min:1',
+            'lines.*.category'   => ['required', Rule::in(array_keys($categories))],
+            'lines.*.title'      => 'required|string|max:150',
+            'lines.*.amount'     => 'required|integer|min:1',
         ]);
 
-        Expense::create([
-            'user_id'      => $request->user()->id,
-            'code'         => $this->generateExpenseCode(),
-            'expense_date' => $request->expense_date,
-            'category'     => $request->category,
-            'title'        => $request->title,
-            'amount'       => (int) $request->amount,
-            'note'         => filled($request->note) ? trim($request->note) : null,
+        $lines = collect($validated['lines'])->map(fn (array $line) => [
+            'category' => $line['category'],
+            'title'    => trim($line['title']),
+            'amount'   => (int) $line['amount'],
         ]);
+
+        DB::transaction(function () use ($request, $validated, $lines) {
+            $expense = Expense::create([
+                'user_id'      => $request->user()->id,
+                'code'         => $this->generateExpenseCode(),
+                'expense_date' => $validated['expense_date'],
+                'amount'       => (int) $lines->sum('amount'),
+                'note'         => filled($validated['note'] ?? null) ? trim($validated['note']) : null,
+            ]);
+
+            $expense->lines()->createMany($lines->all());
+        });
 
         return redirect()->route('account.expenses.index');
     }
@@ -107,16 +126,21 @@ class ExpenseController extends Controller
     public function edit(Request $request, Expense $expense)
     {
         $this->authorizeExpenseOwner($request, $expense);
+        $expense->load('lines:id,expense_id,category,title,amount');
 
         return Inertia::render('Account/Expenses/Edit', [
             'expense' => [
                 'id'           => $expense->id,
                 'code'         => $expense->code,
                 'expense_date' => $expense->expense_date?->toDateString(),
-                'category'     => $expense->category,
-                'title'        => $expense->title,
                 'amount'       => $expense->amount,
                 'note'         => $expense->note,
+                'lines'        => $expense->lines->map(fn ($line) => [
+                    'id'       => $line->id,
+                    'category' => $line->category,
+                    'title'    => $line->title,
+                    'amount'   => $line->amount,
+                ])->values()->all(),
             ],
             'categories' => $this->formatCategories($this->expenseCategories()),
         ]);
@@ -127,21 +151,31 @@ class ExpenseController extends Controller
         $this->authorizeExpenseOwner($request, $expense);
         $categories = $this->expenseCategories();
 
-        $request->validate([
-            'expense_date' => 'required|date',
-            'category'     => ['required', Rule::in(array_keys($categories))],
-            'title'        => 'required|string|max:150',
-            'amount'       => 'required|integer|min:1',
-            'note'         => 'nullable|string|max:1000',
+        $validated = $request->validate([
+            'expense_date'       => 'required|date',
+            'note'               => 'nullable|string|max:1000',
+            'lines'              => 'required|array|min:1',
+            'lines.*.category'   => ['required', Rule::in(array_keys($categories))],
+            'lines.*.title'      => 'required|string|max:150',
+            'lines.*.amount'     => 'required|integer|min:1',
         ]);
 
-        $expense->update([
-            'expense_date' => $request->expense_date,
-            'category'     => $request->category,
-            'title'        => $request->title,
-            'amount'       => (int) $request->amount,
-            'note'         => filled($request->note) ? trim($request->note) : null,
+        $lines = collect($validated['lines'])->map(fn (array $line) => [
+            'category' => $line['category'],
+            'title'    => trim($line['title']),
+            'amount'   => (int) $line['amount'],
         ]);
+
+        DB::transaction(function () use ($expense, $validated, $lines) {
+            $expense->update([
+                'expense_date' => $validated['expense_date'],
+                'amount'       => (int) $lines->sum('amount'),
+                'note'         => filled($validated['note'] ?? null) ? trim($validated['note']) : null,
+            ]);
+
+            $expense->lines()->delete();
+            $expense->lines()->createMany($lines->all());
+        });
 
         return redirect()->route('account.expenses.index');
     }
@@ -169,12 +203,16 @@ class ExpenseController extends Controller
 
                 $expenseQuery->where(function (Builder $searchQuery) use ($search) {
                     $searchQuery->where('code', 'like', '%' . $search . '%')
-                        ->orWhere('title', 'like', '%' . $search . '%')
-                        ->orWhere('note', 'like', '%' . $search . '%');
+                        ->orWhere('note', 'like', '%' . $search . '%')
+                        ->orWhereHas('lines', function (Builder $lineQuery) use ($search) {
+                            $lineQuery->where('title', 'like', '%' . $search . '%');
+                        });
                 });
             })
             ->when(filled($request->category), function (Builder $expenseQuery) use ($request) {
-                $expenseQuery->where('category', $request->category);
+                $expenseQuery->whereHas('lines', function (Builder $lineQuery) use ($request) {
+                    $lineQuery->where('category', $request->category);
+                });
             })
             ->when(filled($request->start_date), function (Builder $expenseQuery) use ($request) {
                 $expenseQuery->whereDate('expense_date', '>=', $request->start_date);
@@ -210,7 +248,7 @@ class ExpenseController extends Controller
     protected function formatCategories(array $categories): array
     {
         return collect($categories)
-            ->map(fn(string $label, string $value) => [
+            ->map(fn (string $label, string $value) => [
                 'value' => $value,
                 'label' => $label,
             ])

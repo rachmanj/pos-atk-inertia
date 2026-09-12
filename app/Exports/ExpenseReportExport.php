@@ -2,7 +2,9 @@
 
 namespace App\Exports;
 
-use App\Models\Expense;
+use App\Models\ExpenseLine;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -13,34 +15,48 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class ExpenseReportExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
     public function __construct(
-        protected array $filters = []
+        protected array $filters = [],
+        protected ?User $user = null,
     ) {}
 
-    public function query()
+    public static function baseQuery(array $filters, ?User $user = null): Builder
     {
-        $filters = $this->filters;
         $startDate = $filters['start_date'] ?? now()->startOfMonth()->toDateString();
         $endDate = $filters['end_date'] ?? now()->toDateString();
 
-        return Expense::query()
-            ->with(['user:id,name'])
-            ->whereBetween('expense_date', [$startDate, $endDate])
-            ->when(!empty($filters['cashier_id']), function ($q) use ($filters) {
-                $q->where('user_id', $filters['cashier_id']);
-            })
-            ->when(!empty($filters['category']), function ($q) use ($filters) {
-                $q->where('category', $filters['category']);
-            })
-            ->when(!empty($filters['q']), function ($q) use ($filters) {
-                $search = trim($filters['q']);
-                $q->where(function ($searchQuery) use ($search) {
-                    $searchQuery->where('title', 'like', '%' . $search . '%')
-                        ->orWhere('code', 'like', '%' . $search . '%')
-                        ->orWhere('note', 'like', '%' . $search . '%');
-                });
-            })
-            ->orderByDesc('expense_date')
-            ->orderByDesc('id');
+        $query = ExpenseLine::query()
+            ->select('expense_lines.*')
+            ->join('expenses', 'expense_lines.expense_id', '=', 'expenses.id')
+            ->whereBetween('expenses.expense_date', [$startDate, $endDate]);
+
+        if ($user !== null && !$user->isAdminUser()) {
+            $query->where('expenses.user_id', $user->id);
+        } elseif (!empty($filters['cashier_id'])) {
+            $query->where('expenses.user_id', $filters['cashier_id']);
+        }
+
+        if (!empty($filters['category'])) {
+            $query->where('expense_lines.category', $filters['category']);
+        }
+
+        if (!empty($filters['q'])) {
+            $search = trim($filters['q']);
+            $query->where(function (Builder $searchQuery) use ($search) {
+                $searchQuery->where('expense_lines.title', 'like', '%' . $search . '%')
+                    ->orWhere('expenses.code', 'like', '%' . $search . '%')
+                    ->orWhere('expenses.note', 'like', '%' . $search . '%');
+            });
+        }
+
+        return $query;
+    }
+
+    public function query()
+    {
+        return self::baseQuery($this->filters, $this->user)
+            ->with(['expense.user:id,name'])
+            ->orderByDesc('expenses.expense_date')
+            ->orderByDesc('expense_lines.id');
     }
 
     public function headings(): array
@@ -64,13 +80,13 @@ class ExpenseReportExport implements FromQuery, WithHeadings, WithMapping, Shoul
 
         return [
             $no,
-            $row->code,
-            $row->expense_date?->format('d/m/Y') ?? $row->expense_date,
+            $row->expense?->code,
+            $row->expense?->expense_date?->format('d/m/Y') ?? $row->expense?->expense_date,
             $row->category,
             $row->title,
             (int) $row->amount,
-            $row->user?->name ?? '-',
-            $row->note ?? '',
+            $row->expense?->user?->name ?? '-',
+            $row->expense?->note ?? '',
         ];
     }
 

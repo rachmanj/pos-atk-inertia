@@ -247,6 +247,7 @@ _(none)_
 
 ## Recently Completed
 
+- `[done] Pengeluaran multi-line (backend): expense_lines table, header/lines split, report queries per line, cashier grants via migration, ExpenseTest feature tests. Frontend Create/Edit/Index belum di-update. (completed: 2026-09-12)`
 - `[done] Migrasi UI Bootstrap → Ant Design — 5 fase selesai: layout shell, shared components, halaman CRUD/report, POS sub-komponen, polish & cleanup (hapus Bootstrap/SweetAlert2/Font Awesome CDN, ganti ikon @ant-design/icons) [docs/migration-antd.md] (completed: 2026-07-23)`
 - `[done] Auth: login with username or email; self-service change password from navbar dropdown [LoginController, PasswordController, Account.jsx] (completed: 2026-06-27)`
 - `[done] Product Excel import — create-only bulk import from Products index [ProductImportController, ProductsImport, Products/Index.jsx] (completed: 2026-06-26)`

@@ -4,7 +4,7 @@ import Delete from "../../../Shared/Delete";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
 import {
     Button,
@@ -29,6 +29,22 @@ import {
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+
+const formatDate = (value) => {
+    if (!value) return "-";
+    return new Date(`${value}T00:00:00`).toLocaleDateString("id-ID", {
+        dateStyle: "medium",
+    });
+};
+
+const formatLinesSummary = (record) => {
+    const count = record.lines_count || 0;
+    const labels = record.category_labels || [];
+    const labelText = labels.length > 0 ? labels.join(", ") : "-";
+
+    return `${count} baris · ${labelText}`;
+};
 
 export default function ExpenseIndex() {
     const {
@@ -46,16 +62,12 @@ export default function ExpenseIndex() {
 
     const [search, setSearch] = useState(filters.q || "");
     const [category, setCategory] = useState(filters.category || undefined);
-    const [startDate, setStartDate] = useState(filters.start_date || "");
-    const [endDate, setEndDate] = useState(filters.end_date || "");
+    const [dateRange, setDateRange] = useState(
+        filters.start_date && filters.end_date
+            ? [dayjs(filters.start_date), dayjs(filters.end_date)]
+            : null,
+    );
     const [userId, setUserId] = useState(filters.user_id || undefined);
-
-    const categoryLabels = useMemo(() => {
-        return categories.reduce((labels, item) => {
-            labels[item.value] = item.label;
-            return labels;
-        }, {});
-    }, [categories]);
 
     const handleFilter = (e) => {
         e.preventDefault();
@@ -63,8 +75,8 @@ export default function ExpenseIndex() {
         router.get("/account/expenses", {
             q: search,
             category: category || "",
-            start_date: startDate,
-            end_date: endDate,
+            start_date: dateRange?.[0]?.format("YYYY-MM-DD") || "",
+            end_date: dateRange?.[1]?.format("YYYY-MM-DD") || "",
             user_id: userId || "",
         });
     };
@@ -72,17 +84,9 @@ export default function ExpenseIndex() {
     const handleReset = () => {
         setSearch("");
         setCategory(undefined);
-        setStartDate("");
-        setEndDate("");
+        setDateRange(null);
         setUserId(undefined);
         router.get("/account/expenses");
-    };
-
-    const formatDate = (value) => {
-        if (!value) return "-";
-        return new Date(`${value}T00:00:00`).toLocaleDateString("id-ID", {
-            dateStyle: "medium",
-        });
     };
 
     const columns = [
@@ -96,6 +100,11 @@ export default function ExpenseIndex() {
                 (expenses.current_page - 1) * expenses.per_page,
         },
         {
+            title: "Tanggal",
+            dataIndex: "expense_date",
+            render: (value) => formatDate(value),
+        },
+        {
             title: "Kode",
             dataIndex: "code",
             render: (value) => (
@@ -105,26 +114,13 @@ export default function ExpenseIndex() {
             ),
         },
         {
-            title: "Tanggal",
-            dataIndex: "expense_date",
-            render: (value) => formatDate(value),
+            title: "Ringkasan Baris",
+            render: (_, record) => (
+                <Text type="secondary">{formatLinesSummary(record)}</Text>
+            ),
         },
         {
-            title: "Kategori",
-            dataIndex: "category",
-            render: (value) => categoryLabels[value] || value,
-        },
-        {
-            title: "Judul",
-            dataIndex: "title",
-            render: (value) => <Text strong>{value}</Text>,
-        },
-        {
-            title: "User",
-            render: (_, record) => record.user?.name || "-",
-        },
-        {
-            title: "Nominal",
+            title: "Total",
             align: "right",
             dataIndex: "amount",
             render: (value) => (
@@ -134,9 +130,8 @@ export default function ExpenseIndex() {
             ),
         },
         {
-            title: "Catatan",
-            dataIndex: "note",
-            render: (value) => value || "-",
+            title: "Kasir",
+            render: (_, record) => record.user?.name || "-",
         },
         {
             title: "Aksi",
@@ -218,39 +213,23 @@ export default function ExpenseIndex() {
                                         }))}
                                     />
                                 </Col>
-                                <Col xs={24} sm={12} lg={4}>
-                                    <DatePicker
+                                <Col xs={24} sm={12} lg={6}>
+                                    <RangePicker
                                         style={{ width: "100%" }}
-                                        placeholder="Dari tanggal"
-                                        format="YYYY-MM-DD"
-                                        value={
-                                            startDate
-                                                ? dayjs(startDate)
-                                                : null
-                                        }
-                                        onChange={(_, dateString) =>
-                                            setStartDate(dateString)
-                                        }
-                                    />
-                                </Col>
-                                <Col xs={24} sm={12} lg={4}>
-                                    <DatePicker
-                                        style={{ width: "100%" }}
-                                        placeholder="Sampai tanggal"
-                                        format="YYYY-MM-DD"
-                                        value={
-                                            endDate ? dayjs(endDate) : null
-                                        }
-                                        onChange={(_, dateString) =>
-                                            setEndDate(dateString)
-                                        }
+                                        format="DD/MM/YYYY"
+                                        placeholder={[
+                                            "Dari tanggal",
+                                            "Sampai tanggal",
+                                        ]}
+                                        value={dateRange}
+                                        onChange={setDateRange}
                                     />
                                 </Col>
                                 {isAdmin && (
                                     <Col xs={24} sm={12} lg={4}>
                                         <Select
                                             allowClear
-                                            placeholder="Semua User"
+                                            placeholder="Semua Kasir"
                                             style={{ width: "100%" }}
                                             value={userId}
                                             onChange={setUserId}
@@ -261,7 +240,7 @@ export default function ExpenseIndex() {
                                         />
                                     </Col>
                                 )}
-                                <Col xs={24} lg={isAdmin ? 2 : 6}>
+                                <Col xs={24} lg={isAdmin ? 4 : 8}>
                                     <Space>
                                         <Button
                                             type="primary"
@@ -286,14 +265,16 @@ export default function ExpenseIndex() {
                                         formatter={(value) =>
                                             formatRupiah(value)
                                         }
-                                        valueStyle={{ color: "var(--semantic-error)" }}
+                                        valueStyle={{
+                                            color: "var(--semantic-error)",
+                                        }}
                                     />
                                 </Card>
                             </Col>
                             <Col xs={24} md={12}>
                                 <Card size="small">
                                     <Statistic
-                                        title="Jumlah Data"
+                                        title="Jumlah Transaksi"
                                         value={summary.total_expenses || 0}
                                     />
                                 </Card>

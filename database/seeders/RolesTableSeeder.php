@@ -42,6 +42,10 @@ class RolesTableSeeder extends Seeder
             'returns.create',
             'returns.show',
 
+            'expenses.index',
+            'expenses.create',
+            'expenses.edit',
+
             'cashier_shifts.index',
             'cashier_shifts.open',
             'cashier_shifts.close',

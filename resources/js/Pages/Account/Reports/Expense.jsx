@@ -4,7 +4,7 @@ import DatePreset from "../../../Shared/DatePreset";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import { Head, router, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
     Button,
     Card,
@@ -40,6 +40,28 @@ import {
 } from "recharts";
 
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+
+const EXPENSE_CATEGORY_LABELS = {
+    operational: "Operasional",
+    salary: "Gaji / Komisi",
+    rent: "Sewa",
+    utilities: "Listrik, Air, Internet",
+    transport: "Transportasi",
+    maintenance: "Perawatan",
+    promotion: "Promosi",
+    other: "Lainnya",
+};
+
+const categoryLabel = (value) =>
+    EXPENSE_CATEGORY_LABELS[value] || value || "-";
+
+const formatDate = (value) => {
+    if (!value) return "-";
+    return new Date(`${value}T00:00:00`).toLocaleDateString("id-ID", {
+        dateStyle: "medium",
+    });
+};
 
 export default function ExpenseReport() {
     const {
@@ -57,11 +79,25 @@ export default function ExpenseReport() {
     const permissions = auth.permissions || {};
 
     const [search, setSearch] = useState(filters.q || "");
-    const [startDate, setStartDate] = useState(filters.start_date || "");
-    const [endDate, setEndDate] = useState(filters.end_date || "");
+    const [dateRange, setDateRange] = useState([
+        dayjs(filters.start_date),
+        dayjs(filters.end_date),
+    ]);
     const [category, setCategory] = useState(filters.category || undefined);
     const [cashierId, setCashierId] = useState(
         filters.cashier_id || undefined,
+    );
+
+    const startDate = dateRange?.[0]?.format("YYYY-MM-DD") || "";
+    const endDate = dateRange?.[1]?.format("YYYY-MM-DD") || "";
+
+    const chartByCategory = useMemo(
+        () =>
+            byCategory.map((item) => ({
+                ...item,
+                category_label: categoryLabel(item.category),
+            })),
+        [byCategory],
     );
 
     const handleFilter = (e) => {
@@ -76,17 +112,19 @@ export default function ExpenseReport() {
     };
 
     const handleReset = () => {
+        const defaultRange = [dayjs().startOf("month"), dayjs()];
         setSearch("");
-        setStartDate("");
-        setEndDate("");
+        setDateRange(defaultRange);
         setCategory(undefined);
         setCashierId(undefined);
-        router.get("/account/reports/expense");
+        router.get("/account/reports/expense", {
+            start_date: defaultRange[0].format("YYYY-MM-DD"),
+            end_date: defaultRange[1].format("YYYY-MM-DD"),
+        });
     };
 
     const handleDatePreset = (start, end) => {
-        setStartDate(start);
-        setEndDate(end);
+        setDateRange([dayjs(start), dayjs(end)]);
         router.get("/account/reports/expense", {
             q: search,
             start_date: start,
@@ -123,17 +161,20 @@ export default function ExpenseReport() {
         },
         {
             title: "Kode",
-            dataIndex: "code",
-            render: (code) => <Text style={{ color: "var(--semantic-info)" }}>{code}</Text>,
+            render: (_, row) => (
+                <Text style={{ color: "var(--semantic-info)" }}>
+                    {row.expense?.code ?? "-"}
+                </Text>
+            ),
         },
         {
             title: "Tanggal",
-            dataIndex: "expense_date",
+            render: (_, row) => formatDate(row.expense?.expense_date),
         },
         {
             title: "Kategori",
             dataIndex: "category",
-            render: (cat) => <Tag>{cat}</Tag>,
+            render: (cat) => <Tag>{categoryLabel(cat)}</Tag>,
         },
         {
             title: "Judul",
@@ -142,14 +183,15 @@ export default function ExpenseReport() {
         },
         {
             title: "Staff",
-            render: (_, expense) => expense.user?.name ?? "-",
+            render: (_, row) => row.expense?.user?.name ?? "-",
         },
         {
             title: "Jumlah",
             align: "right",
-            render: (_, expense) => (
+            dataIndex: "amount",
+            render: (value) => (
                 <Text strong type="danger">
-                    {formatRupiah(expense.amount)}
+                    {formatRupiah(value)}
                 </Text>
             ),
         },
@@ -189,34 +231,13 @@ export default function ExpenseReport() {
                                     allowClear
                                 />
                             </Col>
-                            <Col xs={12} lg={4}>
-                                <DatePicker
+                            <Col xs={24} lg={8}>
+                                <RangePicker
                                     style={{ width: "100%" }}
-                                    placeholder="Tanggal mulai"
                                     format="DD/MM/YYYY"
-                                    value={startDate ? dayjs(startDate) : null}
-                                    onChange={(date) =>
-                                        setStartDate(
-                                            date
-                                                ? date.format("YYYY-MM-DD")
-                                                : "",
-                                        )
-                                    }
-                                />
-                            </Col>
-                            <Col xs={12} lg={4}>
-                                <DatePicker
-                                    style={{ width: "100%" }}
-                                    placeholder="Tanggal akhir"
-                                    format="DD/MM/YYYY"
-                                    value={endDate ? dayjs(endDate) : null}
-                                    onChange={(date) =>
-                                        setEndDate(
-                                            date
-                                                ? date.format("YYYY-MM-DD")
-                                                : "",
-                                        )
-                                    }
+                                    allowClear={false}
+                                    value={dateRange}
+                                    onChange={(value) => setDateRange(value)}
                                 />
                             </Col>
                             <Col xs={24} lg={4}>
@@ -228,7 +249,7 @@ export default function ExpenseReport() {
                                     onChange={setCategory}
                                     options={categoryList.map((cat) => ({
                                         value: cat,
-                                        label: cat,
+                                        label: categoryLabel(cat),
                                     }))}
                                 />
                             </Col>
@@ -276,14 +297,17 @@ export default function ExpenseReport() {
                                 <Statistic
                                     title="Total Pengeluaran"
                                     value={formatRupiah(summary.total_amount)}
-                                    valueStyle={{ color: "var(--semantic-error)", fontSize: 18 }}
+                                    valueStyle={{
+                                        color: "var(--semantic-error)",
+                                        fontSize: 18,
+                                    }}
                                 />
                             </Card>
                         </Col>
                         <Col xs={12} sm={6} md={8}>
                             <Card size="small">
                                 <Statistic
-                                    title="Jumlah Transaksi"
+                                    title="Jumlah Baris"
                                     value={summary.total_count}
                                 />
                             </Card>
@@ -291,7 +315,7 @@ export default function ExpenseReport() {
                         <Col xs={12} sm={6} md={8}>
                             <Card size="small">
                                 <Statistic
-                                    title="Rata-rata per Transaksi"
+                                    title="Rata-rata per Baris"
                                     value={formatRupiah(
                                         summary.avg_per_transaction,
                                     )}
@@ -311,13 +335,13 @@ export default function ExpenseReport() {
                                     </Space>
                                 }
                             >
-                                {byCategory.length > 0 ? (
+                                {chartByCategory.length > 0 ? (
                                     <ResponsiveContainer
                                         width="100%"
                                         height={280}
                                     >
                                         <BarChart
-                                            data={byCategory}
+                                            data={chartByCategory}
                                             layout="vertical"
                                         >
                                             <CartesianGrid strokeDasharray="3 3" />
@@ -327,8 +351,8 @@ export default function ExpenseReport() {
                                             />
                                             <YAxis
                                                 type="category"
-                                                dataKey="category"
-                                                width={100}
+                                                dataKey="category_label"
+                                                width={120}
                                                 tick={{ fontSize: 11 }}
                                             />
                                             <Tooltip
@@ -423,7 +447,7 @@ export default function ExpenseReport() {
                         columns={columns}
                         dataSource={expenses.data}
                         pagination={false}
-                        scroll={{ x: 'max-content' }}
+                        scroll={{ x: "max-content" }}
                         locale={{
                             emptyText:
                                 "Belum ada data pengeluaran untuk filter ini.",

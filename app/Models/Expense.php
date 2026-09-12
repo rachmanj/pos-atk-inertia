@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Expense extends Model
 {
@@ -16,16 +17,12 @@ class Expense extends Model
     }
 
     /**
-     * The attributes that are mass assignable.
-     *
      * @var array<int, string>
      */
     protected $fillable = [
         'user_id',
         'code',
         'expense_date',
-        'category',
-        'title',
         'amount',
         'note',
     ];
@@ -33,5 +30,10 @@ class Expense extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function lines(): HasMany
+    {
+        return $this->hasMany(ExpenseLine::class);
     }
 }
