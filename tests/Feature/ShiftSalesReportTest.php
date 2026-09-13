@@ -106,7 +106,7 @@ class ShiftSalesReportTest extends TestCase
                 ->where('shifts.data.0.user.id', $cashierA->id));
     }
 
-    public function test_pengeluaran_only_sums_expenses_within_shift_range(): void
+    public function test_pengeluaran_uses_stored_expense_amount_on_shift(): void
     {
         $user = $this->createCashierUser(['reports.sales']);
 
@@ -119,6 +119,34 @@ class ShiftSalesReportTest extends TestCase
             'closed_at' => $closedAt,
             'cash_in_hand' => 100_000,
             'status' => 'closed',
+            'expense_amount' => 45_000,
+            'expense_note' => 'Beli galon',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('account.reports.shift_sales'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('shifts.data', 1)
+                ->where('shifts.data.0.pengeluaran', 45_000)
+                ->where('shifts.data.0.expense_note', 'Beli galon')
+                ->where('summary.total_pengeluaran', 45_000));
+    }
+
+    public function test_pengeluaran_menu_only_sums_expenses_within_shift_range(): void
+    {
+        $user = $this->createCashierUser(['reports.sales']);
+
+        $openedAt = now()->copy()->startOfDay()->addHours(8);
+        $closedAt = now()->copy()->startOfDay()->addHours(16);
+
+        CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => $openedAt,
+            'closed_at' => $closedAt,
+            'cash_in_hand' => 100_000,
+            'status' => 'closed',
+            'expense_amount' => 0,
         ]);
 
         $inRangeExpense = Expense::create([
@@ -150,8 +178,10 @@ class ShiftSalesReportTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('shifts.data', 1)
-                ->where('shifts.data.0.pengeluaran', 30_000)
-                ->where('summary.total_pengeluaran', 30_000));
+                ->where('shifts.data.0.pengeluaran', 0)
+                ->where('shifts.data.0.pengeluaran_menu', 30_000)
+                ->where('summary.total_pengeluaran', 0)
+                ->where('summary.total_pengeluaran_menu', 30_000));
     }
 
     public function test_export_runs_without_error(): void

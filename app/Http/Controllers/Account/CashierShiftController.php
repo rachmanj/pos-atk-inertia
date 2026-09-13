@@ -183,6 +183,8 @@ class CashierShiftController extends Controller
                 'total_transactions' => $cashierShift->isOpen() ? $summary['total_transactions'] : $cashierShift->total_transactions,
                 'note'               => $cashierShift->note,
                 'status'             => $cashierShift->status,
+                'expense_amount'     => $cashierShift->expense_amount,
+                'expense_note'       => $cashierShift->expense_note,
                 'summary'            => $summary,
             ],
             'canSendWaReport' => $canSendWaReport,
@@ -208,6 +210,11 @@ class CashierShiftController extends Controller
 
         $expenseAmount = (int) ($validated['expense_amount'] ?? 0);
         $expenseNote = filled($validated['expense_note'] ?? null) ? trim($validated['expense_note']) : null;
+
+        $cashierShift->update([
+            'expense_amount' => $expenseAmount,
+            'expense_note' => $expenseNote,
+        ]);
 
         $report = $this->shiftReportBuilder->build($cashierShift, $expenseAmount, $expenseNote);
 
@@ -244,6 +251,11 @@ class CashierShiftController extends Controller
 
         $expenseAmount = (int) ($validated['expense_amount'] ?? 0);
         $expenseNote = filled($validated['expense_note'] ?? null) ? trim($validated['expense_note']) : null;
+
+        $cashierShift->update([
+            'expense_amount' => $expenseAmount,
+            'expense_note' => $expenseNote,
+        ]);
 
         $report = $this->shiftReportBuilder->build($cashierShift, $expenseAmount, $expenseNote);
         $message = $report['messageText'];

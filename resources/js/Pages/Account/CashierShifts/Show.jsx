@@ -90,8 +90,8 @@ export default function CashierShiftShow() {
     const [note, setNote] = useState("");
 
     const [waModalOpen, setWaModalOpen] = useState(false);
-    const [expenseAmount, setExpenseAmount] = useState(0);
-    const [expenseNote, setExpenseNote] = useState("");
+    const [expenseAmount, setExpenseAmount] = useState(shift.expense_amount ?? 0);
+    const [expenseNote, setExpenseNote] = useState(shift.expense_note ?? "");
     const [previewText, setPreviewText] = useState("");
     const [previewOk, setPreviewOk] = useState(false);
     const [previewLoading, setPreviewLoading] = useState(false);
@@ -151,8 +151,8 @@ export default function CashierShiftShow() {
     }, [shift.id, expenseAmount, expenseNote]);
 
     const openWaModal = () => {
-        setExpenseAmount(0);
-        setExpenseNote("");
+        setExpenseAmount(shift.expense_amount ?? 0);
+        setExpenseNote(shift.expense_note ?? "");
         setPreviewText("");
         setPreviewOk(false);
         setWaModalOpen(true);
@@ -188,7 +188,7 @@ export default function CashierShiftShow() {
                     description: "Rekap shift berhasil dikirim ke Telegram admin.",
                 });
                 setWaModalOpen(false);
-                router.reload({ only: ["whatsappLogs"] });
+                router.reload({ only: ["whatsappLogs", "shift"] });
             } else {
                 notification.error({
                     message: "Gagal mengirim",

@@ -141,7 +141,7 @@ class ShiftSalesReportExport implements FromQuery, WithHeadings, WithMapping, Sh
                 ->selectRaw('COALESCE(SUM(e.amount), 0)')
                 ->whereColumn('e.user_id', 'cashier_shifts.user_id')
                 ->whereRaw("e.created_at BETWEEN cashier_shifts.opened_at AND {$endedAtSql}", [$now]);
-        }, 'pengeluaran');
+        }, 'pengeluaran_menu');
     }
 
     public function headings(): array
@@ -164,6 +164,8 @@ class ShiftSalesReportExport implements FromQuery, WithHeadings, WithMapping, Sh
             'Kas Disetor',
             'Penjualan Tunai',
             'PPOB Tunai',
+            'Pengeluaran Menu',
+            'Catatan Pengeluaran',
             'Kas Awal',
             'Kas Seharusnya',
             'Kas Aktual',
@@ -198,11 +200,13 @@ class ShiftSalesReportExport implements FromQuery, WithHeadings, WithMapping, Sh
             $trxCount - $paidCount,
             $tunai + $nonTunai,
             $nonTunai,
-            (int) ($row->pengeluaran ?? 0),
+            (int) ($row->expense_amount ?? 0),
             (int) ($row->cash_overage ?? 0),
             (int) ($row->actual_cash ?? 0),
             $tunai,
             (int) $row->ppob_tunai,
+            (int) ($row->pengeluaran_menu ?? 0),
+            $row->expense_note ?? '',
             (int) $row->cash_in_hand,
             $kasSeharusnya,
             (int) ($row->actual_cash ?? 0),

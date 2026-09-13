@@ -61,7 +61,8 @@ class ShiftSalesReportController extends Controller
                 COALESCE(SUM(ppob_tunai), 0) as ppob_tunai,
                 COALESCE(SUM(refund_tunai), 0) as refund_tunai,
                 COALESCE(SUM(difference), 0) as total_selisih_kas,
-                COALESCE(SUM(pengeluaran), 0) as total_pengeluaran,
+                COALESCE(SUM(expense_amount), 0) as total_pengeluaran,
+                COALESCE(SUM(pengeluaran_menu), 0) as total_pengeluaran_menu,
                 COALESCE(SUM(cash_overage), 0) as total_kelebihan,
                 COALESCE(SUM(actual_cash), 0) as total_kas_disetor
             ')
@@ -100,7 +101,9 @@ class ShiftSalesReportController extends Controller
                 'paid_count' => $paidCount,
                 'pending_count' => $trxCount - $paidCount,
                 'kas_seharusnya' => (int) $shift->cash_in_hand + $tunai - $refundTunai,
-                'pengeluaran' => (int) ($shift->pengeluaran ?? 0),
+                'pengeluaran' => (int) ($shift->expense_amount ?? 0),
+                'pengeluaran_menu' => (int) ($shift->pengeluaran_menu ?? 0),
+                'expense_note' => $shift->expense_note,
                 'kelebihan' => (int) ($shift->cash_overage ?? 0),
                 'kas_disetor' => (int) ($shift->actual_cash ?? 0),
             ];
@@ -120,6 +123,7 @@ class ShiftSalesReportController extends Controller
                 'refund_tunai' => (int) ($summaryRow->refund_tunai ?? 0),
                 'total_selisih_kas' => (int) ($summaryRow->total_selisih_kas ?? 0),
                 'total_pengeluaran' => (int) ($summaryRow->total_pengeluaran ?? 0),
+                'total_pengeluaran_menu' => (int) ($summaryRow->total_pengeluaran_menu ?? 0),
                 'total_kelebihan' => (int) ($summaryRow->total_kelebihan ?? 0),
                 'total_kas_disetor' => (int) ($summaryRow->total_kas_disetor ?? 0),
             ],

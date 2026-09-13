@@ -188,9 +188,18 @@ export default function ShiftSalesReport() {
             title: "Pengeluaran",
             align: "right",
             render: (_, row) => (
-                <Text style={{ color: "var(--semantic-warning)" }}>
-                    {formatRupiah(row.pengeluaran || 0)}
-                </Text>
+                <div>
+                    <Text style={{ color: "var(--semantic-warning)" }}>
+                        {formatRupiah(row.pengeluaran || 0)}
+                    </Text>
+                    {row.pengeluaran_menu > 0 && (
+                        <div>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                biaya menu: {formatRupiah(row.pengeluaran_menu)}
+                            </Text>
+                        </div>
+                    )}
+                </div>
             ),
         },
         {
@@ -378,6 +387,12 @@ export default function ShiftSalesReport() {
                                         fontSize: 18,
                                     }}
                                 />
+                                {summary.total_pengeluaran_menu > 0 && (
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Biaya menu:{" "}
+                                        {formatRupiahCompact(summary.total_pengeluaran_menu)}
+                                    </Text>
+                                )}
                             </Card>
                         </Col>
                         <Col xs={12} sm={8} md={3}>

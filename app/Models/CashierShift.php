@@ -23,6 +23,7 @@ class CashierShift extends Model
             'ppob_opening_balance' => 'integer',
             'ppob_closing_balance' => 'integer',
             'ppob_expected_balance' => 'integer',
+            'expense_amount' => 'integer',
         ];
     }
 
@@ -42,6 +43,8 @@ class CashierShift extends Model
         'total_transactions',
         'note',
         'status',
+        'expense_amount',
+        'expense_note',
     ];
 
     public function user(): BelongsTo
