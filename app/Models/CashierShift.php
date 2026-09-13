@@ -57,6 +57,11 @@ class CashierShift extends Model
         return $this->hasMany(PpobBalanceLog::class);
     }
 
+    public function shiftExpenses(): HasMany
+    {
+        return $this->hasMany(CashierShiftExpense::class)->orderBy('id');
+    }
+
     public function isOpen(): bool
     {
         return $this->status === 'open';

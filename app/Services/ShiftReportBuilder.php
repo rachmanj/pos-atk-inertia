@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
 
 class ShiftReportBuilder
 {
-    public function build(CashierShift $shift, int $expenseAmount = 0, ?string $expenseNote = null): array
+    public function build(CashierShift $shift, int $expenseAmount = 0, ?string $expenseNote = null, array $expenseLines = []): array
     {
         $startedAt = $shift->opened_at instanceof Carbon
             ? $shift->opened_at->copy()
@@ -81,6 +81,7 @@ class ShiftReportBuilder
             refundTunai: $refundTunai,
             expenseAmount: $expenseAmount,
             expenseNote: $expenseNote,
+            expenseLines: $expenseLines,
             tunaiDariPenjualan: $tunaiDariPenjualan,
             tunaiDisetor: $tunaiDisetor,
             daftarNonTunai: $daftarNonTunai,
@@ -110,6 +111,7 @@ class ShiftReportBuilder
         int $refundTunai,
         int $expenseAmount,
         ?string $expenseNote,
+        array $expenseLines,
         int $tunaiDariPenjualan,
         int $tunaiDisetor,
         array $daftarNonTunai,
@@ -133,11 +135,16 @@ class ShiftReportBuilder
         }
 
         if ($expenseAmount > 0) {
-            $expenseLine = 'Pengeluaran Lain     : ' . $this->formatMinus($expenseAmount);
-            if (filled($expenseNote)) {
-                $expenseLine .= ' (' . trim($expenseNote) . ')';
+            $lines[] = 'Pengeluaran Lain     : ' . $this->formatMinus($expenseAmount);
+
+            if ($expenseLines !== []) {
+                foreach ($expenseLines as $line) {
+                    $lines[] = '  - Rp ' . number_format((int) $line['amount'], 0, ',', '.')
+                        . ' ' . trim($line['title']);
+                }
+            } elseif (filled($expenseNote)) {
+                $lines[array_key_last($lines)] .= ' (' . trim($expenseNote) . ')';
             }
-            $lines[] = $expenseLine;
         }
 
         $lines[] = 'Tunai dari Penjualan : ' . TelegramFormatter::idr($tunaiDariPenjualan);

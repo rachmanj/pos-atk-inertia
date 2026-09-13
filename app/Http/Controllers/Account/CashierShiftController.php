@@ -14,6 +14,7 @@ use App\Services\TelegramNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -185,6 +186,7 @@ class CashierShiftController extends Controller
                 'status'             => $cashierShift->status,
                 'expense_amount'     => $cashierShift->expense_amount,
                 'expense_note'       => $cashierShift->expense_note,
+                'expenses'           => $this->shiftExpensesForProps($cashierShift),
                 'summary'            => $summary,
             ],
             'canSendWaReport' => $canSendWaReport,
@@ -203,20 +205,16 @@ class CashierShiftController extends Controller
             ], 422);
         }
 
-        $validated = $request->validate([
-            'expense_amount' => 'nullable|integer|min:0',
-            'expense_note' => 'nullable|string|max:255',
-        ]);
+        $expenseInput = $this->validateReportExpenseInput($request);
+        $this->persistReportExpenses($cashierShift, $expenseInput);
+        $cashierShift->refresh();
 
-        $expenseAmount = (int) ($validated['expense_amount'] ?? 0);
-        $expenseNote = filled($validated['expense_note'] ?? null) ? trim($validated['expense_note']) : null;
-
-        $cashierShift->update([
-            'expense_amount' => $expenseAmount,
-            'expense_note' => $expenseNote,
-        ]);
-
-        $report = $this->shiftReportBuilder->build($cashierShift, $expenseAmount, $expenseNote);
+        $report = $this->shiftReportBuilder->build(
+            $cashierShift,
+            $expenseInput['amount'],
+            $expenseInput['note'],
+            $expenseInput['lines'],
+        );
 
         return response()->json([
             'ok' => true,
@@ -244,20 +242,16 @@ class CashierShiftController extends Controller
             ], 422);
         }
 
-        $validated = $request->validate([
-            'expense_amount' => 'nullable|integer|min:0',
-            'expense_note' => 'nullable|string|max:255',
-        ]);
+        $expenseInput = $this->validateReportExpenseInput($request);
+        $this->persistReportExpenses($cashierShift, $expenseInput);
+        $cashierShift->refresh();
 
-        $expenseAmount = (int) ($validated['expense_amount'] ?? 0);
-        $expenseNote = filled($validated['expense_note'] ?? null) ? trim($validated['expense_note']) : null;
-
-        $cashierShift->update([
-            'expense_amount' => $expenseAmount,
-            'expense_note' => $expenseNote,
-        ]);
-
-        $report = $this->shiftReportBuilder->build($cashierShift, $expenseAmount, $expenseNote);
+        $report = $this->shiftReportBuilder->build(
+            $cashierShift,
+            $expenseInput['amount'],
+            $expenseInput['note'],
+            $expenseInput['lines'],
+        );
         $message = $report['messageText'];
 
         $results = [];
@@ -475,5 +469,107 @@ class CashierShiftController extends Controller
         ]);
 
         return $parts ? implode("\n\n", $parts) : null;
+    }
+
+    protected function validateReportExpenseInput(Request $request): array
+    {
+        $validated = $request->validate([
+            'expense_amount' => 'nullable|integer|min:0',
+            'expense_note' => 'nullable|string|max:255',
+            'expenses' => 'nullable|array|max:30',
+            'expenses.*.title' => 'nullable|string|max:150',
+            'expenses.*.amount' => 'nullable|integer|min:0',
+        ]);
+
+        if (!$request->has('expenses')) {
+            return [
+                'usesLines' => false,
+                'amount' => (int) ($validated['expense_amount'] ?? 0),
+                'note' => filled($validated['expense_note'] ?? null) ? trim($validated['expense_note']) : null,
+                'lines' => [],
+            ];
+        }
+
+        $lines = [];
+
+        foreach ($validated['expenses'] ?? [] as $row) {
+            $amount = (int) ($row['amount'] ?? 0);
+            $title = filled($row['title'] ?? null) ? trim($row['title']) : null;
+
+            if ($amount < 1 && !filled($title)) {
+                continue;
+            }
+
+            if ($amount >= 1 && !filled($title)) {
+                throw ValidationException::withMessages([
+                    'expenses' => 'Keterangan wajib diisi untuk setiap baris pengeluaran.',
+                ]);
+            }
+
+            if ($amount >= 1) {
+                $lines[] = [
+                    'title' => $title,
+                    'amount' => $amount,
+                ];
+            }
+        }
+
+        return [
+            'usesLines' => true,
+            'amount' => array_sum(array_column($lines, 'amount')),
+            'note' => null,
+            'lines' => $lines,
+        ];
+    }
+
+    protected function persistReportExpenses(CashierShift $shift, array $expenseInput): void
+    {
+        if ($expenseInput['usesLines']) {
+            DB::transaction(function () use ($shift, $expenseInput) {
+                $shift->shiftExpenses()->delete();
+
+                foreach ($expenseInput['lines'] as $line) {
+                    $shift->shiftExpenses()->create([
+                        'title' => $line['title'],
+                        'amount' => $line['amount'],
+                    ]);
+                }
+
+                $shift->update([
+                    'expense_amount' => $expenseInput['amount'],
+                    'expense_note' => null,
+                ]);
+            });
+
+            return;
+        }
+
+        $shift->update([
+            'expense_amount' => $expenseInput['amount'],
+            'expense_note' => $expenseInput['note'],
+        ]);
+    }
+
+    protected function shiftExpensesForProps(CashierShift $shift): array
+    {
+        $shift->loadMissing('shiftExpenses');
+
+        if ($shift->shiftExpenses->isNotEmpty()) {
+            return $shift->shiftExpenses->map(fn ($expense) => [
+                'id' => $expense->id,
+                'title' => $expense->title,
+                'amount' => $expense->amount,
+            ])->values()->all();
+        }
+
+        if ((int) ($shift->expense_amount ?? 0) > 0) {
+            return [[
+                'id' => null,
+                'title' => filled($shift->expense_note) ? trim($shift->expense_note) : 'Pengeluaran lain',
+                'amount' => (int) $shift->expense_amount,
+            ]];
+        }
+
+        return [];
     }
 }

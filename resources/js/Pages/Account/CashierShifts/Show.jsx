@@ -20,6 +20,7 @@ import {
     Space,
     Spin,
     Statistic,
+    Table,
     Tag,
     Typography,
     notification,
@@ -28,10 +29,12 @@ import {
     ArrowLeftOutlined,
     ClockCircleOutlined,
     CloseCircleOutlined,
+    DeleteOutlined,
     DollarOutlined,
     EyeOutlined,
     FallOutlined,
     MoneyCollectOutlined,
+    PlusOutlined,
     RedoOutlined,
     RiseOutlined,
     SendOutlined,
@@ -58,6 +61,48 @@ const waStatusColors = {
     queued: "processing",
     sent: "success",
     failed: "error",
+};
+
+const createEmptyExpenseLine = () => ({
+    title: "",
+    amount: 0,
+});
+
+const buildExpenseLinesFromShift = (shift) => {
+    const expenses = shift?.expenses ?? [];
+    if (expenses.length > 0) {
+        return expenses.map(({ title, amount }) => ({
+            title: title ?? "",
+            amount: Number(amount) || 0,
+        }));
+    }
+    return [createEmptyExpenseLine()];
+};
+
+const validateAndBuildExpensePayload = (lines) => {
+    const hasMissingTitle = lines.some(
+        (line) => Number(line.amount || 0) >= 1 && !String(line.title || "").trim(),
+    );
+    if (hasMissingTitle) {
+        notification.error({
+            message: "Validasi gagal",
+            description: "Keterangan wajib diisi untuk setiap baris pengeluaran",
+        });
+        return null;
+    }
+
+    const expenses = lines
+        .filter(
+            (line) => Number(line.amount || 0) >= 1 && String(line.title || "").trim(),
+        )
+        .map((line) => ({
+            title: String(line.title).trim(),
+            amount: Number(line.amount),
+        }));
+
+    const expense_amount = expenses.reduce((sum, line) => sum + line.amount, 0);
+
+    return { expenses, expense_amount };
 };
 
 const readCsrfToken = () => {
@@ -90,8 +135,7 @@ export default function CashierShiftShow() {
     const [note, setNote] = useState("");
 
     const [waModalOpen, setWaModalOpen] = useState(false);
-    const [expenseAmount, setExpenseAmount] = useState(shift.expense_amount ?? 0);
-    const [expenseNote, setExpenseNote] = useState(shift.expense_note ?? "");
+    const [expenseLines, setExpenseLines] = useState(() => buildExpenseLinesFromShift(shift));
     const [previewText, setPreviewText] = useState("");
     const [previewOk, setPreviewOk] = useState(false);
     const [previewLoading, setPreviewLoading] = useState(false);
@@ -115,17 +159,94 @@ export default function CashierShiftShow() {
         return Number(shift.actual_cash || 0) - Number(shift.cash_overage || 0);
     }, [shift.status, shift.actual_cash, shift.cash_overage]);
 
+    const totalExpenseAmount = useMemo(
+        () =>
+            expenseLines.reduce(
+                (sum, line) => sum + Number(line.amount || 0),
+                0,
+            ),
+        [expenseLines],
+    );
+
+    const updateExpenseLine = (index, field, value) => {
+        setExpenseLines((lines) =>
+            lines.map((line, lineIndex) =>
+                lineIndex === index ? { ...line, [field]: value } : line,
+            ),
+        );
+    };
+
+    const addExpenseLine = () => {
+        setExpenseLines((lines) => [...lines, createEmptyExpenseLine()]);
+    };
+
+    const removeExpenseLine = (index) => {
+        setExpenseLines((lines) => {
+            if (lines.length === 1) {
+                return lines;
+            }
+            return lines.filter((_, lineIndex) => lineIndex !== index);
+        });
+    };
+
+    const expenseLineColumns = [
+        {
+            title: "Keterangan",
+            render: (_, line, index) => (
+                <Input
+                    value={line.title}
+                    maxLength={150}
+                    placeholder="Beli bensin"
+                    onChange={(e) => updateExpenseLine(index, "title", e.target.value)}
+                />
+            ),
+        },
+        {
+            title: "Nominal",
+            align: "right",
+            width: 160,
+            render: (_, line, index) => (
+                <InputNumber
+                    min={0}
+                    style={{ width: "100%" }}
+                    value={line.amount}
+                    onChange={(value) => updateExpenseLine(index, "amount", value ?? 0)}
+                    formatter={(v) => formatRupiah(v)}
+                    parser={(v) => v?.replace(/\D/g, "")}
+                />
+            ),
+        },
+        {
+            title: "Aksi",
+            align: "center",
+            width: 70,
+            render: (_, __, index) => (
+                <Button
+                    danger
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    onClick={() => removeExpenseLine(index)}
+                    disabled={expenseLines.length === 1}
+                />
+            ),
+        },
+    ];
+
     const loadPreview = useCallback(async () => {
+        const payload = validateAndBuildExpensePayload(expenseLines);
+        if (payload === null) {
+            setPreviewText("");
+            setPreviewOk(false);
+            return;
+        }
+
         setPreviewLoading(true);
         setPreviewOk(false);
 
         try {
             const response = await axios.post(
                 `/account/cashier-shifts/${shift.id}/report/preview`,
-                {
-                    expense_amount: expenseAmount || 0,
-                    expense_note: expenseNote || null,
-                },
+                payload,
                 { headers: { "X-XSRF-TOKEN": readCsrfToken() } },
             );
 
@@ -148,11 +269,10 @@ export default function CashierShiftShow() {
         } finally {
             setPreviewLoading(false);
         }
-    }, [shift.id, expenseAmount, expenseNote]);
+    }, [shift.id, expenseLines]);
 
     const openWaModal = () => {
-        setExpenseAmount(shift.expense_amount ?? 0);
-        setExpenseNote(shift.expense_note ?? "");
+        setExpenseLines(buildExpenseLinesFromShift(shift));
         setPreviewText("");
         setPreviewOk(false);
         setWaModalOpen(true);
@@ -163,10 +283,15 @@ export default function CashierShiftShow() {
             loadPreview();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [waModalOpen]);
+    }, [waModalOpen, shift.id]);
 
     const sendWaReport = async () => {
         if (!previewOk) {
+            return;
+        }
+
+        const payload = validateAndBuildExpensePayload(expenseLines);
+        if (payload === null) {
             return;
         }
 
@@ -175,10 +300,7 @@ export default function CashierShiftShow() {
         try {
             const response = await axios.post(
                 `/account/cashier-shifts/${shift.id}/report/send`,
-                {
-                    expense_amount: expenseAmount || 0,
-                    expense_note: expenseNote || null,
-                },
+                payload,
                 { headers: { "X-XSRF-TOKEN": readCsrfToken() } },
             );
 
@@ -579,31 +701,31 @@ export default function CashierShiftShow() {
                     destroyOnClose
                 >
                     <Form layout="vertical">
-                        <Row gutter={16}>
-                            <Col xs={24} sm={12}>
-                                <Form.Item label="Pengeluaran Lain">
-                                    <InputNumber
-                                        min={0}
-                                        style={{ width: "100%" }}
-                                        value={expenseAmount}
-                                        onChange={v => setExpenseAmount(v || 0)}
-                                        placeholder="0 (opsional)"
-                                        formatter={v => formatRupiah(v)}
-                                        parser={v => v?.replace(/\D/g, "")}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12}>
-                                <Form.Item label="Catatan Pengeluaran">
-                                    <Input
-                                        value={expenseNote}
-                                        onChange={e => setExpenseNote(e.target.value)}
-                                        placeholder="Opsional"
-                                        maxLength={255}
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
+                        <Form.Item label="Pengeluaran Lain">
+                            <Table
+                                rowKey={(_, index) => index}
+                                columns={expenseLineColumns}
+                                dataSource={expenseLines}
+                                pagination={false}
+                                scroll={{ x: "max-content" }}
+                                size="small"
+                                style={{ marginBottom: 8 }}
+                            />
+                            <Space direction="vertical" style={{ width: "100%" }}>
+                                <Button
+                                    type="dashed"
+                                    icon={<PlusOutlined />}
+                                    onClick={addExpenseLine}
+                                    block
+                                >
+                                    Tambah Baris
+                                </Button>
+                                <Text>
+                                    Total Pengeluaran Lain:{" "}
+                                    <Text strong>{formatRupiah(totalExpenseAmount)}</Text>
+                                </Text>
+                            </Space>
+                        </Form.Item>
                         <Space style={{ marginBottom: 16 }}>
                             <Button loading={previewLoading} onClick={loadPreview}>
                                 Pratinjau
