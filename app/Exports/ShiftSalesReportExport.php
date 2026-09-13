@@ -135,6 +135,13 @@ class ShiftSalesReportExport implements FromQuery, WithHeadings, WithMapping, Sh
                 ->where('refund_method', '!=', 'cash')
                 ->whereRaw($returnRangeSql, [$now]);
         }, 'refund_non_tunai');
+
+        $query->selectSub(function ($sub) use ($now, $endedAtSql) {
+            $sub->from('expenses as e')
+                ->selectRaw('COALESCE(SUM(e.amount), 0)')
+                ->whereColumn('e.user_id', 'cashier_shifts.user_id')
+                ->whereRaw("e.created_at BETWEEN cashier_shifts.opened_at AND {$endedAtSql}", [$now]);
+        }, 'pengeluaran');
     }
 
     public function headings(): array
@@ -150,15 +157,17 @@ class ShiftSalesReportExport implements FromQuery, WithHeadings, WithMapping, Sh
             'Trx',
             'Lunas',
             'Pending',
+            'Total Penjualan',
+            'Non Tunai',
+            'Pengeluaran',
+            'Kelebihan',
+            'Kas Disetor',
             'Penjualan Tunai',
             'PPOB Tunai',
-            'Non Tunai',
-            'Total Penjualan',
             'Kas Awal',
             'Kas Seharusnya',
             'Kas Aktual',
             'Selisih',
-            'Kelebihan',
             'Refund Tunai',
             'Refund Non Tunai',
         ];
@@ -187,15 +196,17 @@ class ShiftSalesReportExport implements FromQuery, WithHeadings, WithMapping, Sh
             $trxCount,
             $paidCount,
             $trxCount - $paidCount,
+            $tunai + $nonTunai,
+            $nonTunai,
+            (int) ($row->pengeluaran ?? 0),
+            (int) ($row->cash_overage ?? 0),
+            (int) ($row->actual_cash ?? 0),
             $tunai,
             (int) $row->ppob_tunai,
-            $nonTunai,
-            $tunai + $nonTunai,
             (int) $row->cash_in_hand,
             $kasSeharusnya,
             (int) ($row->actual_cash ?? 0),
             (int) ($row->difference ?? 0),
-            (int) ($row->cash_overage ?? 0),
             $refundTunai,
             (int) $row->refund_non_tunai,
         ];

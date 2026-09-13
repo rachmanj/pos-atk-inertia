@@ -158,17 +158,17 @@ export default function ShiftSalesReport() {
             ),
         },
         {
-            title: "Penjualan Tunai",
+            title: "Total Penjualan",
             align: "right",
             render: (_, row) => (
                 <div>
-                    <Text style={{ color: "var(--semantic-success)" }}>
-                        {formatRupiah(row.tunai)}
+                    <Text strong style={{ color: "var(--brand-primary)" }}>
+                        {formatRupiah(row.total_penjualan)}
                     </Text>
                     {row.ppob_tunai > 0 && (
                         <div>
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                                PPOB: {formatRupiah(row.ppob_tunai)}
+                                PPOB tunai: {formatRupiah(row.ppob_tunai)}
                             </Text>
                         </div>
                     )}
@@ -185,37 +185,49 @@ export default function ShiftSalesReport() {
             ),
         },
         {
-            title: "Total Penjualan",
+            title: "Pengeluaran",
             align: "right",
             render: (_, row) => (
-                <Text strong style={{ color: "var(--brand-primary)" }}>
-                    {formatRupiah(row.total_penjualan)}
+                <Text style={{ color: "var(--semantic-warning)" }}>
+                    {formatRupiah(row.pengeluaran || 0)}
                 </Text>
             ),
         },
         {
-            title: "Kas Seharusnya",
+            title: "Kelebihan",
             align: "right",
-            render: (_, row) => formatRupiah(row.kas_seharusnya),
+            render: (_, row) => (
+                <Text style={{ color: "var(--semantic-warning)" }}>
+                    {formatRupiah(row.kelebihan || 0)}
+                </Text>
+            ),
         },
         {
-            title: "Kas Aktual",
-            align: "right",
-            render: (_, row) => formatRupiah(row.actual_cash),
-        },
-        {
-            title: "Selisih",
+            title: "Kas Disetor",
             align: "right",
             render: (_, row) => {
                 const diff = row.difference;
-                let color = undefined;
-                if (diff < 0) color = "var(--semantic-error)";
-                else if (diff > 0) color = "var(--semantic-warning)";
+                let selisihColor;
+                if (diff < 0) selisihColor = "var(--semantic-error)";
+                else if (diff > 0) selisihColor = "var(--semantic-warning)";
 
                 return (
-                    <Text strong style={color ? { color } : undefined}>
-                        {formatRupiah(diff)}
-                    </Text>
+                    <div>
+                        <Text strong>{formatRupiah(row.kas_disetor || 0)}</Text>
+                        {diff !== 0 && (
+                            <div>
+                                <Text
+                                    type="secondary"
+                                    style={{
+                                        fontSize: 12,
+                                        color: selisihColor,
+                                    }}
+                                >
+                                    selisih: {formatRupiah(diff)}
+                                </Text>
+                            </div>
+                        )}
+                    </div>
                 );
             },
         },
@@ -310,7 +322,7 @@ export default function ShiftSalesReport() {
                     </form>
 
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                        <Col xs={12} sm={6} md={4}>
+                        <Col xs={12} sm={8} md={3}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Shift"
@@ -321,7 +333,7 @@ export default function ShiftSalesReport() {
                                 </Text>
                             </Card>
                         </Col>
-                        <Col xs={12} sm={6} md={4}>
+                        <Col xs={12} sm={8} md={3}>
                             <Card size="small">
                                 <Statistic
                                     title="Transaksi"
@@ -332,34 +344,7 @@ export default function ShiftSalesReport() {
                                 </Text>
                             </Card>
                         </Col>
-                        <Col xs={12} sm={6} md={4}>
-                            <Card size="small">
-                                <Statistic
-                                    title="Tunai"
-                                    value={formatRupiahCompact(summary.tunai)}
-                                    valueStyle={{
-                                        color: "var(--semantic-success)",
-                                        fontSize: 18,
-                                    }}
-                                />
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                    PPOB: {formatRupiahCompact(summary.ppob_tunai)}
-                                </Text>
-                            </Card>
-                        </Col>
-                        <Col xs={12} sm={6} md={4}>
-                            <Card size="small">
-                                <Statistic
-                                    title="Non Tunai"
-                                    value={formatRupiahCompact(summary.non_tunai)}
-                                    valueStyle={{
-                                        color: "var(--semantic-info)",
-                                        fontSize: 18,
-                                    }}
-                                />
-                            </Card>
-                        </Col>
-                        <Col xs={12} sm={6} md={4}>
+                        <Col xs={12} sm={8} md={3}>
                             <Card size="small">
                                 <Statistic
                                     title="Total Penjualan"
@@ -371,20 +356,49 @@ export default function ShiftSalesReport() {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={12} sm={6} md={4}>
+                        <Col xs={12} sm={8} md={3}>
                             <Card size="small">
                                 <Statistic
-                                    title="Refund Tunai"
-                                    value={formatRupiahCompact(summary.refund_tunai)}
+                                    title="Non Tunai"
+                                    value={formatRupiahCompact(summary.non_tunai)}
+                                    valueStyle={{
+                                        color: "var(--semantic-info)",
+                                        fontSize: 18,
+                                    }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={12} sm={8} md={3}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Pengeluaran"
+                                    value={formatRupiahCompact(summary.total_pengeluaran)}
                                     valueStyle={{
                                         color: "var(--semantic-warning)",
                                         fontSize: 18,
                                     }}
                                 />
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                    Selisih kas:{" "}
-                                    {formatRupiahCompact(summary.total_selisih_kas)}
-                                </Text>
+                            </Card>
+                        </Col>
+                        <Col xs={12} sm={8} md={3}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Kelebihan"
+                                    value={formatRupiahCompact(summary.total_kelebihan)}
+                                    valueStyle={{
+                                        color: "var(--semantic-warning)",
+                                        fontSize: 18,
+                                    }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={12} sm={8} md={3}>
+                            <Card size="small">
+                                <Statistic
+                                    title="Kas Disetor"
+                                    value={formatRupiahCompact(summary.total_kas_disetor)}
+                                    valueStyle={{ fontSize: 18 }}
+                                />
                             </Card>
                         </Col>
                     </Row>

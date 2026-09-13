@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CashierShift;
+use App\Models\Expense;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,6 +46,7 @@ class ShiftSalesReportTest extends TestCase
             'status' => 'closed',
             'actual_cash' => 200_000,
             'difference' => 0,
+            'cash_overage' => 15_000,
         ]);
 
         $this->createShiftTransaction($user, $openedAt->copy()->addHour(), 100_000, 'cash', 'paid');
@@ -64,6 +66,8 @@ class ShiftSalesReportTest extends TestCase
                 ->where('shifts.data.0.trx_count', 3)
                 ->where('shifts.data.0.paid_count', 2)
                 ->where('shifts.data.0.pending_count', 1)
+                ->where('shifts.data.0.kelebihan', 15_000)
+                ->where('shifts.data.0.kas_disetor', 200_000)
                 ->where('summary.tunai', 100_000)
                 ->where('summary.non_tunai', 50_000)
                 ->where('summary.total_penjualan', 150_000)
@@ -100,6 +104,54 @@ class ShiftSalesReportTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('shifts.data', 1)
                 ->where('shifts.data.0.user.id', $cashierA->id));
+    }
+
+    public function test_pengeluaran_only_sums_expenses_within_shift_range(): void
+    {
+        $user = $this->createCashierUser(['reports.sales']);
+
+        $openedAt = now()->copy()->startOfDay()->addHours(8);
+        $closedAt = now()->copy()->startOfDay()->addHours(16);
+
+        CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => $openedAt,
+            'closed_at' => $closedAt,
+            'cash_in_hand' => 100_000,
+            'status' => 'closed',
+        ]);
+
+        $inRangeExpense = Expense::create([
+            'user_id' => $user->id,
+            'code' => 'EXP-IN-RANGE',
+            'expense_date' => $openedAt->toDateString(),
+            'amount' => 30_000,
+            'note' => 'Dalam shift',
+        ]);
+        $inRangeExpense->forceFill([
+            'created_at' => $openedAt->copy()->addHours(2),
+            'updated_at' => $openedAt->copy()->addHours(2),
+        ])->save();
+
+        $outOfRangeExpense = Expense::create([
+            'user_id' => $user->id,
+            'code' => 'EXP-OUT-RANGE',
+            'expense_date' => $openedAt->toDateString(),
+            'amount' => 99_000,
+            'note' => 'Di luar shift',
+        ]);
+        $outOfRangeExpense->forceFill([
+            'created_at' => $openedAt->copy()->subHour(),
+            'updated_at' => $openedAt->copy()->subHour(),
+        ])->save();
+
+        $this->actingAs($user)
+            ->get(route('account.reports.shift_sales'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('shifts.data', 1)
+                ->where('shifts.data.0.pengeluaran', 30_000)
+                ->where('summary.total_pengeluaran', 30_000));
     }
 
     public function test_export_runs_without_error(): void
