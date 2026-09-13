@@ -93,21 +93,54 @@ class SalesReportController extends Controller
             ->orderBy('date')
             ->get();
 
+        $paidAtExpression = 'COALESCE(transactions.paid_at, transactions.created_at)';
+        $hourExpression = DB::getDriverName() === 'sqlite'
+            ? "cast(strftime('%H', {$paidAtExpression}) as integer)"
+            : "HOUR({$paidAtExpression})";
+
         // Chart data: sales by hour
         $salesByHour = (clone $baseQuery)
             ->select(
-                DB::raw('HOUR(COALESCE(transactions.paid_at, transactions.created_at)) as hour'),
+                DB::raw("{$hourExpression} as hour"),
                 DB::raw('SUM(grand_total) as total'),
                 DB::raw('COUNT(*) as count')
             )
-            ->groupBy(DB::raw('HOUR(COALESCE(transactions.paid_at, transactions.created_at))'))
+            ->groupBy(DB::raw($hourExpression))
             ->orderBy('hour')
+            ->get();
+
+        $storeSalesByDay = (clone $baseQuery)
+            ->join('transaction_details', 'transactions.id', '=', 'transaction_details.transaction_id')
+            ->join('products', 'transaction_details.product_id', '=', 'products.id')
+            ->where('products.product_type', '<>', 'ppob')
+            ->select(
+                DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at)) as date'),
+                DB::raw('SUM(transaction_details.subtotal) as total'),
+                DB::raw('COUNT(DISTINCT transactions.id) as count')
+            )
+            ->groupBy(DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at))'))
+            ->orderBy('date')
+            ->get();
+
+        $ppobSalesByDay = (clone $baseQuery)
+            ->join('transaction_details', 'transactions.id', '=', 'transaction_details.transaction_id')
+            ->join('products', 'transaction_details.product_id', '=', 'products.id')
+            ->where('products.product_type', 'ppob')
+            ->select(
+                DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at)) as date'),
+                DB::raw('SUM(transaction_details.subtotal) as total'),
+                DB::raw('COUNT(DISTINCT transactions.id) as count')
+            )
+            ->groupBy(DB::raw('DATE(COALESCE(transactions.paid_at, transactions.created_at))'))
+            ->orderBy('date')
             ->get();
 
         return Inertia::render('Account/Reports/Sales', [
             'sales' => $sales,
             'salesByDay' => $salesByDay,
             'salesByHour' => $salesByHour,
+            'storeSalesByDay' => $storeSalesByDay,
+            'ppobSalesByDay' => $ppobSalesByDay,
             'summary' => [
                 'total_sales' => $totalSales,
                 'total_returns' => $totalReturns,

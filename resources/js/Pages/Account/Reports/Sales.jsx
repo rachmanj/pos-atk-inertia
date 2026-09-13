@@ -61,6 +61,8 @@ export default function SalesReport() {
         sales,
         salesByDay = [],
         salesByHour = [],
+        storeSalesByDay = [],
+        ppobSalesByDay = [],
         summary,
         filters = {},
         cashiers = [],
@@ -469,6 +471,91 @@ export default function SalesReport() {
                                             <Bar
                                                 dataKey="total"
                                                 fill={"var(--semantic-success)"}
+                                                name="Omzet (Rp)"
+                                                radius={[4, 4, 0, 0]}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            display: "block",
+                                            textAlign: "center",
+                                            padding: 32,
+                                        }}
+                                    >
+                                        Belum ada data.
+                                    </Text>
+                                )}
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                        <Col xs={24} lg={12}>
+                            <Card size="small" title="Penjualan Non PPOB">
+                                {storeSalesByDay.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={storeSalesByDay}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis
+                                                dataKey="date"
+                                                tick={{ fontSize: 11 }}
+                                            />
+                                            <YAxis
+                                                tickFormatter={formatChartRupiah}
+                                            />
+                                            <Tooltip
+                                                formatter={(value) => [
+                                                    formatRupiah(value),
+                                                    "Omzet (Rp)",
+                                                ]}
+                                            />
+                                            <Bar
+                                                dataKey="total"
+                                                fill={"var(--brand-primary)"}
+                                                name="Omzet (Rp)"
+                                                radius={[4, 4, 0, 0]}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            display: "block",
+                                            textAlign: "center",
+                                            padding: 32,
+                                        }}
+                                    >
+                                        Belum ada data.
+                                    </Text>
+                                )}
+                            </Card>
+                        </Col>
+                        <Col xs={24} lg={12}>
+                            <Card size="small" title="Penjualan PPOB">
+                                {ppobSalesByDay.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={ppobSalesByDay}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis
+                                                dataKey="date"
+                                                tick={{ fontSize: 11 }}
+                                            />
+                                            <YAxis
+                                                tickFormatter={formatChartRupiah}
+                                            />
+                                            <Tooltip
+                                                formatter={(value) => [
+                                                    formatRupiah(value),
+                                                    "Omzet (Rp)",
+                                                ]}
+                                            />
+                                            <Bar
+                                                dataKey="total"
+                                                fill={"var(--semantic-warning)"}
                                                 name="Omzet (Rp)"
                                                 radius={[4, 4, 0, 0]}
                                             />
