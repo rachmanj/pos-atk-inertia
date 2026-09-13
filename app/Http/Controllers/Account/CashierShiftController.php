@@ -9,6 +9,7 @@ use App\Models\PpobBalanceLog;
 use App\Models\ReturnTransaction;
 use App\Models\Transaction;
 use App\Models\WhatsappOutboundLog;
+use App\Services\ShiftLiveSummary;
 use App\Services\ShiftReportBuilder;
 use App\Services\TelegramNotificationService;
 use Illuminate\Http\JsonResponse;
@@ -24,8 +25,34 @@ class CashierShiftController extends Controller
 {
     public function __construct(
         protected ShiftReportBuilder $shiftReportBuilder,
+        protected ShiftLiveSummary $shiftLiveSummary,
         protected TelegramNotificationService $telegramNotificationService,
     ) {}
+
+    public function activeSummary(Request $request): JsonResponse
+    {
+        $activeShift = $request->user()->activeCashierShift;
+
+        if (!$activeShift) {
+            return response()->json(['has_shift' => false]);
+        }
+
+        $summary = $this->shiftLiveSummary->build($activeShift);
+
+        return response()->json([
+            'has_shift' => true,
+            'shift' => [
+                'id'                 => $activeShift->id,
+                'opened_at'          => $activeShift->opened_at,
+                'total_sales'        => $summary['total_sales'],
+                'cash_sales'         => $summary['cash_sales'],
+                'non_cash_sales'     => $summary['non_cash_sales'],
+                'expected_cash'      => $summary['expected_cash'],
+                'total_transactions' => $summary['total_transactions'],
+                'paid_transactions'  => $summary['paid_transactions'],
+            ],
+        ]);
+    }
 
     public function index(Request $request)
     {

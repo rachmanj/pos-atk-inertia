@@ -214,6 +214,10 @@ Route::middleware(['auth'])
             ->middleware('permission:supplier_returns.show')
             ->name('supplier-returns.show');
 
+        Route::get('/cashier-shifts/active-summary', [CashierShiftController::class, 'activeSummary'])
+            ->middleware('permission:cashier_shifts.index')
+            ->name('cashier-shifts.active-summary');
+
         Route::resource('/cashier-shifts', CashierShiftController::class)
             ->only(['index', 'create', 'store', 'show'])
             ->middlewareFor('index', 'permission:cashier_shifts.index')

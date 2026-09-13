@@ -8,8 +8,8 @@ use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Profit;
 use App\Models\PpobAccount;
-use App\Models\ReturnTransaction;
 use App\Models\Transaction;
+use App\Services\ShiftLiveSummary;
 use App\Models\TransactionDetail;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,6 +20,10 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        protected ShiftLiveSummary $shiftLiveSummary,
+    ) {}
+
     /**
      * Handle the incoming request.
      */
@@ -158,44 +162,13 @@ class DashboardController extends Controller
             return null;
         }
 
-        $startedAt = $shift->opened_at instanceof Carbon
-            ? $shift->opened_at->copy()
-            : Carbon::parse($shift->opened_at);
-
-        $endedAt = Carbon::now();
-
-        $transactionsQuery = Transaction::query()
-            ->where('cashier_id', $shift->user_id)
-            ->where('status', '!=', 'voided')
-            ->whereBetween('created_at', [$startedAt, $endedAt]);
-
-        $paidTransactionsQuery = (clone $transactionsQuery)
-            ->where('payment_status', 'paid');
-
-        $cashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', 'cash')
-            ->sum('grand_total');
-
-        $nonCashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', '!=', 'cash')
-            ->sum('grand_total');
-
-        $cashRefunds = (int) ReturnTransaction::query()
-            ->where('cashier_id', $shift->user_id)
-            ->where('status', 'approved')
-            ->where('refund_method', 'cash')
-            ->whereBetween('updated_at', [$startedAt, $endedAt])
-            ->sum('total_refund');
-
-        return [
-            'id'                 => $shift->id,
-            'opened_at'          => $shift->opened_at,
-            'cash_in_hand'       => $shift->cash_in_hand,
-            'cash_sales'         => $cashSales,
-            'non_cash_sales'     => $nonCashSales,
-            'cash_refunds'       => $cashRefunds,
-            'expected_cash'      => (int) $shift->cash_in_hand + $cashSales - $cashRefunds,
-            'total_transactions' => (int) (clone $transactionsQuery)->count(),
-        ];
+        return array_merge(
+            [
+                'id'           => $shift->id,
+                'opened_at'    => $shift->opened_at,
+                'cash_in_hand' => $shift->cash_in_hand,
+            ],
+            $this->shiftLiveSummary->build($shift),
+        );
     }
 }

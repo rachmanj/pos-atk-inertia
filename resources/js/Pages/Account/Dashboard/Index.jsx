@@ -342,15 +342,38 @@ export default function Dashboard() {
                                                     ),
                                                 },
                                                 {
-                                                    key: "sales",
+                                                    key: "total_sales",
+                                                    label: "Total Penjualan",
+                                                    children: (
+                                                        <Text
+                                                            strong
+                                                            style={{
+                                                                color: "var(--brand-primary)",
+                                                            }}
+                                                        >
+                                                            {formatRupiah(
+                                                                activeShift.total_sales,
+                                                            )}
+                                                        </Text>
+                                                    ),
+                                                },
+                                                {
+                                                    key: "cash_sales",
                                                     label: "Penjualan Tunai",
                                                     children: formatRupiah(
                                                         activeShift.cash_sales,
                                                     ),
                                                 },
                                                 {
+                                                    key: "non_cash_sales",
+                                                    label: "Non Tunai",
+                                                    children: formatRupiah(
+                                                        activeShift.non_cash_sales,
+                                                    ),
+                                                },
+                                                {
                                                     key: "expected",
-                                                    label: "Estimasi Kas",
+                                                    label: "Kas Tunai di Laci",
                                                     children: (
                                                         <Text
                                                             strong
@@ -367,11 +390,33 @@ export default function Dashboard() {
                                                 {
                                                     key: "transactions",
                                                     label: "Transaksi Shift",
-                                                    children:
-                                                        activeShift.total_transactions,
+                                                    children: (
+                                                        <>
+                                                            {activeShift.total_transactions}
+                                                            <Text
+                                                                type="secondary"
+                                                                style={{
+                                                                    fontSize: 12,
+                                                                    display: "block",
+                                                                }}
+                                                            >
+                                                                Lunas:{" "}
+                                                                {activeShift.paid_transactions}
+                                                            </Text>
+                                                        </>
+                                                    ),
                                                 },
                                             ]}
                                         />
+
+                                        <Text
+                                            type="secondary"
+                                            style={{ fontSize: 11, display: "block" }}
+                                        >
+                                            Kas Tunai di Laci = uang awal + penjualan
+                                            tunai − refund tunai; belum dikurangi
+                                            pengeluaran.
+                                        </Text>
                                     </Space>
                                 ) : (
                                     <Empty

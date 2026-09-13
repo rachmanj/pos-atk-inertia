@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { Button, Drawer, Modal, notification, Spin } from "antd";
-import { FileTextOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import { Button, Drawer, Modal, notification, Spin, Typography } from "antd";
+import {
+    FileTextOutlined,
+    ReloadOutlined,
+    ShoppingCartOutlined,
+} from "@ant-design/icons";
+import axios from "axios";
 import LayoutAccount from "../../../Layouts/Account";
 import useMobile from "../../../Hooks/useMobile";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
@@ -15,6 +20,10 @@ import PosUnitModal from "../../../Components/Pos/PosUnitModal";
 import PosQuickCustomerModal from "../../../Components/Pos/PosQuickCustomerModal";
 import BarcodeScanner from "../../../Components/BarcodeScanner";
 import { lineNet } from "../../../Components/Pos/posUtils";
+
+const { Text } = Typography;
+
+const SHIFT_SUMMARY_REFRESH_MS = 60_000;
 
 const getTempAge = (cart) => {
     const id = String(cart.id);
@@ -85,6 +94,54 @@ export default function TransactionCreate() {
     const isMobile = useMobile();
     const loading = useInertiaLoading();
     const [localCarts, setLocalCarts] = useState(carts);
+    const [shiftSummary, setShiftSummary] = useState(null);
+    const [shiftSummaryFailed, setShiftSummaryFailed] = useState(false);
+    const [shiftSummaryRefreshing, setShiftSummaryRefreshing] = useState(false);
+
+    const fetchShiftSummary = useCallback(async (manual = false) => {
+        if (manual) {
+            setShiftSummaryRefreshing(true);
+        }
+
+        try {
+            const { data } = await axios.get(
+                "/account/cashier-shifts/active-summary",
+            );
+            setShiftSummary(data);
+            setShiftSummaryFailed(false);
+        } catch {
+            setShiftSummaryFailed(true);
+        } finally {
+            if (manual) {
+                setShiftSummaryRefreshing(false);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchShiftSummary();
+
+        const intervalId = window.setInterval(
+            () => fetchShiftSummary(),
+            SHIFT_SUMMARY_REFRESH_MS,
+        );
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                fetchShiftSummary();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            window.clearInterval(intervalId);
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange,
+            );
+        };
+    }, [fetchShiftSummary]);
 
     useEffect(() => {
         setLocalCarts(carts);
@@ -1058,11 +1115,110 @@ export default function TransactionCreate() {
                             <span>{cartQty} item dalam keranjang</span>
                         </div>
 
-                        <Link href="/account/transactions">
-                            <Button icon={<FileTextOutlined />}>
-                                Riwayat
-                            </Button>
-                        </Link>
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                                flexWrap: "wrap",
+                                justifyContent: "flex-end",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                    flexWrap: "wrap",
+                                    fontSize: 12,
+                                    lineHeight: 1.4,
+                                }}
+                            >
+                                <Text
+                                    strong
+                                    style={{
+                                        color: "var(--brand-primary)",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    Shift Ini
+                                </Text>
+                                {shiftSummaryFailed ? (
+                                    <Text type="secondary">-</Text>
+                                ) : shiftSummary?.has_shift ? (
+                                    <>
+                                        <Text strong style={{ whiteSpace: "nowrap" }}>
+                                            Shift #{shiftSummary.shift.id}
+                                        </Text>
+                                        <Text type="secondary">·</Text>
+                                        <Text style={{ whiteSpace: "nowrap" }}>
+                                            Total Penjualan:{" "}
+                                            <Text strong>
+                                                {formatRupiah(
+                                                    shiftSummary.shift.total_sales,
+                                                )}
+                                            </Text>
+                                        </Text>
+                                        <Text type="secondary">·</Text>
+                                        <Text style={{ whiteSpace: "nowrap" }}>
+                                            Non Tunai:{" "}
+                                            {formatRupiah(
+                                                shiftSummary.shift.non_cash_sales,
+                                            )}
+                                        </Text>
+                                        <Text type="secondary">·</Text>
+                                        <Text style={{ whiteSpace: "nowrap" }}>
+                                            Kas Tunai:{" "}
+                                            <Text
+                                                strong
+                                                style={{
+                                                    color: "var(--semantic-success)",
+                                                }}
+                                            >
+                                                {formatRupiah(
+                                                    shiftSummary.shift
+                                                        .expected_cash,
+                                                )}
+                                            </Text>
+                                        </Text>
+                                        <Text type="secondary">·</Text>
+                                        <Text
+                                            type="secondary"
+                                            style={{
+                                                fontSize: 11,
+                                                whiteSpace: "nowrap",
+                                            }}
+                                        >
+                                            {shiftSummary.shift.total_transactions}{" "}
+                                            transaksi
+                                            {shiftSummary.shift.paid_transactions !=
+                                            null
+                                                ? ` (lunas: ${shiftSummary.shift.paid_transactions})`
+                                                : ""}
+                                        </Text>
+                                    </>
+                                ) : shiftSummary ? (
+                                    <Text type="secondary">
+                                        Belum ada shift aktif
+                                    </Text>
+                                ) : null}
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<ReloadOutlined />}
+                                    loading={shiftSummaryRefreshing}
+                                    onClick={() => fetchShiftSummary(true)}
+                                    aria-label="Muat ulang ringkasan shift"
+                                    style={{ color: "var(--brand-primary)" }}
+                                />
+                            </div>
+
+                            <Link href="/account/transactions">
+                                <Button icon={<FileTextOutlined />}>
+                                    Riwayat
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
 
                     <div className="pos-cashier-main">
