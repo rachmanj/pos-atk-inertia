@@ -21,6 +21,7 @@ use App\Http\Controllers\Account\TransactionHistoryController;
 use App\Http\Controllers\Account\ReturnTransactionController;
 use App\Http\Controllers\Account\ExpenseController;
 use App\Http\Controllers\Account\SalesReportController;
+use App\Http\Controllers\Account\ShiftSalesReportController;
 use App\Http\Controllers\Account\ProfitReportController;
 use App\Http\Controllers\Account\StockReportController;
 use App\Http\Controllers\Account\ProductSalesReportController;
@@ -294,6 +295,14 @@ Route::middleware(['auth'])
         Route::get('/reports/sales', [SalesReportController::class, 'index'])
             ->middleware('permission:reports.sales')
             ->name('reports.sales');
+
+        Route::get('/reports/shift-sales', [ShiftSalesReportController::class, 'index'])
+            ->middleware('permission:reports.sales')
+            ->name('reports.shift_sales');
+
+        Route::get('/reports/shift-sales/export', [ShiftSalesReportController::class, 'export'])
+            ->middleware('permission:reports.export')
+            ->name('reports.shift_sales.export');
 
         Route::get('/reports/profit', [ProfitReportController::class, 'index'])
             ->middleware('permission:profits.index')

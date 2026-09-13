@@ -29,6 +29,7 @@ export const NAV_MENUS = [
     { id: 'purchases',     label: 'Pembelian Supplier',  group: 'Transaksi Supplier',   permission: 'purchases.index',          href: '/account/purchases' },
     { id: 'supplier-ret',  label: 'Retur Supplier',      group: 'Transaksi Supplier',   permission: 'supplier_returns.index',   href: '/account/supplier-returns' },
     { id: 'report-sales',    label: 'Laporan Penjualan',   group: 'Laporan',              permission: 'reports.sales',            href: '/account/reports/sales' },
+    { id: 'report-shift-sales', label: 'Penjualan per Shift', group: 'Laporan',           permission: 'reports.sales',            href: '/account/reports/shift-sales' },
     { id: 'report-product',  label: 'Produk Terlaris',     group: 'Laporan',              permission: 'reports.product_sales',    href: '/account/reports/product-sales' },
     { id: 'report-ppob',     label: 'Laporan PPOB',        group: 'Laporan',              permission: 'reports.ppob',             href: '/account/reports/ppob' },
     { id: 'report-profit',   label: 'Laporan Laba',        group: 'Laporan',              permission: 'profits.index',            href: '/account/reports/profit' },
