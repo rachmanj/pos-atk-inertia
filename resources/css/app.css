@@ -2669,3 +2669,19 @@ body.printing-receipt .transaction-show-page {
 .ant-card.ppob-hero-card .ant-alert .ant-alert-icon {
     color: #FFFFFF;
 }
+
+/* Tag AntD mode terang — teks digelapkan + latar tint diterangkan (kontras >= 4.5:1).
+   AntD 6 memakai .ant-tag-filled dan menurunkan latar dari token colorSuccess/Warning/Error,
+   yang di app ini bernuansa tinta gelap, sehingga teks jadi gelap di atas latar gelap. */
+html[data-theme="light"] .ant-tag.ant-tag-filled.ant-tag-success { color: #1E5A3C; background: #E4F2E9; border-color: rgba(30, 90, 60, 0.28); }
+html[data-theme="light"] .ant-tag.ant-tag-filled.ant-tag-warning { color: #7A4E14; background: #F8EFDD; border-color: rgba(122, 78, 20, 0.28); }
+html[data-theme="light"] .ant-tag.ant-tag-filled.ant-tag-error { color: #7A2632; background: #FBE7EA; border-color: rgba(122, 38, 50, 0.28); }
+html[data-theme="light"] .ant-tag.ant-tag-filled.ant-tag-info,
+html[data-theme="light"] .ant-tag.ant-tag-filled.ant-tag-blue { color: #23307A; background: #E7EBF8; border-color: rgba(35, 48, 122, 0.28); }
+html[data-theme="light"] .ant-tag.ant-tag-filled.ant-tag-green { color: #256A09; background: #F3FCEB; border-color: rgba(37, 106, 9, 0.28); }
+html[data-theme="light"] .ant-tag.ant-tag-filled.ant-tag-cyan { color: #0A6B6F; background: #E4FAF8; border-color: rgba(10, 107, 111, 0.28); }
+
+/* Tag AntD mode gelap — varian error/success/blue dinaikkan kontrasnya (>= 4.5:1). */
+html[data-theme="dark"] .ant-tag.ant-tag-filled.ant-tag-error { color: #FF8A8A; }
+html[data-theme="dark"] .ant-tag.ant-tag-filled.ant-tag-success { color: #4ADE80; }
+html[data-theme="dark"] .ant-tag.ant-tag-filled.ant-tag-blue { color: #7CC0FF; }
