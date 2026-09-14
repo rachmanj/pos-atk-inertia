@@ -4,7 +4,6 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { BRAND } from "../../../theme/colors";
 import axios from "axios";
 import {
     Alert,
@@ -433,22 +432,21 @@ export default function CashierShiftShow() {
 
                     {shift.summary?.ppob_expected_balance != null && (
                         <Card
+                            className="ppob-hero-card"
                             title="Ringkasan PPOB Shift"
-                            style={{ background: `linear-gradient(135deg, ${BRAND.primary}, #115e59)` }}
-                            headStyle={{ color: "#fff", borderBottom: "1px solid rgba(255,255,255,0.15)" }}
                         >
                             <Row gutter={[16, 16]}>
                                 <Col xs={12} sm={6}>
                                     <Statistic title="Saldo Awal" value={shift.summary.ppob_opening_balance || shift.ppob_opening_balance || 0} formatter={v => formatRupiah(v)} />
                                 </Col>
                                 <Col xs={12} sm={6}>
-                                    <Statistic title="Top Up" value={shift.summary.ppob_top_ups || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: "var(--semantic-success)" }} />
+                                    <Statistic title="Top Up" className="ppob-hero-positive" value={shift.summary.ppob_top_ups || 0} formatter={v => formatRupiah(v)} />
                                 </Col>
                                 <Col xs={12} sm={6}>
-                                    <Statistic title="Biaya Penjualan" value={shift.summary.ppob_sales_cost || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: "var(--semantic-error)" }} />
+                                    <Statistic title="Biaya Penjualan" className="ppob-hero-negative" value={shift.summary.ppob_sales_cost || 0} formatter={v => formatRupiah(v)} />
                                 </Col>
                                 <Col xs={12} sm={6}>
-                                    <Statistic title="Kontribusi Shift" value={shift.summary.ppob_expected_balance || 0} formatter={v => formatRupiah(v)} valueStyle={{ color: "#fff" }} />
+                                    <Statistic title="Kontribusi Shift" value={shift.summary.ppob_expected_balance || 0} formatter={v => formatRupiah(v)} />
                                 </Col>
                             </Row>
                             <Alert

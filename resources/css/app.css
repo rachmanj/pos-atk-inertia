@@ -2617,3 +2617,55 @@ body.printing-receipt .transaction-show-page {
     --border-subtle: #1D283A;
     --icon-muted: #94A3B8;
 }
+
+/* Kartu hero Ringkasan PPOB Shift (selalu gelap, teks terang) */
+/* Latar dan warna teks memakai hex tetap (bukan token tema) agar kontras ≥4.5:1 di mode terang & gelap. */
+.ant-card.ppob-hero-card {
+    background: linear-gradient(135deg, #2A3B8F 0%, #115E59 100%);
+}
+
+.ant-card.ppob-hero-card .ant-card-head {
+    color: #FFFFFF;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.ant-card.ppob-hero-card .ant-card-head-title {
+    color: #FFFFFF;
+}
+
+.ant-card.ppob-hero-card .ant-statistic .ant-statistic-title {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.ant-card.ppob-hero-card .ant-statistic .ant-statistic-content-value {
+    color: #FFFFFF;
+}
+
+.ant-card.ppob-hero-card .ppob-hero-positive .ant-statistic-content-value {
+    color: #7BE3C4;
+}
+
+.ant-card.ppob-hero-card .ppob-hero-negative .ant-statistic-content-value {
+    color: #FFC9C9;
+}
+
+.ant-card.ppob-hero-card .ant-alert {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.ant-card.ppob-hero-card .ant-alert .ant-alert-message {
+    color: #FFFFFF;
+}
+
+.ant-card.ppob-hero-card .ant-alert .ant-alert-title {
+    color: #FFFFFF;
+}
+
+.ant-card.ppob-hero-card .ant-alert .ant-alert-section {
+    color: #FFFFFF;
+}
+
+.ant-card.ppob-hero-card .ant-alert .ant-alert-icon {
+    color: #FFFFFF;
+}
