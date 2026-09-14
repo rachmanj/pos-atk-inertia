@@ -2,7 +2,7 @@ import LayoutAccount from "../../../Layouts/Account";
 import Pagination from "../../../Shared/Pagination";
 import DatePreset from "../../../Shared/DatePreset";
 import hasAnyPermission from "../../../Utils/Permissions";
-import { formatRupiah } from "../../../Utils/format";
+import { formatRupiah, formatRupiahAxis } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import {
@@ -116,12 +116,6 @@ export default function SalesReport() {
 
     const handleExport = () => {
         window.location.href = `/account/reports/sales/export?start_date=${startDate}&end_date=${endDate}&payment_method=${paymentMethod || ""}&cashier_id=${cashierId || ""}`;
-    };
-
-    const formatChartRupiah = (value) => {
-        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-        if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-        return value;
     };
 
     const formatDate = (value) => {
@@ -413,7 +407,7 @@ export default function SalesReport() {
                                                 tick={{ fontSize: 11 }}
                                             />
                                             <YAxis
-                                                tickFormatter={formatChartRupiah}
+                                                tickFormatter={formatRupiahAxis}
                                             />
                                             <Tooltip
                                                 formatter={(value) => [
@@ -457,7 +451,7 @@ export default function SalesReport() {
                                                 tick={{ fontSize: 11 }}
                                             />
                                             <YAxis
-                                                tickFormatter={formatChartRupiah}
+                                                tickFormatter={formatRupiahAxis}
                                             />
                                             <Tooltip
                                                 formatter={(value) => [
@@ -504,7 +498,7 @@ export default function SalesReport() {
                                                 tick={{ fontSize: 11 }}
                                             />
                                             <YAxis
-                                                tickFormatter={formatChartRupiah}
+                                                tickFormatter={formatRupiahAxis}
                                             />
                                             <Tooltip
                                                 formatter={(value) => [
@@ -545,7 +539,7 @@ export default function SalesReport() {
                                                 tick={{ fontSize: 11 }}
                                             />
                                             <YAxis
-                                                tickFormatter={formatChartRupiah}
+                                                tickFormatter={formatRupiahAxis}
                                             />
                                             <Tooltip
                                                 formatter={(value) => [

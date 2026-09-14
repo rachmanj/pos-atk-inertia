@@ -32,3 +32,19 @@ export const formatRupiahCompact = (value) => {
 
     return formatRupiah(num);
 };
+
+// Label ringkas untuk sumbu chart: "1,2 jt" / "76 rb" (tanpa prefix Rp, locale Indonesia)
+export const formatRupiahAxis = (value) => {
+    const num = Number(value) || 0;
+    const abs = Math.abs(num);
+
+    if (abs >= 1_000_000) {
+        return `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(num / 1_000_000)} jt`;
+    }
+
+    if (abs >= 1_000) {
+        return `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(num / 1_000)} rb`;
+    }
+
+    return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(num);
+};

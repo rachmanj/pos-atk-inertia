@@ -2,7 +2,7 @@ import LayoutAccount from "../../../Layouts/Account";
 import Pagination from "../../../Shared/Pagination";
 import DatePreset from "../../../Shared/DatePreset";
 import hasAnyPermission from "../../../Utils/Permissions";
-import { formatRupiah } from "../../../Utils/format";
+import { formatRupiah, formatRupiahAxis } from "../../../Utils/format";
 import { Head, router, usePage } from "@inertiajs/react";
 import { useMemo, useState } from "react";
 import {
@@ -143,12 +143,6 @@ export default function ExpenseReport() {
             cashier_id: cashierId || "",
         });
         window.location.href = `/account/reports/expense/export?${params.toString()}`;
-    };
-
-    const formatChartRupiah = (value) => {
-        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-        if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-        return value;
     };
 
     const columns = [
@@ -347,7 +341,7 @@ export default function ExpenseReport() {
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis
                                                 type="number"
-                                                tickFormatter={formatChartRupiah}
+                                                tickFormatter={formatRupiahAxis}
                                             />
                                             <YAxis
                                                 type="category"
@@ -405,7 +399,7 @@ export default function ExpenseReport() {
                                                 tick={{ fontSize: 11 }}
                                             />
                                             <YAxis
-                                                tickFormatter={formatChartRupiah}
+                                                tickFormatter={formatRupiahAxis}
                                             />
                                             <Tooltip
                                                 formatter={(value) => [
