@@ -9,6 +9,7 @@ use App\Models\PpobBalanceLog;
 use App\Models\ReturnTransaction;
 use App\Models\Transaction;
 use App\Models\WhatsappOutboundLog;
+use App\Services\ShiftCashReconciliation;
 use App\Services\ShiftLiveSummary;
 use App\Services\ShiftReportBuilder;
 use App\Services\TelegramNotificationService;
@@ -26,6 +27,7 @@ class CashierShiftController extends Controller
     public function __construct(
         protected ShiftReportBuilder $shiftReportBuilder,
         protected ShiftLiveSummary $shiftLiveSummary,
+        protected ShiftCashReconciliation $shiftCashReconciliation,
         protected TelegramNotificationService $telegramNotificationService,
     ) {}
 
@@ -203,11 +205,11 @@ class CashierShiftController extends Controller
                 'ppob_opening_balance' => $cashierShift->ppob_opening_balance,
                 'ppob_closing_balance' => $cashierShift->ppob_closing_balance,
                 'ppob_expected_balance' => $cashierShift->ppob_expected_balance,
-                'expected_cash'      => $cashierShift->isOpen() ? $summary['expected_cash'] : $cashierShift->expected_cash,
+                'expected_cash'      => $summary['expected_cash'],
                 'actual_cash'        => $cashierShift->actual_cash,
                 'cash_overage'       => $cashierShift->cash_overage,
                 'overage_note'       => $cashierShift->overage_note,
-                'difference'         => $cashierShift->difference,
+                'difference'         => $summary['selisih'],
                 'total_transactions' => $cashierShift->isOpen() ? $summary['total_transactions'] : $cashierShift->total_transactions,
                 'note'               => $cashierShift->note,
                 'status'             => $cashierShift->status,
@@ -428,31 +430,16 @@ class CashierShiftController extends Controller
         $paidTransactionsQuery = (clone $transactionsQuery)
             ->where('payment_status', 'paid');
 
-        $cashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', 'cash')
-            ->sum('grand_total');
-
-        $nonCashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', '!=', 'cash')
-            ->sum('grand_total');
-
         $approvedReturnsQuery = ReturnTransaction::query()
             ->where('cashier_id', $shift->user_id)
             ->where('status', 'approved')
             ->whereBetween('updated_at', [$startedAt, $endedAt]);
 
-        $cashRefunds = (int) (clone $approvedReturnsQuery)
-            ->where('refund_method', 'cash')
-            ->sum('total_refund');
-
-        $nonCashRefunds = (int) (clone $approvedReturnsQuery)
-            ->where('refund_method', '!=', 'cash')
-            ->sum('total_refund');
-
         $totalTransactions = (int) (clone $transactionsQuery)->count();
         $paidTransactions = (int) (clone $paidTransactionsQuery)->count();
         $totalReturns = (int) (clone $approvedReturnsQuery)->count();
-        $expectedCash = (int) $shift->cash_in_hand + $cashSales - $cashRefunds;
+
+        $reconciliation = $this->shiftCashReconciliation->build($shift, $endedAt);
 
         $ppobTopUps = (int) PpobBalanceLog::query()
             ->where('cashier_shift_id', $shift->id)
@@ -468,11 +455,19 @@ class CashierShiftController extends Controller
         $ppobExpected = $ppobOpening + $ppobTopUps - $ppobSalesCost;
 
         return [
-            'cash_sales'         => $cashSales,
-            'non_cash_sales'     => $nonCashSales,
-            'cash_refunds'       => $cashRefunds,
-            'non_cash_refunds'   => $nonCashRefunds,
-            'expected_cash'      => $expectedCash,
+            'cash_sales'         => $reconciliation['hanya_cash_sales'],
+            'non_cash_sales'     => $reconciliation['non_cash_sales'],
+            'cash_refunds'       => $reconciliation['cash_refunds'],
+            'non_cash_refunds'   => (int) (clone $approvedReturnsQuery)
+                ->where('refund_method', '!=', 'cash')
+                ->sum('total_refund'),
+            'expected_cash'      => $reconciliation['kas_seharusnya'],
+            'kas_awal'           => $reconciliation['kas_awal'],
+            'kas_seharusnya'     => $reconciliation['kas_seharusnya'],
+            'kas_disetor'        => $reconciliation['kas_disetor'],
+            'selisih'            => $reconciliation['selisih'],
+            'expense_amount'     => $reconciliation['expense_amount'],
+            'tunai_dari_penjualan' => $reconciliation['tunai_dari_penjualan'],
             'total_transactions' => $totalTransactions,
             'paid_transactions'  => $paidTransactions,
             'total_returns'      => $totalReturns,
@@ -566,6 +561,8 @@ class CashierShiftController extends Controller
                     'expense_amount' => $expenseInput['amount'],
                     'expense_note' => null,
                 ]);
+
+                $this->recalculateClosedShiftCash($shift);
             });
 
             return;
@@ -574,6 +571,23 @@ class CashierShiftController extends Controller
         $shift->update([
             'expense_amount' => $expenseInput['amount'],
             'expense_note' => $expenseInput['note'],
+        ]);
+
+        $this->recalculateClosedShiftCash($shift);
+    }
+
+    protected function recalculateClosedShiftCash(CashierShift $shift): void
+    {
+        if ($shift->status !== 'closed') {
+            return;
+        }
+
+        $shift->refresh();
+        $reconciliation = $this->shiftCashReconciliation->build($shift);
+
+        $shift->update([
+            'expected_cash' => $reconciliation['kas_seharusnya'],
+            'difference' => $reconciliation['selisih'],
         ]);
     }
 

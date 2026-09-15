@@ -413,7 +413,13 @@ export default function CashierShiftShow() {
                                 <Card size="small"><Statistic title="Non Tunai" value={shift.summary?.non_cash_sales || 0} prefix={<WalletOutlined />} valueStyle={{ color: "var(--semantic-info)" }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
-                                <Card size="small"><Statistic title="Kas Seharusnya" value={shift.summary?.expected_cash || 0} prefix={<DollarOutlined />} valueStyle={{ color: "var(--brand-primary)" }} formatter={v => formatRupiah(v)} /></Card>
+                                <Card size="small"><Statistic title="Pengeluaran dari Laci" value={shift.summary?.expense_amount || 0} prefix={<FallOutlined />} valueStyle={{ color: "var(--semantic-warning)" }} formatter={v => formatRupiah(v)} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Kas Seharusnya" value={shift.summary?.kas_seharusnya ?? shift.summary?.expected_cash ?? 0} prefix={<DollarOutlined />} valueStyle={{ color: "var(--brand-primary)" }} formatter={v => formatRupiah(v)} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title={Number(shift.summary?.selisih ?? 0) < 0 ? "Kekurangan" : "Kelebihan"} value={shift.summary?.selisih ?? 0} prefix={<SwapOutlined />} valueStyle={{ color: Number(shift.summary?.selisih ?? 0) < 0 ? "var(--semantic-error)" : Number(shift.summary?.selisih ?? 0) > 0 ? "var(--semantic-warning)" : "var(--semantic-success)" }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
                                 <Card size="small"><Statistic title="Refund Tunai" value={shift.summary?.cash_refunds || 0} prefix={<FallOutlined />} valueStyle={{ color: "var(--semantic-error)" }} formatter={v => formatRupiah(v)} /></Card>
@@ -609,7 +615,7 @@ export default function CashierShiftShow() {
                                         </Col>
                                     )}
                                     <Col xs={24} sm={8}>
-                                        <Statistic title="Selisih" value={shift.difference} formatter={v => formatRupiah(v)} valueStyle={{ color: shift.difference < 0 ? "var(--semantic-error)" : shift.difference > 0 ? "var(--semantic-warning)" : "var(--semantic-success)" }} prefix={<SwapOutlined />} />
+                                        <Statistic title={Number(shift.summary?.selisih ?? shift.difference ?? 0) < 0 ? "Kekurangan" : "Selisih"} value={shift.summary?.selisih ?? shift.difference ?? 0} formatter={v => formatRupiah(v)} valueStyle={{ color: Number(shift.summary?.selisih ?? shift.difference ?? 0) < 0 ? "var(--semantic-error)" : Number(shift.summary?.selisih ?? shift.difference ?? 0) > 0 ? "var(--semantic-warning)" : "var(--semantic-success)" }} prefix={<SwapOutlined />} />
                                     </Col>
                                     <Col xs={24} sm={8}>
                                         <Statistic title="Total Transaksi" value={shift.total_transactions} prefix={<ShoppingCartOutlined />} />
@@ -699,7 +705,7 @@ export default function CashierShiftShow() {
                     destroyOnClose
                 >
                     <Form layout="vertical">
-                        <Form.Item label="Pengeluaran Lain">
+                        <Form.Item label="Pengeluaran dari Laci">
                             <Table
                                 rowKey={(_, index) => index}
                                 columns={expenseLineColumns}
@@ -719,7 +725,7 @@ export default function CashierShiftShow() {
                                     Tambah Baris
                                 </Button>
                                 <Text>
-                                    Total Pengeluaran Lain:{" "}
+                                    Total Pengeluaran dari Laci:{" "}
                                     <Text strong>{formatRupiah(totalExpenseAmount)}</Text>
                                 </Text>
                             </Space>

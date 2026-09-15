@@ -31,7 +31,7 @@ class ShiftReportTest extends TestCase
             'closed_at' => $closedAt,
             'cash_in_hand' => 100_000,
             'status' => 'closed',
-            'actual_cash' => 1_050_000,
+            'actual_cash' => 1_150_000,
             'cash_overage' => 50_000,
             'overage_note' => 'lebih',
             'difference' => 50_000,
@@ -42,22 +42,29 @@ class ShiftReportTest extends TestCase
         $report = app(ShiftReportBuilder::class)->build($shift);
 
         $tunaiDariPenjualan = 1_000_000;
-        $actualCash = 1_050_000;
-        $cashOverage = 50_000;
+        $kasSeharusnya = 1_100_000;
+        $actualCash = 1_150_000;
+        $selisih = 50_000;
 
         $this->assertSame($tunaiDariPenjualan, $report['tunaiDariPenjualan']);
+        $this->assertSame($kasSeharusnya, $report['kas_seharusnya']);
         $this->assertSame($actualCash, $report['tunaiDisetor']);
+        $this->assertSame($selisih, $report['selisih']);
         $this->assertStringContainsString(
-            'Tunai dari Penjualan : ' . TelegramFormatter::idr($tunaiDariPenjualan),
+            str_pad('Tunai dari Penjualan', 21) . ': ' . TelegramFormatter::idr($tunaiDariPenjualan),
             $report['messageText']
         );
         $this->assertStringContainsString(
-            'Kelebihan Uang       : ' . TelegramFormatter::idr($cashOverage),
+            str_pad('Kas Seharusnya', 21) . ': ' . TelegramFormatter::idr($kasSeharusnya),
+            $report['messageText']
+        );
+        $this->assertStringContainsString(
+            str_pad('Kelebihan Uang', 21) . ': ' . TelegramFormatter::idr($selisih),
             $report['messageText']
         );
         $this->assertStringContainsString('  lebih', $report['messageText']);
         $this->assertStringContainsString(
-            'Tunai Disetor        : ' . TelegramFormatter::idr($actualCash),
+            str_pad('Tunai Disetor', 21) . ': ' . TelegramFormatter::idr($actualCash),
             $report['messageText']
         );
     }
@@ -76,7 +83,7 @@ class ShiftReportTest extends TestCase
             'status' => 'closed',
             'actual_cash' => 450_000,
             'cash_overage' => 0,
-            'difference' => -50_000,
+            'difference' => -150_000,
         ]);
 
         $this->createShiftTransaction($user, $openedAt->copy()->addHour(), 500_000, 'cash');
@@ -84,17 +91,19 @@ class ShiftReportTest extends TestCase
         $report = app(ShiftReportBuilder::class)->build($shift);
 
         $tunaiDariPenjualan = 500_000;
+        $kasSeharusnya = 600_000;
         $actualCash = 450_000;
-        $kurangUang = 50_000;
+        $kurangUang = 150_000;
 
         $this->assertSame($tunaiDariPenjualan, $report['tunaiDariPenjualan']);
+        $this->assertSame($kasSeharusnya, $report['kas_seharusnya']);
         $this->assertSame($actualCash, $report['tunaiDisetor']);
         $this->assertStringContainsString(
-            'Kurang Uang          : ' . TelegramFormatter::idr($kurangUang),
+            str_pad('Kurang Uang', 21) . ': ' . TelegramFormatter::idr($kurangUang),
             $report['messageText']
         );
         $this->assertStringContainsString(
-            'Tunai Disetor        : ' . TelegramFormatter::idr($actualCash),
+            str_pad('Tunai Disetor', 21) . ': ' . TelegramFormatter::idr($actualCash),
             $report['messageText']
         );
         $this->assertStringNotContainsString('Kelebihan Uang', $report['messageText']);
@@ -122,12 +131,12 @@ class ShiftReportTest extends TestCase
         $report = app(ShiftReportBuilder::class)->build($shift);
 
         $tunaiDariPenjualan = 300_000;
-        $tunaiDisetorFallback = 320_000;
+        $tunaiDisetorFallback = 420_000;
 
         $this->assertSame($tunaiDariPenjualan, $report['tunaiDariPenjualan']);
         $this->assertSame($tunaiDisetorFallback, $report['tunaiDisetor']);
         $this->assertStringContainsString(
-            'Tunai Disetor        : ' . TelegramFormatter::idr($tunaiDisetorFallback),
+            str_pad('Tunai Disetor', 21) . ': ' . TelegramFormatter::idr($tunaiDisetorFallback),
             $report['messageText']
         );
     }

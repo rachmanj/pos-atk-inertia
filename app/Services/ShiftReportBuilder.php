@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\CashierShift;
-use App\Models\ReturnTransaction;
 use App\Models\Setting;
 use App\Models\Transaction;
 use App\Services\Telegram\TelegramFormatter;
@@ -11,6 +10,10 @@ use Illuminate\Support\Carbon;
 
 class ShiftReportBuilder
 {
+    public function __construct(
+        protected ShiftCashReconciliation $shiftCashReconciliation,
+    ) {}
+
     public function build(CashierShift $shift, int $expenseAmount = 0, ?string $expenseNote = null, array $expenseLines = []): array
     {
         $startedAt = $shift->opened_at instanceof Carbon
@@ -21,25 +24,19 @@ class ShiftReportBuilder
             ? $shift->closed_at->copy()
             : Carbon::parse($shift->closed_at);
 
-        $transactionsQuery = Transaction::query()
-            ->where('cashier_id', $shift->user_id)
-            ->where('status', '!=', 'voided')
-            ->whereBetween('created_at', [$startedAt, $endedAt]);
+        $shiftForReconciliation = clone $shift;
+        $shiftForReconciliation->expense_amount = $expenseAmount;
 
-        $totalPenjualan = (int) (clone $transactionsQuery)->sum('grand_total');
+        $reconciliation = $this->shiftCashReconciliation->build($shiftForReconciliation, $endedAt);
 
-        $nonTunai = (int) (clone $transactionsQuery)
-            ->whereIn('payment_method', ['qris', 'transfer', 'digital'])
-            ->sum('grand_total');
-
-        $approvedReturnsQuery = ReturnTransaction::query()
-            ->where('cashier_id', $shift->user_id)
-            ->where('status', 'approved')
-            ->whereBetween('updated_at', [$startedAt, $endedAt]);
-
-        $refundTunai = (int) (clone $approvedReturnsQuery)
-            ->where('refund_method', 'cash')
-            ->sum('total_refund');
+        $totalPenjualan = $reconciliation['total_penjualan'];
+        $nonTunai = $reconciliation['non_tunai'];
+        $refundTunai = $reconciliation['cash_refunds'];
+        $tunaiDariPenjualan = $reconciliation['tunai_dari_penjualan'];
+        $kasAwal = $reconciliation['kas_awal'];
+        $kasSeharusnya = $reconciliation['kas_seharusnya'];
+        $tunaiDisetor = $reconciliation['kas_disetor'];
+        $selisih = $reconciliation['selisih'];
 
         $ppobCashQuery = Transaction::query()
             ->where('cashier_id', $shift->user_id)
@@ -51,6 +48,11 @@ class ShiftReportBuilder
 
         $ppobTunai = (int) (clone $ppobCashQuery)->sum('grand_total');
         $ppobTransaksi = (int) (clone $ppobCashQuery)->distinct()->count('transactions.id');
+
+        $transactionsQuery = Transaction::query()
+            ->where('cashier_id', $shift->user_id)
+            ->where('status', '!=', 'voided')
+            ->whereBetween('created_at', [$startedAt, $endedAt]);
 
         $nonCashTransactions = (clone $transactionsQuery)
             ->whereIn('payment_method', ['qris', 'transfer', 'digital'])
@@ -67,15 +69,13 @@ class ShiftReportBuilder
             ];
         })->values()->all();
 
-        $tunaiDariPenjualan = $totalPenjualan - $nonTunai - $refundTunai - $expenseAmount;
-        $tunaiDisetor = (int) ($shift->actual_cash ?? ($tunaiDariPenjualan + (int) ($shift->cash_overage ?? 0)));
-
         $shift->loadMissing('user:id,name');
 
         $messageText = $this->buildMessageText(
             shift: $shift,
             startedAt: $startedAt,
             endedAt: $endedAt,
+            kasAwal: $kasAwal,
             totalPenjualan: $totalPenjualan,
             nonTunai: $nonTunai,
             refundTunai: $refundTunai,
@@ -83,6 +83,8 @@ class ShiftReportBuilder
             expenseNote: $expenseNote,
             expenseLines: $expenseLines,
             tunaiDariPenjualan: $tunaiDariPenjualan,
+            kasSeharusnya: $kasSeharusnya,
+            selisih: $selisih,
             tunaiDisetor: $tunaiDisetor,
             daftarNonTunai: $daftarNonTunai,
             ppobTunai: $ppobTunai,
@@ -98,6 +100,9 @@ class ShiftReportBuilder
             'daftarNonTunai' => $daftarNonTunai,
             'tunaiDariPenjualan' => $tunaiDariPenjualan,
             'tunaiDisetor' => $tunaiDisetor,
+            'kas_awal' => $kasAwal,
+            'kas_seharusnya' => $kasSeharusnya,
+            'selisih' => $selisih,
             'messageText' => $messageText,
         ];
     }
@@ -106,6 +111,7 @@ class ShiftReportBuilder
         CashierShift $shift,
         Carbon $startedAt,
         Carbon $endedAt,
+        int $kasAwal,
         int $totalPenjualan,
         int $nonTunai,
         int $refundTunai,
@@ -113,6 +119,8 @@ class ShiftReportBuilder
         ?string $expenseNote,
         array $expenseLines,
         int $tunaiDariPenjualan,
+        int $kasSeharusnya,
+        int $selisih,
         int $tunaiDisetor,
         array $daftarNonTunai,
         int $ppobTunai,
@@ -126,16 +134,17 @@ class ShiftReportBuilder
             'Kasir : ' . $cashierName,
             'Shift : ' . $startedAt->format('d/m/Y H:i') . ' - ' . $endedAt->format('d/m/Y H:i'),
             '',
-            'Total Penjualan      : ' . TelegramFormatter::idr($totalPenjualan),
-            'Non-Tunai QRIS/Trf   : ' . $this->formatMinus($nonTunai),
+            $this->labelLine('Kas Awal', TelegramFormatter::idr($kasAwal)),
+            $this->labelLine('Total Penjualan', TelegramFormatter::idr($totalPenjualan)),
+            $this->labelLine('Non-Tunai QRIS/Trf', $this->formatMinus($nonTunai)),
         ];
 
         if ($refundTunai > 0) {
-            $lines[] = 'Retur Tunai          : ' . $this->formatMinus($refundTunai);
+            $lines[] = $this->labelLine('Retur Tunai', $this->formatMinus($refundTunai));
         }
 
         if ($expenseAmount > 0) {
-            $lines[] = 'Pengeluaran Lain     : ' . $this->formatMinus($expenseAmount);
+            $lines[] = $this->labelLine('Pengeluaran dari Laci', $this->formatMinus($expenseAmount));
 
             if ($expenseLines !== []) {
                 foreach ($expenseLines as $line) {
@@ -147,23 +156,22 @@ class ShiftReportBuilder
             }
         }
 
-        $lines[] = 'Tunai dari Penjualan : ' . TelegramFormatter::idr($tunaiDariPenjualan);
+        $lines[] = $this->labelLine('Tunai dari Penjualan', TelegramFormatter::idr($tunaiDariPenjualan));
+        $lines[] = $this->labelLine('Kas Seharusnya', TelegramFormatter::idr($kasSeharusnya));
 
-        $cashOverage = (int) ($shift->cash_overage ?? 0);
-        if ($cashOverage > 0) {
-            $lines[] = 'Kelebihan Uang       : ' . TelegramFormatter::idr($cashOverage);
+        if ($selisih > 0) {
+            $lines[] = $this->labelLine('Kelebihan Uang', TelegramFormatter::idr($selisih));
             if (filled($shift->overage_note)) {
                 $lines[] = '  ' . trim($shift->overage_note);
             }
         }
 
-        $difference = (int) ($shift->difference ?? 0);
-        if ($difference < 0) {
-            $lines[] = 'Kurang Uang          : ' . TelegramFormatter::idr(abs($difference));
+        if ($selisih < 0) {
+            $lines[] = $this->labelLine('Kurang Uang', TelegramFormatter::idr(abs($selisih)));
         }
 
         $lines[] = '';
-        $lines[] = 'Tunai Disetor        : ' . TelegramFormatter::idr($tunaiDisetor);
+        $lines[] = $this->labelLine('Tunai Disetor', TelegramFormatter::idr($tunaiDisetor));
         $lines[] = '';
         $lines[] = 'RINCIAN NON-TUNAI:';
 
@@ -186,6 +194,11 @@ class ShiftReportBuilder
         }
 
         return implode("\n", $lines);
+    }
+
+    protected function labelLine(string $label, string $value): string
+    {
+        return str_pad($label, 21, ' ', STR_PAD_RIGHT) . ': ' . $value;
     }
 
     protected function formatMinus(int $amount): string

@@ -9,6 +9,10 @@ use Illuminate\Support\Carbon;
 
 class ShiftLiveSummary
 {
+    public function __construct(
+        protected ShiftCashReconciliation $shiftCashReconciliation,
+    ) {}
+
     public function build(CashierShift $shift): array
     {
         $startedAt = $shift->opened_at instanceof Carbon
@@ -48,13 +52,20 @@ class ShiftLiveSummary
             ->where('refund_method', '!=', 'cash')
             ->sum('total_refund');
 
+        $reconciliation = $this->shiftCashReconciliation->build($shift, $endedAt);
+
         return [
             'total_sales'        => $totalSales,
             'cash_sales'         => $cashSales,
             'non_cash_sales'     => $nonCashSales,
             'cash_refunds'       => $cashRefunds,
             'non_cash_refunds'   => $nonCashRefunds,
-            'expected_cash'      => (int) $shift->cash_in_hand + $cashSales - $cashRefunds,
+            'expected_cash'      => $reconciliation['kas_seharusnya'],
+            'kas_awal'           => $reconciliation['kas_awal'],
+            'kas_seharusnya'     => $reconciliation['kas_seharusnya'],
+            'kas_disetor'        => $reconciliation['kas_disetor'],
+            'selisih'            => $reconciliation['selisih'],
+            'expense_amount'     => $reconciliation['expense_amount'],
             'total_transactions' => (int) (clone $transactionsQuery)->count(),
             'paid_transactions'  => (int) (clone $paidTransactionsQuery)->count(),
         ];
