@@ -11,6 +11,7 @@ use App\Services\ShiftReportBuilder;
 use App\Services\Telegram\TelegramPosQueryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Concerns\PosTestHelpers;
 use Tests\TestCase;
 
@@ -321,6 +322,33 @@ class SplitPaymentShiftReconciliationTest extends TestCase
         $this->assertSame(1_100_000, $reconciliation['kas_seharusnya']);
         $this->assertSame(1_050_000, $reconciliation['kas_disetor']);
         $this->assertSame(-50_000, $reconciliation['selisih']);
+    }
+
+    public function test_shift_show_summary_includes_shift_open_flag(): void
+    {
+        $user = $this->createCashierUser(['cashier_shifts.index']);
+        $openedAt = Carbon::parse('2026-09-16 08:00:00');
+
+        $openShift = CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => $openedAt,
+            'cash_in_hand' => 100_000,
+            'status' => 'open',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('account.cashier-shifts.show', $openShift))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('shift.summary.shift_open', true));
+
+        $closedShift = $this->createClosedShift($user, 100_000);
+
+        $this->actingAs($user)
+            ->get(route('account.cashier-shifts.show', $closedShift))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('shift.summary.shift_open', false));
     }
 
     public function test_open_shift_report_does_not_show_false_kurang_uang_line(): void

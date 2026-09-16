@@ -466,6 +466,7 @@ class CashierShiftController extends Controller
             'kas_seharusnya'     => $reconciliation['kas_seharusnya'],
             'kas_disetor'        => $reconciliation['kas_disetor'],
             'selisih'            => $reconciliation['selisih'],
+            'shift_open'         => $reconciliation['shift_open'],
             'expense_amount'     => $reconciliation['expense_amount'],
             'tunai_dari_penjualan' => $reconciliation['tunai_dari_penjualan'],
             'total_transactions' => $totalTransactions,
