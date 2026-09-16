@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Transaction extends Model
 {
+    protected ?array $breakdownCache = null;
+
     protected function casts(): array
     {
         return [
@@ -67,6 +69,11 @@ class Transaction extends Model
         return $this->hasOne(Profit::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(TransactionPayment::class)->orderBy('id');
+    }
+
     public function returnTransactions(): HasMany
     {
         return $this->hasMany(ReturnTransaction::class);
@@ -82,5 +89,65 @@ class Transaction extends Model
     public function isVoided(): bool
     {
         return $this->status === 'voided';
+    }
+
+    public function paymentBreakdown(): array
+    {
+        if ($this->breakdownCache !== null) {
+            return $this->breakdownCache;
+        }
+
+        $payments = $this->relationLoaded('payments')
+            ? $this->payments
+            : $this->payments()->get();
+
+        if ($payments->isEmpty()) {
+            return $this->breakdownCache = [
+                (string) $this->payment_method => (int) $this->grand_total,
+            ];
+        }
+
+        $breakdown = [];
+
+        foreach ($payments as $payment) {
+            if ($payment->payment_status === TransactionPayment::STATUS_FAILED) {
+                continue;
+            }
+
+            $method = (string) $payment->method;
+            $breakdown[$method] = ($breakdown[$method] ?? 0) + (int) $payment->amount;
+        }
+
+        return $this->breakdownCache = $breakdown;
+    }
+
+    public function isSplitPayment(): bool
+    {
+        if ($this->payment_method === 'split') {
+            return true;
+        }
+
+        $paymentCount = $this->relationLoaded('payments')
+            ? $this->payments->count()
+            : $this->payments()->count();
+
+        return $paymentCount > 1;
+    }
+
+    public function cashPart(): int
+    {
+        return (int) ($this->paymentBreakdown()[TransactionPayment::METHOD_CASH] ?? 0);
+    }
+
+    public function nonCashPart(): int
+    {
+        $breakdown = $this->paymentBreakdown();
+        $total = 0;
+
+        foreach (TransactionPayment::nonCashMethods() as $method) {
+            $total += (int) ($breakdown[$method] ?? 0);
+        }
+
+        return $total;
     }
 }
