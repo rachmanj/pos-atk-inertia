@@ -221,10 +221,28 @@ class TransactionController extends Controller
             })
             ->firstOrFail();
 
-        if (! TransactionPaymentAggregator::hasPendingTransferPart($transaction)) {
+        $hasTransferPart = $transaction->payments->isEmpty()
+            ? $transaction->payment_method === 'transfer'
+            : $transaction->payments->contains(
+                fn (TransactionPayment $payment) => $payment->method === TransactionPayment::METHOD_TRANSFER
+            );
+
+        if (! $hasTransferPart) {
             return redirect()
                 ->route('account.transactions.show', $invoice)
                 ->with('error', 'Konfirmasi hanya untuk transaksi transfer manual.');
+        }
+
+        if ($transaction->payment_status === 'paid') {
+            return redirect()
+                ->route('account.transactions.show', $invoice)
+                ->with('success', 'Transaksi ini sudah dikonfirmasi sebelumnya.');
+        }
+
+        if (! TransactionPaymentAggregator::hasPendingTransferPart($transaction)) {
+            return redirect()
+                ->route('account.transactions.show', $invoice)
+                ->with('error', 'Tidak ada bagian transfer yang menunggu konfirmasi pada transaksi ini.');
         }
 
         DB::transaction(function () use ($transaction) {

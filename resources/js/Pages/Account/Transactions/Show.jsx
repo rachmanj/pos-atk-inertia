@@ -51,6 +51,7 @@ export default function TransactionShow() {
     const [receiptPaperSize, setReceiptPaperSize] = useState(() =>
         normalizeReceiptPaperSize(store?.receipt_paper_size),
     );
+    const [confirming, setConfirming] = useState(false);
     const voidReasonRef = useRef("");
     const receiptPrintWidth = getReceiptPrintWidth(receiptPaperSize);
 
@@ -135,7 +136,9 @@ export default function TransactionShow() {
         transaction.status === "pending" &&
         transaction.payment_status === "pending" &&
         (hasPendingTransferPart ||
-            (transaction.payment_method === "transfer" && payments.length <= 1));
+            (transaction.payment_method === "transfer" &&
+                transaction.payment_status === "pending" &&
+                payments.length === 0));
 
     const canConfirmTransfer =
         isTransferPending &&
@@ -190,16 +193,31 @@ export default function TransactionShow() {
     };
 
     const handleConfirmTransfer = () => {
+        if (confirming) {
+            return;
+        }
+
         Modal.confirm({
             title: "Konfirmasi pembayaran transfer?",
             content:
                 "Pastikan dana sudah masuk ke rekening toko sebelum mengonfirmasi transaksi ini.",
             okText: "Ya, konfirmasi",
             cancelText: "Batal",
-            onOk: () =>
-                router.post(
-                    `/account/transactions/${transaction.invoice}/confirm-transfer`,
-                ),
+            onOk: () => {
+                setConfirming(true);
+
+                return new Promise((resolve, reject) => {
+                    router.post(
+                        `/account/transactions/${transaction.invoice}/confirm-transfer`,
+                        {},
+                        {
+                            onFinish: () => setConfirming(false),
+                            onSuccess: () => resolve(),
+                            onError: () => reject(),
+                        },
+                    );
+                });
+            },
         });
     };
 
@@ -341,6 +359,8 @@ export default function TransactionShow() {
                                             block
                                             icon={<CheckCircleOutlined />}
                                             onClick={handleConfirmTransfer}
+                                            loading={confirming}
+                                            disabled={confirming}
                                             style={{
                                                 background: "#2F6F4E",
                                                 borderColor: "#2F6F4E",
