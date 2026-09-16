@@ -25,6 +25,11 @@ const { Text } = Typography;
 
 const SHIFT_SUMMARY_REFRESH_MS = 60_000;
 
+const SPLIT_METHODS = ["cash", "qris", "transfer"];
+
+const nextAvailableSplitMethod = (usedMethods) =>
+    SPLIT_METHODS.find((method) => !usedMethods.includes(method)) || "qris";
+
 const getTempAge = (cart) => {
     const id = String(cart.id);
     if (!id.startsWith("temp-")) return 0;
@@ -65,6 +70,10 @@ export default function TransactionCreate() {
     const [searchQuery, setSearchQuery] = useState(params.get("q") || "");
     const [customerId, setCustomerId] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("cash");
+    const [splitMode, setSplitMode] = useState(false);
+    const [paymentParts, setPaymentParts] = useState([
+        { method: "cash", amount: null },
+    ]);
     const [discount, setDiscount] = useState(0);
     const [discountType, setDiscountType] = useState("nominal");
     const [cash, setCash] = useState("");
@@ -174,7 +183,7 @@ export default function TransactionCreate() {
         resetProductSearch();
     }, [products.data]);
 
-    const isCashLikePayment = ["cash", "qris"].includes(paymentMethod);
+    const isCashPayment = paymentMethod === "cash";
 
     const activeCarts = useMemo(
         () => localCarts.filter((cart) => !cart.is_held),
@@ -198,9 +207,25 @@ export default function TransactionCreate() {
             : discountValue;
     const grandTotal = Math.max(subtotal - discountAmount, 0);
     const cashValue = Number(cash || 0);
+    const partsTotal = splitMode
+        ? paymentParts.reduce(
+              (total, part) => total + Number(part.amount || 0),
+              0,
+          )
+        : 0;
+    const remaining = splitMode ? grandTotal - partsTotal : 0;
+    const overAmount = splitMode && remaining < 0 ? Math.abs(remaining) : 0;
+    const hasCashPart = splitMode
+        ? paymentParts.some((part) => part.method === "cash")
+        : isCashPayment;
+    const cashPartAmount = splitMode
+        ? Number(
+              paymentParts.find((part) => part.method === "cash")?.amount || 0,
+          )
+        : grandTotal;
     const change =
-        isCashLikePayment && cashValue >= grandTotal
-            ? cashValue - grandTotal
+        hasCashPart && cashValue >= cashPartAmount
+            ? cashValue - cashPartAmount
             : 0;
 
     const cartQty = activeCarts.reduce(
@@ -209,25 +234,169 @@ export default function TransactionCreate() {
     );
 
     const cashOptions = useMemo(() => {
-        if (!isCashLikePayment || grandTotal <= 0) {
+        const targetAmount = splitMode ? cashPartAmount : grandTotal;
+
+        if (!hasCashPart || targetAmount <= 0) {
             return [];
         }
 
         const roundTo = (n, to) => Math.ceil(n / to) * to;
         const options = [
-            grandTotal,
-            roundTo(grandTotal, 1000),
-            roundTo(grandTotal, 2000),
-            roundTo(grandTotal, 5000),
-            roundTo(grandTotal, 10000),
-            roundTo(grandTotal, 20000),
-            roundTo(grandTotal, 50000),
-            roundTo(grandTotal, 100000),
+            targetAmount,
+            roundTo(targetAmount, 1000),
+            roundTo(targetAmount, 2000),
+            roundTo(targetAmount, 5000),
+            roundTo(targetAmount, 10000),
+            roundTo(targetAmount, 20000),
+            roundTo(targetAmount, 50000),
+            roundTo(targetAmount, 100000),
         ];
         return [...new Set(options)]
-            .filter((value) => value >= grandTotal)
+            .filter((value) => value >= targetAmount)
             .slice(0, 5);
-    }, [grandTotal, isCashLikePayment]);
+    }, [cashPartAmount, grandTotal, hasCashPart, splitMode]);
+
+    const canSubmitPayment = useMemo(() => {
+        if (activeCarts.length === 0) {
+            return false;
+        }
+
+        if (splitMode) {
+            if (remaining !== 0) {
+                return false;
+            }
+
+            if (
+                paymentParts.some(
+                    (part) => !part.amount || Number(part.amount) <= 0,
+                )
+            ) {
+                return false;
+            }
+
+            if (hasCashPart && cashValue < cashPartAmount) {
+                return false;
+            }
+
+            return true;
+        }
+
+        if (isCashPayment && cashValue < grandTotal) {
+            return false;
+        }
+
+        return true;
+    }, [
+        activeCarts.length,
+        cashPartAmount,
+        cashValue,
+        grandTotal,
+        hasCashPart,
+        isCashPayment,
+        paymentParts,
+        remaining,
+        splitMode,
+    ]);
+
+    const enterSplitMode = () => {
+        const primaryMethod = SPLIT_METHODS.includes(paymentMethod)
+            ? paymentMethod
+            : "cash";
+        const nextMethod = nextAvailableSplitMethod([primaryMethod]);
+
+        setSplitMode(true);
+        setPaymentParts([
+            { method: primaryMethod, amount: grandTotal > 0 ? grandTotal : null },
+            { method: nextMethod, amount: null },
+        ]);
+        setCash("");
+    };
+
+    const exitSplitMode = () => {
+        setSplitMode(false);
+        setPaymentParts([{ method: paymentMethod, amount: null }]);
+        setCash("");
+    };
+
+    const handlePaymentMethodChange = (value) => {
+        setPaymentMethod(value);
+
+        if (value === "digital") {
+            if (splitMode) {
+                exitSplitMode();
+            }
+            setCash("");
+            return;
+        }
+
+        if (splitMode) {
+            setPaymentParts((currentParts) => {
+                const usedMethods = currentParts
+                    .slice(1)
+                    .map((part) => part.method);
+
+                if (usedMethods.includes(value)) {
+                    return currentParts;
+                }
+
+                return currentParts.map((part, index) =>
+                    index === 0 ? { ...part, method: value } : part,
+                );
+            });
+            return;
+        }
+
+        if (value === "transfer") {
+            setCash("");
+        }
+    };
+
+    const handlePaymentPartAmountChange = (index, value) => {
+        setPaymentParts((currentParts) =>
+            currentParts.map((part, partIndex) =>
+                partIndex === index
+                    ? {
+                          ...part,
+                          amount: value == null ? null : Number(value),
+                      }
+                    : part,
+            ),
+        );
+    };
+
+    const handlePaymentPartMethodChange = (index, method) => {
+        setPaymentParts((currentParts) =>
+            currentParts.map((part, partIndex) =>
+                partIndex === index ? { ...part, method } : part,
+            ),
+        );
+    };
+
+    const handleAddPaymentPart = () => {
+        setPaymentParts((currentParts) => {
+            if (currentParts.length >= 3) {
+                return currentParts;
+            }
+
+            const usedMethods = currentParts.map((part) => part.method);
+            const nextMethod = nextAvailableSplitMethod(usedMethods);
+
+            return [...currentParts, { method: nextMethod, amount: null }];
+        });
+    };
+
+    const handleRemovePaymentPart = (index) => {
+        const nextParts = paymentParts.filter(
+            (_, partIndex) => partIndex !== index,
+        );
+
+        if (nextParts.length <= 1) {
+            exitSplitMode();
+            return;
+        }
+
+        setPaymentParts(nextParts);
+    };
 
     const resetProductSearch = () => {
         setSearchQuery("");
@@ -920,7 +1089,28 @@ export default function TransactionCreate() {
             return;
         }
 
-        if (isCashLikePayment && cashValue < grandTotal) {
+        if (splitMode) {
+            if (remaining !== 0) {
+                notification.error({
+                    message: "Error",
+                    description:
+                        overAmount > 0
+                            ? `Kelebihan ${formatRupiah(overAmount)} — kurangi nominal salah satu metode.`
+                            : `Sisa pembayaran ${formatRupiah(Math.abs(remaining))} belum terisi.`,
+                    duration: 2,
+                });
+                return;
+            }
+
+            if (hasCashPart && cashValue < cashPartAmount) {
+                notification.error({
+                    message: "Error",
+                    description: "Uang tunai kurang untuk bagian pembayaran tunai!",
+                    duration: 1.5,
+                });
+                return;
+            }
+        } else if (isCashPayment && cashValue < grandTotal) {
             notification.error({
                 message: "Error",
                 description: "Uang pembayaran kurang!",
@@ -929,14 +1119,21 @@ export default function TransactionCreate() {
             return;
         }
 
+        const hasTransferPart = splitMode
+            ? paymentParts.some((part) => part.method === "transfer")
+            : paymentMethod === "transfer";
+
         Modal.confirm({
             title: "Proses Pembayaran?",
-            content:
-                paymentMethod === "transfer"
-                    ? "Transaksi transfer akan disimpan sebagai pending. Konfirmasi setelah dana masuk ke rekening toko."
-                    : isCashLikePayment
-                      ? "Pastikan uang yang diterima sudah sesuai."
-                      : "Pembayaran digital akan diproses melalui Midtrans.",
+            content: splitMode
+                ? hasTransferPart
+                    ? "Transaksi campuran dengan transfer akan disimpan sebagai pending untuk bagian transfer. Konfirmasi setelah dana masuk."
+                    : "Pastikan nominal tiap metode pembayaran sudah sesuai."
+                : paymentMethod === "transfer"
+                  ? "Transaksi transfer akan disimpan sebagai pending. Konfirmasi setelah dana masuk ke rekening toko."
+                  : isCashPayment
+                    ? "Pastikan uang yang diterima sudah sesuai."
+                    : "Pembayaran digital akan diproses melalui Midtrans.",
             okText: "Ya, Bayar!",
             cancelText: "Batal",
             width: getModalWidth(isMobile),
@@ -950,13 +1147,27 @@ export default function TransactionCreate() {
                             "X-XSRF-TOKEN": readCsrfToken(),
                         },
                         credentials: "same-origin",
-                        body: JSON.stringify({
-                            customer_id: customerId,
-                            discount: discountValue,
-                            discount_type: discountType,
-                            cash: isCashLikePayment ? cashValue : 0,
-                            payment_method: paymentMethod,
-                        }),
+                        body: JSON.stringify(
+                            splitMode
+                                ? {
+                                      customer_id: customerId,
+                                      discount: discountValue,
+                                      discount_type: discountType,
+                                      cash: hasCashPart ? cashValue : 0,
+                                      payment_method: paymentParts[0]?.method || paymentMethod,
+                                      payments: paymentParts.map((part) => ({
+                                          method: part.method,
+                                          amount: Number(part.amount || 0),
+                                      })),
+                                  }
+                                : {
+                                      customer_id: customerId,
+                                      discount: discountValue,
+                                      discount_type: discountType,
+                                      cash: isCashPayment ? cashValue : 0,
+                                      payment_method: paymentMethod,
+                                  },
+                        ),
                     });
 
                     const data = await response.json().catch(() => ({}));
@@ -1031,6 +1242,12 @@ export default function TransactionCreate() {
         cashValue,
         customerId,
         isMobile,
+        splitMode,
+        paymentParts,
+        hasCashPart,
+        cashPartAmount,
+        remaining,
+        overAmount,
     ]);
 
     const cartPanelProps = {
@@ -1064,12 +1281,7 @@ export default function TransactionCreate() {
 
     const paymentSummaryProps = {
         paymentMethod,
-        onPaymentMethodChange: (value) => {
-            setPaymentMethod(value);
-            if (value === "digital" || value === "transfer") {
-                setCash("");
-            }
-        },
+        onPaymentMethodChange: handlePaymentMethodChange,
         discount,
         onDiscountChange: setDiscount,
         discountType,
@@ -1080,13 +1292,24 @@ export default function TransactionCreate() {
         cash,
         onCashChange: setCash,
         cashOptions,
-        isCashLikePayment,
         subtotal,
         discountAmount,
         grandTotal,
         change,
         activeCartsCount: activeCarts.length,
         onSubmit: storeTransaction,
+        splitMode,
+        paymentParts,
+        onPaymentPartAmountChange: handlePaymentPartAmountChange,
+        onPaymentPartMethodChange: handlePaymentPartMethodChange,
+        onAddPaymentPart: handleAddPaymentPart,
+        onRemovePaymentPart: handleRemovePaymentPart,
+        onEnterSplitMode: enterSplitMode,
+        partsTotal,
+        remaining,
+        overAmount,
+        canSubmit: canSubmitPayment,
+        hasCashPart,
     };
 
     const checkoutPanel = (mobile = false) => (

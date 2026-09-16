@@ -72,6 +72,7 @@ class ReturnTransactionController extends Controller
             'cashier',
             'customer',
             'details.product',
+            'payments',
             'activeReturn',
         ])
             ->where('invoice', $invoice)
@@ -131,6 +132,7 @@ class ReturnTransactionController extends Controller
         return Inertia::render('Account/Returns/Create', [
             'transaction' => $transaction,
             'returnableItems' => $returnableItems,
+            'defaultRefundMethod' => $this->resolveDefaultRefundMethod($transaction),
         ]);
     }
 
@@ -146,6 +148,7 @@ class ReturnTransactionController extends Controller
             'items.*.product_id' => 'required|integer|distinct|exists:products,id',
             'items.*.qty' => 'nullable|integer|min:0',
             'items.*.restock' => 'nullable|boolean',
+            'refund_method' => 'nullable|in:cash,original',
         ]);
 
         $selectedItems = collect($request->items)
@@ -170,7 +173,7 @@ class ReturnTransactionController extends Controller
 
         try {
             $returnTransaction = DB::transaction(function () use ($request, $user, $selectedItems, &$blockedReturnInvoice, &$transactionInvoice) {
-                $transaction = Transaction::with(['details.product', 'profit', 'activeReturn'])
+                $transaction = Transaction::with(['details.product', 'profit', 'payments', 'activeReturn'])
                     ->when(!$user->isAdminUser(), function ($query) use ($user) {
                         $query->where('cashier_id', $user->id);
                     })
@@ -200,7 +203,9 @@ class ReturnTransactionController extends Controller
 
                 $detailMap = $transaction->details->keyBy('product_id');
                 $reservedQty = $this->getReservedQtyByProduct($transaction->id);
-                $refundMethod = $transaction->payment_method === 'cash' ? 'cash' : 'original';
+                $refundMethod = filled($request->refund_method)
+                    ? $request->refund_method
+                    : $this->resolveDefaultRefundMethod($transaction);
                 $preparedItems = [];
                 $rawSelectedTotal = 0;
 
@@ -472,5 +477,26 @@ class ReturnTransactionController extends Controller
         } while (ReturnTransaction::where('invoice', $invoice)->exists());
 
         return $invoice;
+    }
+
+    protected function resolveDefaultRefundMethod(Transaction $transaction): string
+    {
+        $breakdown = $transaction->paymentBreakdown();
+
+        if (count($breakdown) <= 1) {
+            return $transaction->payment_method === 'cash' ? 'cash' : 'original';
+        }
+
+        $largestMethod = array_key_first($breakdown);
+        $largestAmount = 0;
+
+        foreach ($breakdown as $method => $amount) {
+            if ($amount > $largestAmount) {
+                $largestAmount = $amount;
+                $largestMethod = $method;
+            }
+        }
+
+        return $largestMethod === 'cash' ? 'cash' : 'original';
     }
 }

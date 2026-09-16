@@ -69,12 +69,30 @@ export default function TransactionShow() {
         }).format(new Date(value));
     };
 
-    const paymentMethodLabel = {
+    const paymentMethodLabels = {
         cash: "Tunai",
         digital: "Digital",
         qris: "QRIS",
         transfer: "Transfer",
+        split: "Campuran",
     };
+
+    const paymentPartStatusLabels = {
+        paid: "Lunas",
+        pending: "Menunggu konfirmasi",
+        failed: "Gagal",
+    };
+
+    const payments = transaction.payments || [];
+    const isSplitPayment =
+        transaction.payment_method === "split" || payments.length > 1;
+
+    const resolvePaymentMethodLabel = (method) =>
+        paymentMethodLabels[method] || method || "-";
+
+    const displayPaymentMethod = isSplitPayment
+        ? "Campuran"
+        : resolvePaymentMethodLabel(transaction.payment_method);
 
     const statusLabel = {
         completed: "Selesai",
@@ -107,10 +125,17 @@ export default function TransactionShow() {
     const hasBlockingReturn =
         Number(transaction.blocking_returns_count || 0) > 0;
 
+    const hasPendingTransferPart = payments.some(
+        (payment) =>
+            payment.method === "transfer" &&
+            payment.payment_status === "pending",
+    );
+
     const isTransferPending =
-        transaction.payment_method === "transfer" &&
+        transaction.status === "pending" &&
         transaction.payment_status === "pending" &&
-        transaction.status === "pending";
+        (hasPendingTransferPart ||
+            (transaction.payment_method === "transfer" && payments.length <= 1));
 
     const canConfirmTransfer =
         isTransferPending &&
@@ -413,14 +438,45 @@ export default function TransactionShow() {
                                 </div>
                                 <div className="transaction-summary-row">
                                     <span>Metode</span>
-                                    <strong>
-                                        {paymentMethodLabel[
-                                            transaction.payment_method
-                                        ] ||
-                                            transaction.payment_method ||
-                                            "-"}
-                                    </strong>
+                                    <strong>{displayPaymentMethod}</strong>
                                 </div>
+                                {isSplitPayment && payments.length > 0 && (
+                                    <div className="transaction-summary-row transaction-summary-row--stacked">
+                                        <span>Rincian</span>
+                                        <div className="transaction-payment-parts">
+                                            {payments.map((payment) => (
+                                                <div
+                                                    key={payment.id}
+                                                    className="transaction-payment-part"
+                                                >
+                                                    <strong>
+                                                        {resolvePaymentMethodLabel(
+                                                            payment.method,
+                                                        )}
+                                                    </strong>
+                                                    <span>
+                                                        {formatRupiah(
+                                                            payment.amount,
+                                                        )}
+                                                    </span>
+                                                    <small>
+                                                        {payment.method ===
+                                                            "transfer" &&
+                                                        payment.payment_status ===
+                                                            "pending"
+                                                            ? "menunggu konfirmasi"
+                                                            : paymentPartStatusLabels[
+                                                                  payment
+                                                                      .payment_status
+                                                              ] ||
+                                                              payment.payment_status ||
+                                                              "-"}
+                                                    </small>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="transaction-summary-row">
                                     <span>Pelanggan</span>
                                     <strong>
@@ -528,14 +584,43 @@ export default function TransactionShow() {
                                             <div className="receipt-meta-row">
                                                 <span>Metode</span>
                                                 <span>
-                                                    {paymentMethodLabel[
-                                                        transaction
-                                                            .payment_method
-                                                    ] ||
-                                                        transaction.payment_method ||
-                                                        "-"}
+                                                    {displayPaymentMethod}
                                                 </span>
                                             </div>
+                                            {isSplitPayment &&
+                                                payments.length > 0 && (
+                                                    <>
+                                                        <div
+                                                            className="receipt-section-title"
+                                                            style={{
+                                                                marginTop: 8,
+                                                            }}
+                                                        >
+                                                            Rincian Pembayaran
+                                                        </div>
+                                                        {payments.map(
+                                                            (payment) => (
+                                                                <div
+                                                                    className="receipt-meta-row"
+                                                                    key={
+                                                                        payment.id
+                                                                    }
+                                                                >
+                                                                    <span>
+                                                                        {resolvePaymentMethodLabel(
+                                                                            payment.method,
+                                                                        )}
+                                                                    </span>
+                                                                    <span>
+                                                                        {formatRupiah(
+                                                                            payment.amount,
+                                                                        )}
+                                                                    </span>
+                                                                </div>
+                                                            ),
+                                                        )}
+                                                    </>
+                                                )}
                                         </div>
 
                                         <div className="receipt-divider" />
@@ -597,22 +682,46 @@ export default function TransactionShow() {
                                                     )}
                                                 </span>
                                             </div>
-                                            <div className="receipt-summary-row">
-                                                <span>Tunai</span>
-                                                <span>
-                                                    {formatRupiah(
-                                                        transaction.cash,
-                                                    )}
-                                                </span>
-                                            </div>
-                                            <div className="receipt-summary-row">
-                                                <span>Kembali</span>
-                                                <span>
-                                                    {formatRupiah(
-                                                        transaction.change,
-                                                    )}
-                                                </span>
-                                            </div>
+                                            {!isSplitPayment && (
+                                                <>
+                                                    <div className="receipt-summary-row">
+                                                        <span>Tunai</span>
+                                                        <span>
+                                                            {formatRupiah(
+                                                                transaction.cash,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="receipt-summary-row">
+                                                        <span>Kembali</span>
+                                                        <span>
+                                                            {formatRupiah(
+                                                                transaction.change,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {isSplitPayment && (
+                                                <>
+                                                    <div className="receipt-summary-row">
+                                                        <span>Uang Diterima</span>
+                                                        <span>
+                                                            {formatRupiah(
+                                                                transaction.cash,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="receipt-summary-row">
+                                                        <span>Kembali</span>
+                                                        <span>
+                                                            {formatRupiah(
+                                                                transaction.change,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
 
                                         {transaction.note && (

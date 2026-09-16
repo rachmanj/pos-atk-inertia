@@ -13,6 +13,7 @@ import {
     Input,
     InputNumber,
     Modal,
+    Radio,
     Row,
     Select,
     Space,
@@ -35,12 +36,23 @@ const reasonLabel = {
     other: "Lainnya",
 };
 
+const refundMethodOptions = [
+    { value: "cash", label: "Tunai" },
+    { value: "original", label: "Sesuai metode asal" },
+];
+
 export default function Create() {
-    const { transaction, returnableItems = [], errors = {} } = usePage().props;
+    const {
+        transaction,
+        returnableItems = [],
+        defaultRefundMethod = "cash",
+        errors = {},
+    } = usePage().props;
     const loading = useInertiaLoading();
 
     const [reason, setReason] = useState("customer_request");
     const [note, setNote] = useState("");
+    const [refundMethod, setRefundMethod] = useState(defaultRefundMethod);
     const [items, setItems] = useState(
         returnableItems.map((item) => ({
             product_id: item.product_id,
@@ -139,6 +151,7 @@ export default function Create() {
                     transaction_id: transaction.id,
                     reason,
                     note,
+                    refund_method: refundMethod,
                     items: items.map((item) => ({
                         product_id: item.product_id,
                         qty: item.qty,
@@ -324,7 +337,7 @@ export default function Create() {
 
                         <form onSubmit={handleSubmit}>
                             <Row gutter={16} style={{ marginBottom: 16 }}>
-                                <Col xs={24} md={12}>
+                                <Col xs={24} md={8}>
                                     <Form.Item label="Alasan Retur">
                                         <Select
                                             value={reason}
@@ -338,7 +351,18 @@ export default function Create() {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col xs={24} md={12}>
+                                <Col xs={24} md={8}>
+                                    <Form.Item label="Metode Refund">
+                                        <Radio.Group
+                                            value={refundMethod}
+                                            onChange={(e) =>
+                                                setRefundMethod(e.target.value)
+                                            }
+                                            options={refundMethodOptions}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} md={8}>
                                     <Form.Item label="Catatan">
                                         <Input
                                             placeholder="Contoh: kemasan rusak, ukuran salah, dll."

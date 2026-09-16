@@ -190,6 +190,7 @@ class TransactionController extends Controller
             'customer',
             'details.product',
             'details.unit',
+            'payments',
             'activeReturn',
         ])
             ->withCount([

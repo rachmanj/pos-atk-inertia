@@ -419,7 +419,38 @@ export default function CashierShiftShow() {
                                 <Card size="small"><Statistic title="Kas Seharusnya" value={shift.summary?.kas_seharusnya ?? shift.summary?.expected_cash ?? 0} prefix={<DollarOutlined />} valueStyle={{ color: "var(--brand-primary)" }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
-                                <Card size="small"><Statistic title={Number(shift.summary?.selisih ?? 0) < 0 ? "Kekurangan" : "Kelebihan"} value={shift.summary?.selisih ?? 0} prefix={<SwapOutlined />} valueStyle={{ color: Number(shift.summary?.selisih ?? 0) < 0 ? "var(--semantic-error)" : Number(shift.summary?.selisih ?? 0) > 0 ? "var(--semantic-warning)" : "var(--semantic-success)" }} formatter={v => formatRupiah(v)} /></Card>
+                                <Card size="small">
+                                    {shift.summary?.shift_open ? (
+                                        <Statistic
+                                            title="Selisih Kas"
+                                            value="Belum ditutup"
+                                            prefix={<SwapOutlined />}
+                                            valueStyle={{
+                                                color: "var(--text-secondary)",
+                                                fontSize: 14,
+                                            }}
+                                        />
+                                    ) : (
+                                        <Statistic
+                                            title={
+                                                Number(shift.summary?.selisih ?? 0) < 0
+                                                    ? "Kekurangan"
+                                                    : "Kelebihan"
+                                            }
+                                            value={shift.summary?.selisih ?? 0}
+                                            prefix={<SwapOutlined />}
+                                            valueStyle={{
+                                                color:
+                                                    Number(shift.summary?.selisih ?? 0) < 0
+                                                        ? "var(--semantic-error)"
+                                                        : Number(shift.summary?.selisih ?? 0) > 0
+                                                          ? "var(--semantic-warning)"
+                                                          : "var(--semantic-success)",
+                                            }}
+                                            formatter={(v) => formatRupiah(v)}
+                                        />
+                                    )}
+                                </Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
                                 <Card size="small"><Statistic title="Refund Tunai" value={shift.summary?.cash_refunds || 0} prefix={<FallOutlined />} valueStyle={{ color: "var(--semantic-error)" }} formatter={v => formatRupiah(v)} /></Card>
