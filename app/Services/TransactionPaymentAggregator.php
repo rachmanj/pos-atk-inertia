@@ -58,38 +58,33 @@ class TransactionPaymentAggregator
         ];
 
         foreach ($transactions as $transaction) {
-            $payments = $transaction->relationLoaded('payments')
-                ? $transaction->payments
-                : collect();
-
-            if ($payments->isEmpty()) {
-                if ($transaction->payment_status !== 'paid') {
-                    continue;
-                }
-
-                $method = (string) $transaction->payment_method;
-
-                if (array_key_exists($method, $totals)) {
-                    $totals[$method] += (int) $transaction->grand_total;
-                }
-
+            if ($transaction->payment_status !== 'paid') {
                 continue;
             }
 
-            foreach ($payments as $payment) {
-                if ($payment->payment_status !== TransactionPayment::STATUS_PAID) {
-                    continue;
-                }
-
-                $method = (string) $payment->method;
-
+            foreach ($transaction->paymentBreakdown() as $method => $amount) {
                 if (array_key_exists($method, $totals)) {
-                    $totals[$method] += (int) $payment->amount;
+                    $totals[$method] += (int) $amount;
                 }
             }
         }
 
         return $totals;
+    }
+
+    public static function sumPaidMethodPart(Collection $transactions, string $method): int
+    {
+        $total = 0;
+
+        foreach ($transactions as $transaction) {
+            if ($transaction->payment_status !== 'paid') {
+                continue;
+            }
+
+            $total += (int) ($transaction->paymentBreakdown()[$method] ?? 0);
+        }
+
+        return $total;
     }
 
     public static function pendingTransferAmount(Transaction $transaction): int

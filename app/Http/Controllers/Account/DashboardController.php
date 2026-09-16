@@ -9,7 +9,9 @@ use App\Models\Product;
 use App\Models\Profit;
 use App\Models\PpobAccount;
 use App\Models\Transaction;
+use App\Models\TransactionPayment;
 use App\Services\ShiftLiveSummary;
+use App\Services\TransactionPaymentAggregator;
 use App\Models\TransactionDetail;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,6 +40,11 @@ class DashboardController extends Controller
         $this->applyPaidTransactionPeriod($paidTransactionsToday, $user, $todayStart, $todayEnd);
 
         $totalSalesToday = (int) (clone $paidTransactionsToday)->sum('grand_total');
+        $todayPaidTransactions = (clone $paidTransactionsToday)
+            ->select(['id', 'grand_total', 'payment_method', 'payment_status'])
+            ->with('payments')
+            ->get();
+        $todayMethodTotals = TransactionPaymentAggregator::sumPaidByMethod($todayPaidTransactions);
         $todayStoreSales = $this->sumTodayDetailSubtotal($user, $todayStart, $todayEnd, false);
         $todayPpobSales = $this->sumTodayDetailSubtotal($user, $todayStart, $todayEnd, true);
         $totalTransactionsToday = (int) (clone $paidTransactionsToday)->count();
@@ -90,6 +97,10 @@ class DashboardController extends Controller
                 'today_sales'              => $totalSalesToday,
                 'today_store_sales'        => $todayStoreSales,
                 'today_ppob_sales'         => $todayPpobSales,
+                'today_cash_sales'         => $todayMethodTotals[TransactionPayment::METHOD_CASH],
+                'today_digital_sales'      => $todayMethodTotals[TransactionPayment::METHOD_DIGITAL],
+                'today_qris_sales'         => $todayMethodTotals[TransactionPayment::METHOD_QRIS],
+                'today_transfer_sales'     => $todayMethodTotals[TransactionPayment::METHOD_TRANSFER],
                 'today_transactions'       => $totalTransactionsToday,
                 'today_average_sale'       => $averageSaleToday,
                 'today_gross_profit'       => $grossProfitToday,

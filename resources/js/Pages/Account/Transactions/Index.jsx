@@ -34,13 +34,18 @@ import {
 
 const { Title, Text } = Typography;
 
-const paymentMethodLabel = (method) => {
+const paymentMethodLabel = (method, record) => {
+    if (record?.payments?.length > 1 || method === "split") {
+        return "Campuran";
+    }
+
     const labels = {
         cash: "Tunai",
         digital: "Digital",
         qris: "QRIS",
         transfer: "Transfer",
     };
+
     return labels[method] || method || "-";
 };
 
@@ -287,7 +292,9 @@ export default function Index() {
             title: "Metode",
             align: "center",
             dataIndex: "payment_method",
-            render: (method) => <Tag>{paymentMethodLabel(method)}</Tag>,
+            render: (method, record) => (
+                <Tag>{paymentMethodLabel(method, record)}</Tag>
+            ),
         },
         {
             title: "Pembayaran",

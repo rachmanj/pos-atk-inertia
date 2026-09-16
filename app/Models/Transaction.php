@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -149,5 +150,22 @@ class Transaction extends Model
         }
 
         return $total;
+    }
+
+    public function scopeWithPaymentMethodPart(Builder $query, string $method): void
+    {
+        $query->where(function (Builder $scopedQuery) use ($method) {
+            $scopedQuery
+                ->whereHas('payments', function (Builder $paymentQuery) use ($method) {
+                    $paymentQuery
+                        ->where('method', $method)
+                        ->where('payment_status', '!=', TransactionPayment::STATUS_FAILED);
+                })
+                ->orWhere(function (Builder $legacyQuery) use ($method) {
+                    $legacyQuery
+                        ->whereDoesntHave('payments')
+                        ->where('payment_method', $method);
+                });
+        });
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\CashierShift;
+use App\Models\TransactionPayment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -65,25 +66,8 @@ class ShiftSalesReportExport implements FromQuery, WithHeadings, WithMapping, Sh
         $rangeSql = "created_at BETWEEN cashier_shifts.opened_at AND {$endedAtSql}";
         $returnRangeSql = "updated_at BETWEEN cashier_shifts.opened_at AND {$endedAtSql}";
 
-        $query->selectSub(function ($sub) use ($now, $rangeSql) {
-            $sub->from('transactions')
-                ->selectRaw('COALESCE(SUM(grand_total), 0)')
-                ->whereColumn('cashier_id', 'cashier_shifts.user_id')
-                ->where('status', '!=', 'voided')
-                ->where('payment_status', 'paid')
-                ->where('payment_method', 'cash')
-                ->whereRaw($rangeSql, [$now]);
-        }, 'tunai');
-
-        $query->selectSub(function ($sub) use ($now, $rangeSql) {
-            $sub->from('transactions')
-                ->selectRaw('COALESCE(SUM(grand_total), 0)')
-                ->whereColumn('cashier_id', 'cashier_shifts.user_id')
-                ->where('status', '!=', 'voided')
-                ->where('payment_status', 'paid')
-                ->where('payment_method', '!=', 'cash')
-                ->whereRaw($rangeSql, [$now]);
-        }, 'non_tunai');
+        $query->selectRaw(static::paidCashAmountSql($rangeSql) . ' as tunai', [$now, $now]);
+        $query->selectRaw(static::paidNonCashAmountSql($rangeSql) . ' as non_tunai', [$now, $now]);
 
         $query->selectSub(function ($sub) use ($now, $rangeSql) {
             $sub->from('transactions')
@@ -102,21 +86,7 @@ class ShiftSalesReportExport implements FromQuery, WithHeadings, WithMapping, Sh
                 ->whereRaw($rangeSql, [$now]);
         }, 'paid_count');
 
-        $query->selectSub(function ($sub) use ($now, $rangeSql) {
-            $sub->from('transactions')
-                ->selectRaw('COALESCE(SUM(grand_total), 0)')
-                ->whereColumn('cashier_id', 'cashier_shifts.user_id')
-                ->where('status', '!=', 'voided')
-                ->where('payment_status', 'paid')
-                ->where('payment_method', 'cash')
-                ->whereRaw($rangeSql, [$now])
-                ->whereExists(function ($exists) {
-                    $exists->selectRaw('1')
-                        ->from('transaction_details')
-                        ->whereColumn('transaction_details.transaction_id', 'transactions.id')
-                        ->whereNotNull('transaction_details.ppob_cost');
-                });
-        }, 'ppob_tunai');
+        $query->selectRaw(static::paidCashAmountSql($rangeSql, true) . ' as ppob_tunai', [$now, $now]);
 
         $query->selectSub(function ($sub) use ($now, $returnRangeSql) {
             $sub->from('return_transactions')
@@ -221,5 +191,92 @@ class ShiftSalesReportExport implements FromQuery, WithHeadings, WithMapping, Sh
         return [
             1 => ['font' => ['bold' => true]],
         ];
+    }
+
+    protected static function qualifiedRangeSql(string $rangeSql): string
+    {
+        return str_replace('created_at', 'transactions.created_at', $rangeSql);
+    }
+
+    protected static function paidCashAmountSql(string $rangeSql, bool $ppobOnly = false): string
+    {
+        $cashMethod = TransactionPayment::METHOD_CASH;
+        $paidStatus = TransactionPayment::STATUS_PAID;
+        $qualifiedRangeSql = static::qualifiedRangeSql($rangeSql);
+        $ppobExistsSql = $ppobOnly
+            ? ' AND EXISTS (
+                SELECT 1
+                FROM transaction_details td
+                WHERE td.transaction_id = transactions.id
+                  AND td.ppob_cost IS NOT NULL
+            )'
+            : '';
+
+        $paymentPart = "(
+            SELECT COALESCE(SUM(tp.amount), 0)
+            FROM transaction_payments tp
+            INNER JOIN transactions ON transactions.id = tp.transaction_id
+            WHERE transactions.cashier_id = cashier_shifts.user_id
+              AND transactions.status != 'voided'
+              AND transactions.payment_status = 'paid'
+              AND tp.method = '{$cashMethod}'
+              AND tp.payment_status = '{$paidStatus}'
+              AND {$qualifiedRangeSql}
+              {$ppobExistsSql}
+        )";
+
+        $legacyPart = "(
+            SELECT COALESCE(SUM(transactions.grand_total), 0)
+            FROM transactions
+            WHERE transactions.cashier_id = cashier_shifts.user_id
+              AND transactions.status != 'voided'
+              AND transactions.payment_status = 'paid'
+              AND transactions.payment_method = '{$cashMethod}'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM transaction_payments tp
+                  WHERE tp.transaction_id = transactions.id
+              )
+              AND {$qualifiedRangeSql}
+              {$ppobExistsSql}
+        )";
+
+        return "({$paymentPart} + {$legacyPart})";
+    }
+
+    protected static function paidNonCashAmountSql(string $rangeSql): string
+    {
+        $paidStatus = TransactionPayment::STATUS_PAID;
+        $nonCashMethods = implode("','", TransactionPayment::nonCashMethods());
+        $qualifiedRangeSql = static::qualifiedRangeSql($rangeSql);
+
+        $paymentPart = "(
+            SELECT COALESCE(SUM(tp.amount), 0)
+            FROM transaction_payments tp
+            INNER JOIN transactions ON transactions.id = tp.transaction_id
+            WHERE transactions.cashier_id = cashier_shifts.user_id
+              AND transactions.status != 'voided'
+              AND transactions.payment_status = 'paid'
+              AND tp.method IN ('{$nonCashMethods}')
+              AND tp.payment_status = '{$paidStatus}'
+              AND {$qualifiedRangeSql}
+        )";
+
+        $legacyPart = "(
+            SELECT COALESCE(SUM(transactions.grand_total), 0)
+            FROM transactions
+            WHERE transactions.cashier_id = cashier_shifts.user_id
+              AND transactions.status != 'voided'
+              AND transactions.payment_status = 'paid'
+              AND transactions.payment_method IN ('{$nonCashMethods}')
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM transaction_payments tp
+                  WHERE tp.transaction_id = transactions.id
+              )
+              AND {$qualifiedRangeSql}
+        )";
+
+        return "({$paymentPart} + {$legacyPart})";
     }
 }

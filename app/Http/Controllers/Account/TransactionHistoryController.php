@@ -34,7 +34,7 @@ class TransactionHistoryController extends Controller
                 });
             })
             ->when($request->payment_method, function ($query, $paymentMethod) {
-                $query->where('payment_method', $paymentMethod);
+                $query->withPaymentMethodPart($paymentMethod);
             })
             ->when($request->payment_status, function ($query, $paymentStatus) {
                 $query->where('payment_status', $paymentStatus);

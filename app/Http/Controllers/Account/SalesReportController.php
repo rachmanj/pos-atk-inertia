@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Exports\SalesReportExport;
 use App\Models\ReturnTransaction;
 use App\Models\Transaction;
+use App\Models\TransactionPayment;
 use App\Models\User;
+use App\Services\TransactionPaymentAggregator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -69,18 +71,20 @@ class SalesReportController extends Controller
         $totalItems = (int) (clone $summaryQuery)
             ->join('transaction_details', 'transactions.id', '=', 'transaction_details.transaction_id')
             ->sum('transaction_details.qty');
-        $cashGrossSales = (int) (clone $summaryQuery)
-            ->where('payment_method', 'cash')
-            ->sum('grand_total');
-        $digitalGrossSales = (int) (clone $summaryQuery)
-            ->where('payment_method', 'digital')
-            ->sum('grand_total');
-        $qrisGrossSales = (int) (clone $summaryQuery)
-            ->where('payment_method', 'qris')
-            ->sum('grand_total');
-        $transferGrossSales = (int) (clone $summaryQuery)
-            ->where('payment_method', 'transfer')
-            ->sum('grand_total');
+
+        $summaryTransactions = (clone $summaryQuery)
+            ->select(['id', 'grand_total', 'payment_method', 'payment_status'])
+            ->with('payments')
+            ->get();
+
+        $methodTotals = $this->calculateMethodGrossSales(
+            $summaryTransactions,
+            filled($request->payment_method) ? $request->payment_method : null,
+        );
+        $cashGrossSales = $methodTotals['cash'];
+        $digitalGrossSales = $methodTotals['digital'];
+        $qrisGrossSales = $methodTotals['qris'];
+        $transferGrossSales = $methodTotals['transfer'];
 
         // Chart data: sales by day
         $salesByDay = (clone $baseQuery)
@@ -194,7 +198,7 @@ class SalesReportController extends Controller
                 $transactionQuery->where('cashier_id', $request->cashier_id);
             })
             ->when(filled($request->payment_method), function (Builder $transactionQuery) use ($request) {
-                $transactionQuery->where('payment_method', $request->payment_method);
+                $transactionQuery->withPaymentMethodPart($request->payment_method);
             })
             ->when(filled($request->q), function (Builder $transactionQuery) use ($request) {
                 $search = trim($request->q);
@@ -232,7 +236,25 @@ class SalesReportController extends Controller
                 $query->where('transactions.cashier_id', $request->cashier_id);
             })
             ->when(filled($filteredPaymentMethod), function (Builder $query) use ($filteredPaymentMethod) {
-                $query->where('transactions.payment_method', $filteredPaymentMethod);
+                $query->where(function (Builder $methodQuery) use ($filteredPaymentMethod) {
+                    $methodQuery
+                        ->whereExists(function ($exists) use ($filteredPaymentMethod) {
+                            $exists->selectRaw('1')
+                                ->from('transaction_payments')
+                                ->whereColumn('transaction_payments.transaction_id', 'transactions.id')
+                                ->where('transaction_payments.method', $filteredPaymentMethod)
+                                ->where('transaction_payments.payment_status', '!=', TransactionPayment::STATUS_FAILED);
+                        })
+                        ->orWhere(function (Builder $legacyQuery) use ($filteredPaymentMethod) {
+                            $legacyQuery
+                                ->whereNotExists(function ($exists) {
+                                    $exists->selectRaw('1')
+                                        ->from('transaction_payments')
+                                        ->whereColumn('transaction_payments.transaction_id', 'transactions.id');
+                                })
+                                ->where('transactions.payment_method', $filteredPaymentMethod);
+                        });
+                });
             })
             ->select('transactions.payment_method', DB::raw('SUM(return_transactions.total_refund) as total_refund'))
             ->groupBy('transactions.payment_method')
@@ -274,10 +296,43 @@ class SalesReportController extends Controller
                         $scopedQuery->where('cashier_id', $request->cashier_id);
                     })
                     ->when(filled($filteredPaymentMethod), function (Builder $scopedQuery) use ($filteredPaymentMethod) {
-                        $scopedQuery->where('payment_method', $filteredPaymentMethod);
+                        $scopedQuery->withPaymentMethodPart($filteredPaymentMethod);
                     });
             })
             ->sum('total_refund');
+    }
+
+    /**
+     * @return array{cash: int, digital: int, qris: int, transfer: int}
+     */
+    protected function calculateMethodGrossSales($transactions, ?string $filteredMethod = null): array
+    {
+        $methods = [
+            TransactionPayment::METHOD_CASH,
+            TransactionPayment::METHOD_DIGITAL,
+            TransactionPayment::METHOD_QRIS,
+            TransactionPayment::METHOD_TRANSFER,
+        ];
+
+        if ($filteredMethod) {
+            $filteredAmount = TransactionPaymentAggregator::sumPaidMethodPart($transactions, $filteredMethod);
+
+            return [
+                'cash' => $filteredMethod === TransactionPayment::METHOD_CASH ? $filteredAmount : 0,
+                'digital' => $filteredMethod === TransactionPayment::METHOD_DIGITAL ? $filteredAmount : 0,
+                'qris' => $filteredMethod === TransactionPayment::METHOD_QRIS ? $filteredAmount : 0,
+                'transfer' => $filteredMethod === TransactionPayment::METHOD_TRANSFER ? $filteredAmount : 0,
+            ];
+        }
+
+        $totals = TransactionPaymentAggregator::sumPaidByMethod($transactions);
+
+        return [
+            'cash' => $totals[TransactionPayment::METHOD_CASH],
+            'digital' => $totals[TransactionPayment::METHOD_DIGITAL],
+            'qris' => $totals[TransactionPayment::METHOD_QRIS],
+            'transfer' => $totals[TransactionPayment::METHOD_TRANSFER],
+        ];
     }
 
     public function export(Request $request)

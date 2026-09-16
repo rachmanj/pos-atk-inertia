@@ -53,6 +53,17 @@ const refundMethodLabels = {
 const paymentMethodLabels = {
     cash: "Tunai",
     digital: "Digital",
+    qris: "QRIS",
+    transfer: "Transfer",
+    split: "Campuran",
+};
+
+const paymentMethodLabel = (method, transaction) => {
+    if (transaction?.payments?.length > 1 || method === "split") {
+        return "Campuran";
+    }
+
+    return paymentMethodLabels[method] || method || "-";
 };
 
 function InfoCard({ label, children }) {
@@ -326,10 +337,11 @@ export default function Show() {
                                             </Text>
                                             <br />
                                             <Text strong>
-                                                {paymentMethodLabels[
+                                                {paymentMethodLabel(
                                                     returnData.transaction
-                                                        ?.payment_method
-                                                ] || "-"}
+                                                        ?.payment_method,
+                                                    returnData.transaction,
+                                                )}
                                             </Text>
                                         </div>
                                         <div>

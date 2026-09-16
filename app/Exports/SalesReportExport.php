@@ -25,10 +25,10 @@ class SalesReportExport implements FromQuery, WithHeadings, WithMapping, ShouldA
         return Transaction::query()
             ->select([
                 'id', 'cashier_id', 'customer_id', 'invoice',
-                'discount', 'grand_total', 'payment_method',
+                'discount', 'grand_total', 'payment_method', 'payment_status',
                 'paid_at', 'created_at',
             ])
-            ->with(['cashier:id,name', 'customer:id,name'])
+            ->with(['cashier:id,name', 'customer:id,name', 'payments'])
             ->withSum('details as total_items', 'qty')
             ->where('payment_status', 'paid')
             ->where('status', '!=', 'voided')
@@ -37,7 +37,7 @@ class SalesReportExport implements FromQuery, WithHeadings, WithMapping, ShouldA
                 [$startDate . ' 00:00:00', $endDate . ' 23:59:59']
             )
             ->when(!empty($filters['payment_method']), function ($q) use ($filters) {
-                $q->where('payment_method', $filters['payment_method']);
+                $q->withPaymentMethodPart($filters['payment_method']);
             })
             ->when(!empty($filters['cashier_id']), function ($q) use ($filters) {
                 $q->where('cashier_id', $filters['cashier_id']);
@@ -65,11 +65,12 @@ class SalesReportExport implements FromQuery, WithHeadings, WithMapping, ShouldA
         static $no = 0;
         $no++;
 
-        $paymentMethod = match ($row->payment_method) {
-            'cash' => 'Tunai',
-            'digital' => 'Digital',
-            'qris' => 'QRIS',
-            'transfer' => 'Transfer',
+        $paymentMethod = match (true) {
+            $row->isSplitPayment() => 'Campuran',
+            $row->payment_method === 'cash' => 'Tunai',
+            $row->payment_method === 'digital' => 'Digital',
+            $row->payment_method === 'qris' => 'QRIS',
+            $row->payment_method === 'transfer' => 'Transfer',
             default => $row->payment_method ?? '-',
         };
 

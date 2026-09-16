@@ -47,6 +47,15 @@ const paymentMethodLabels = {
     digital: "Digital",
     qris: "QRIS",
     transfer: "Transfer",
+    split: "Campuran",
+};
+
+const paymentMethodLabel = (method, record) => {
+    if (record?.payments?.length > 1 || method === "split") {
+        return "Campuran";
+    }
+
+    return paymentMethodLabels[method] || method || "-";
 };
 
 const paymentMethodColors = {
@@ -156,10 +165,14 @@ export default function SalesReport() {
             title: "Metode",
             align: "center",
             render: (_, sale) => (
-                <Tag color={paymentMethodColors[sale.payment_method] || "default"}>
-                    {paymentMethodLabels[sale.payment_method] ||
-                        sale.payment_method ||
-                        "-"}
+                <Tag
+                    color={
+                        sale.payment_method === "split"
+                            ? "purple"
+                            : paymentMethodColors[sale.payment_method] || "default"
+                    }
+                >
+                    {paymentMethodLabel(sale.payment_method, sale)}
                 </Tag>
             ),
         },

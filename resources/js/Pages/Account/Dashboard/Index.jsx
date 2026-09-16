@@ -33,6 +33,17 @@ const { Title, Text } = Typography;
 const paymentMethodLabels = {
     cash: "Tunai",
     digital: "Digital",
+    qris: "QRIS",
+    transfer: "Transfer",
+    split: "Campuran",
+};
+
+const paymentMethodLabel = (method, record) => {
+    if (record?.payments?.length > 1 || method === "split") {
+        return "Campuran";
+    }
+
+    return paymentMethodLabels[method] || method;
 };
 
 const paymentStatusLabels = {
@@ -138,7 +149,7 @@ export default function Dashboard() {
         {
             title: "Penjualan Toko Hari Ini",
             value: formatRupiahCompact(summary.today_store_sales || 0),
-            detail: `PPOB: ${formatRupiahCompact(summary.today_ppob_sales || 0)}`,
+            detail: `PPOB: ${formatRupiahCompact(summary.today_ppob_sales || 0)} · Tunai: ${formatRupiahCompact(summary.today_cash_sales || 0)} · QRIS: ${formatRupiahCompact(summary.today_qris_sales || 0)}`,
             subtitle: `${summary.today_transactions || 0} transaksi lunas aktif, tidak termasuk void`,
             icon: <DollarOutlined />,
             color: "primary",
@@ -177,8 +188,10 @@ export default function Dashboard() {
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
                         {record.customer?.name || "Umum"} ·{" "}
-                        {paymentMethodLabels[record.payment_method] ||
-                            record.payment_method}
+                        {paymentMethodLabel(
+                            record.payment_method,
+                            record,
+                        )}
                     </Text>
                 </div>
             ),
