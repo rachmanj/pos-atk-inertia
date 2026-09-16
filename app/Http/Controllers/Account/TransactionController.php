@@ -20,6 +20,7 @@ use App\Services\Telegram\TelegramFormatter;
 use App\Services\TelegramNotificationService;
 use DomainException;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -140,7 +141,13 @@ class TransactionController extends Controller
                 ]);
             }
 
-            if (in_array($transaction->payment_method, ['qris', 'transfer'], true)) {
+            if ($transaction->payment_method === 'split') {
+                $transaction->load('payments');
+
+                if ($transaction->nonCashPart() > 0) {
+                    $this->notifyNonCashPayment($transaction, $user);
+                }
+            } elseif (in_array($transaction->payment_method, ['qris', 'transfer'], true)) {
                 $this->notifyNonCashPayment($transaction, $user);
             }
 
@@ -151,6 +158,8 @@ class TransactionController extends Controller
                 'payment_status' => $transaction->payment_status,
                 'snap_token' => $snapToken,
             ]);
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (DomainException $exception) {
             return response()->json([
                 'success' => false,
@@ -284,20 +293,54 @@ class TransactionController extends Controller
             return;
         }
 
-        $methodLabel = $transaction->payment_method === 'qris' ? 'QRIS' : 'Transfer';
         $time = ($transaction->created_at ?? now())->format('H:i');
 
         $lines = [
             '💰 PEMBAYARAN NON-TUNAI — VASIA',
             'Kasir : ' . $user->name,
             'Jam   : ' . $time,
-            'Metode: ' . $methodLabel,
-            'Total : ' . TelegramFormatter::idr((int) $transaction->grand_total),
-            'Invoice: ' . $transaction->invoice,
         ];
 
-        if ($transaction->payment_method === 'transfer') {
-            $lines[] = 'Status: *menunggu konfirmasi — cek rekening lalu konfirmasi di app*';
+        if ($transaction->payment_method === 'split') {
+            $lines[] = 'Metode: Campuran';
+
+            $nonCashTotal = 0;
+
+            foreach ($transaction->payments as $payment) {
+                if ($payment->method === 'cash') {
+                    continue;
+                }
+
+                $label = match ($payment->method) {
+                    'qris' => 'QRIS',
+                    'transfer' => 'Transfer',
+                    default => ucfirst($payment->method),
+                };
+
+                $lines[] = $label . '  : ' . TelegramFormatter::idr((int) $payment->amount);
+                $nonCashTotal += (int) $payment->amount;
+            }
+
+            $lines[] = 'Total : ' . TelegramFormatter::idr($nonCashTotal);
+            $lines[] = 'Invoice: ' . $transaction->invoice;
+
+            $hasPendingTransfer = $transaction->payments
+                ->contains(fn ($payment) => $payment->method === 'transfer'
+                    && $payment->payment_status === 'pending');
+
+            if ($hasPendingTransfer) {
+                $lines[] = 'Status: *menunggu konfirmasi — cek rekening lalu konfirmasi di app*';
+            }
+        } else {
+            $methodLabel = $transaction->payment_method === 'qris' ? 'QRIS' : 'Transfer';
+
+            $lines[] = 'Metode: ' . $methodLabel;
+            $lines[] = 'Total : ' . TelegramFormatter::idr((int) $transaction->grand_total);
+            $lines[] = 'Invoice: ' . $transaction->invoice;
+
+            if ($transaction->payment_method === 'transfer') {
+                $lines[] = 'Status: *menunggu konfirmasi — cek rekening lalu konfirmasi di app*';
+            }
         }
 
         $message = implode("\n", $lines);

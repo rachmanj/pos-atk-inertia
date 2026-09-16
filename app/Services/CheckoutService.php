@@ -9,9 +9,11 @@ use App\Models\Profit;
 use App\Models\StockMovement;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Models\TransactionPayment;
 use App\Models\User;
 use DomainException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CheckoutService
 {
@@ -142,13 +144,36 @@ class CheckoutService
             }
 
             $grandTotal = $subtotal - $discountAmount;
-            $cash = $isCashLikePayment ? (int) ($data['cash'] ?? 0) : 0;
+            $splitPayments = $this->resolveSplitPayments($data, $grandTotal);
 
-            if ($isCashLikePayment && $cash < $grandTotal) {
-                throw new DomainException('Uang pembayaran kurang dari total belanja.');
+            if ($splitPayments !== null) {
+                $paymentMethod = 'split';
+                $cash = $splitPayments['cash_received'];
+                $change = $splitPayments['change'];
+                $isImmediatePayment = $splitPayments['is_immediate'];
+                $paymentStatus = $splitPayments['payment_status'];
+                $transactionStatus = $splitPayments['status'];
+                $paidAt = $splitPayments['paid_at'];
+                $paymentChannel = null;
+            } else {
+                $cash = $isCashLikePayment ? (int) ($data['cash'] ?? 0) : 0;
+
+                if ($isCashLikePayment && $cash < $grandTotal) {
+                    throw new DomainException('Uang pembayaran kurang dari total belanja.');
+                }
+
+                $change = $isCashLikePayment ? $cash - $grandTotal : 0;
+                $paymentStatus = $isImmediatePayment ? 'paid' : 'pending';
+                $transactionStatus = $isImmediatePayment ? 'completed' : 'pending';
+                $paidAt = $isImmediatePayment ? now() : null;
+                $paymentChannel = match ($paymentMethod) {
+                    'cash' => 'cash',
+                    'qris' => 'qris',
+                    'transfer' => 'transfer',
+                    default => 'midtrans',
+                };
             }
 
-            $change = $isCashLikePayment ? $cash - $grandTotal : 0;
             $invoice = $this->generateTransactionInvoice();
 
             $transaction = Transaction::create([
@@ -160,17 +185,25 @@ class CheckoutService
                 'discount' => $discountAmount,
                 'grand_total' => $grandTotal,
                 'payment_method' => $paymentMethod,
-                'payment_channel' => match ($paymentMethod) {
-                    'cash' => 'cash',
-                    'qris' => 'qris',
-                    'transfer' => 'transfer',
-                    default => 'midtrans',
-                },
-                'payment_status' => $isImmediatePayment ? 'paid' : 'pending',
-                'paid_at' => $isImmediatePayment ? now() : null,
-                'status' => $isImmediatePayment ? 'completed' : 'pending',
+                'payment_channel' => $paymentChannel,
+                'payment_status' => $paymentStatus,
+                'paid_at' => $paidAt,
+                'status' => $transactionStatus,
                 'note' => $data['note'] ?? null,
             ]);
+
+            if ($splitPayments !== null) {
+                foreach ($splitPayments['rows'] as $paymentRow) {
+                    TransactionPayment::create([
+                        'transaction_id' => $transaction->id,
+                        'method' => $paymentRow['method'],
+                        'amount' => $paymentRow['amount'],
+                        'payment_status' => $paymentRow['payment_status'],
+                        'reference' => $paymentRow['reference'],
+                        'paid_at' => $paymentRow['paid_at'],
+                    ]);
+                }
+            }
 
             $totalBuyPrice = 0;
 
@@ -510,5 +543,101 @@ class CheckoutService
         } while (Transaction::where('invoice', $invoice)->exists());
 
         return $invoice;
+    }
+
+    /**
+     * @return array{
+     *     cash_received: int,
+     *     change: int,
+     *     is_immediate: bool,
+     *     payment_status: string,
+     *     status: string,
+     *     paid_at: \Illuminate\Support\Carbon|null,
+     *     rows: list<array{
+     *         method: string,
+     *         amount: int,
+     *         payment_status: string,
+     *         reference: string|null,
+     *         paid_at: \Illuminate\Support\Carbon|null
+     *     }>
+     * }|null
+     */
+    protected function resolveSplitPayments(array $data, int $grandTotal): ?array
+    {
+        if (! isset($data['payments']) || ! is_array($data['payments']) || $data['payments'] === []) {
+            return null;
+        }
+
+        $payments = $data['payments'];
+        $methods = array_column($payments, 'method');
+
+        if (count($methods) !== count(array_unique($methods))) {
+            throw ValidationException::withMessages([
+                'payments' => ['Metode pembayaran tidak boleh duplikat.'],
+            ]);
+        }
+
+        $totalAmount = (int) collect($payments)->sum(fn (array $payment) => (int) $payment['amount']);
+
+        if ($totalAmount !== $grandTotal) {
+            $difference = abs($grandTotal - $totalAmount);
+            $message = 'Total pembayaran tidak sama dengan total transaksi.';
+
+            if ($difference > 0) {
+                $message .= ' Selisih: Rp ' . number_format($difference, 0, ',', '.');
+            }
+
+            throw ValidationException::withMessages([
+                'payments' => [$message],
+            ]);
+        }
+
+        $cashPortion = 0;
+
+        foreach ($payments as $payment) {
+            if ($payment['method'] === TransactionPayment::METHOD_CASH) {
+                $cashPortion = (int) $payment['amount'];
+                break;
+            }
+        }
+
+        $cashReceived = (int) ($data['cash'] ?? 0);
+
+        if ($cashPortion > 0 && $cashReceived < $cashPortion) {
+            throw ValidationException::withMessages([
+                'cash' => ['Uang tunai kurang dari bagian tunai.'],
+            ]);
+        }
+
+        $change = $cashPortion > 0 ? $cashReceived - $cashPortion : 0;
+        $hasTransfer = in_array(TransactionPayment::METHOD_TRANSFER, $methods, true);
+        $isImmediate = ! $hasTransfer;
+
+        $rows = [];
+
+        foreach ($payments as $payment) {
+            $method = (string) $payment['method'];
+            $isTransfer = $method === TransactionPayment::METHOD_TRANSFER;
+
+            $rows[] = [
+                'method' => $method,
+                'amount' => (int) $payment['amount'],
+                'payment_status' => $isTransfer
+                    ? TransactionPayment::STATUS_PENDING
+                    : TransactionPayment::STATUS_PAID,
+                'reference' => $isTransfer ? ($payment['reference'] ?? null) : null,
+                'paid_at' => $isTransfer ? null : now(),
+            ];
+        }
+
+        return [
+            'cash_received' => $cashPortion > 0 ? $cashReceived : 0,
+            'change' => $change,
+            'is_immediate' => $isImmediate,
+            'payment_status' => $isImmediate ? 'paid' : 'pending',
+            'status' => $isImmediate ? 'completed' : 'pending',
+            'paid_at' => $isImmediate ? now() : null,
+            'rows' => $rows,
+        ];
     }
 }
