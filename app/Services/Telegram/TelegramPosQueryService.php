@@ -185,6 +185,57 @@ class TelegramPosQueryService
         return implode("\n", $lines);
     }
 
+    public function handlePending(User $user): string
+    {
+        $baseQuery = $this->pendingTransferTransactionsQuery($user);
+        $totalCount = (int) (clone $baseQuery)->count();
+
+        if ($totalCount === 0) {
+            return '✅ Tidak ada transfer yang menunggu konfirmasi.';
+        }
+
+        $totalAmount = (int) (clone $baseQuery)->sum('grand_total');
+        $remainingCount = max(0, $totalCount - 10);
+
+        $transactions = (clone $baseQuery)
+            ->with('cashier:id,name')
+            ->orderBy('created_at')
+            ->limit(10)
+            ->get([
+                'id',
+                'invoice',
+                'grand_total',
+                'cashier_id',
+                'created_at',
+            ]);
+
+        $lines = [
+            '🏦 <b>Transfer Menunggu Konfirmasi</b>',
+            '',
+        ];
+
+        foreach ($transactions as $index => $transaction) {
+            $createdAt = $transaction->created_at instanceof Carbon
+                ? $transaction->created_at
+                : Carbon::parse($transaction->created_at);
+
+            $lines[] = ($index + 1) . '. <b>' . e($transaction->invoice) . '</b>'
+                . ' — ' . TelegramFormatter::idr((int) $transaction->grand_total)
+                . ' · ' . e($transaction->cashier?->name ?? '—')
+                . ' · ' . $createdAt->format('H:i')
+                . ' (' . $this->formatPendingAge($createdAt) . ')';
+        }
+
+        if ($remainingCount > 0) {
+            $lines[] = '… dan ' . $remainingCount . ' transaksi lain (total keseluruhan termasuk di bawah)';
+        }
+
+        $lines[] = '🏦 Total menunggu: ' . TelegramFormatter::idr($totalAmount) . ' (' . $totalCount . ' transaksi)';
+        $lines[] = 'Konfirmasi di app: Transaksi → cari invoice → Konfirmasi Pembayaran.';
+
+        return implode("\n", $lines);
+    }
+
     public function handleLaporan(User $user): string
     {
         $todayStart = Carbon::now()->startOfDay();
@@ -287,6 +338,33 @@ class TelegramPosQueryService
             'transfer' => 'Transfer',
             default => ucfirst((string) $method),
         };
+    }
+
+    protected function pendingTransferTransactionsQuery(User $user)
+    {
+        return Transaction::query()
+            ->where('payment_method', 'transfer')
+            ->where('payment_status', 'pending')
+            ->where('status', '!=', 'voided')
+            ->when(! $user->isAdminUser(), function ($query) use ($user) {
+                $query->where('cashier_id', $user->id);
+            });
+    }
+
+    protected function formatPendingAge(Carbon $createdAt): string
+    {
+        $createdDay = $createdAt->copy()->startOfDay();
+        $today = Carbon::now()->startOfDay();
+
+        if ($createdDay->equalTo($today)) {
+            return 'hari ini';
+        }
+
+        if ($createdDay->equalTo($today->copy()->subDay())) {
+            return 'kemarin';
+        }
+
+        return (int) $createdDay->diffInDays($today) . ' hari lalu';
     }
 
     protected function todayPaidTransactionsQuery(User $user)

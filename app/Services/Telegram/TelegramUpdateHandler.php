@@ -416,6 +416,7 @@ beli &lt;produk&gt; &lt;qty&gt; [di &lt;ref&gt;] @&lt;biaya per unit&gt;
 /topup &lt;nominal&gt; [catatan] — top up saldo PPOB (admin)
 /shift — status shift saat ini
 /laporan — ringkasan penjualan hari ini
+/pending — transfer belum dikonfirmasi
 /batal — batalkan pending
 
 Gunakan <b>total</b> untuk biaya keseluruhan atau <b>@</b> untuk biaya per unit.
@@ -474,6 +475,7 @@ HTML;
             '/saldo' => $this->posQueryService->handleSaldo(),
             '/shift' => $this->posQueryService->handleShift($user),
             '/laporan' => $this->posQueryService->handleLaporan($user),
+            '/pending' => $this->posQueryService->handlePending($user),
             default => null,
         };
 
