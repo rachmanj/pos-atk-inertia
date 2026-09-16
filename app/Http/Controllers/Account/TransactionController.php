@@ -13,7 +13,9 @@ use App\Models\Profit;
 use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Models\TransactionPayment;
 use App\Models\User;
+use App\Services\TransactionPaymentAggregator;
 use App\Models\WhatsappOutboundLog;
 use App\Services\CheckoutService;
 use App\Services\Telegram\TelegramFormatter;
@@ -211,31 +213,50 @@ class TransactionController extends Controller
     {
         $user = $request->user();
 
-        $transaction = Transaction::with('details')
+        $transaction = Transaction::with(['details', 'payments'])
             ->where('invoice', $invoice)
             ->when(! $user->isAdminUser(), function ($query) use ($user) {
                 $query->where('cashier_id', $user->id);
             })
             ->firstOrFail();
 
-        if ($transaction->payment_method !== 'transfer') {
+        if (! TransactionPaymentAggregator::hasPendingTransferPart($transaction)) {
             return redirect()
                 ->route('account.transactions.show', $invoice)
                 ->with('error', 'Konfirmasi hanya untuk transaksi transfer manual.');
         }
 
-        if ($transaction->payment_status !== 'pending') {
-            return redirect()
-                ->route('account.transactions.show', $invoice)
-                ->with('error', 'Transaksi transfer ini sudah dikonfirmasi atau tidak dalam status pending.');
-        }
-
         DB::transaction(function () use ($transaction) {
-            $transaction->update([
-                'payment_status' => 'paid',
-                'status' => 'completed',
-                'paid_at' => now(),
-            ]);
+            $now = now();
+
+            if ($transaction->payments->isNotEmpty()) {
+                $transaction->payments()
+                    ->where('method', TransactionPayment::METHOD_TRANSFER)
+                    ->where('payment_status', TransactionPayment::STATUS_PENDING)
+                    ->update([
+                        'payment_status' => TransactionPayment::STATUS_PAID,
+                        'paid_at' => $now,
+                    ]);
+
+                $transaction->load('payments');
+
+                $hasPendingParts = $transaction->payments
+                    ->contains(fn (TransactionPayment $payment) => $payment->payment_status === TransactionPayment::STATUS_PENDING);
+
+                if (! $hasPendingParts) {
+                    $transaction->update([
+                        'payment_status' => 'paid',
+                        'status' => 'completed',
+                        'paid_at' => $now,
+                    ]);
+                }
+            } else {
+                $transaction->update([
+                    'payment_status' => 'paid',
+                    'status' => 'completed',
+                    'paid_at' => $now,
+                ]);
+            }
 
             $totalCost = $transaction->details->sum(function ($detail) {
                 if ($detail->ppob_cost !== null) {

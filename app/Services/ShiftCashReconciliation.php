@@ -19,27 +19,18 @@ class ShiftCashReconciliation
             ? $shift->closed_at->copy()
             : ($shift->closed_at ? Carbon::parse($shift->closed_at) : now()));
 
-        $transactionsQuery = Transaction::query()
+        $transactions = Transaction::query()
+            ->with('payments')
             ->where('cashier_id', $shift->user_id)
             ->where('status', '!=', 'voided')
-            ->whereBetween('created_at', [$startedAt, $endedAt]);
+            ->whereBetween('created_at', [$startedAt, $endedAt])
+            ->get();
 
-        $paidTransactionsQuery = (clone $transactionsQuery)
-            ->where('payment_status', 'paid');
+        $hanyaCashSales = TransactionPaymentAggregator::sumPaidCash($transactions);
+        $nonCashSales = TransactionPaymentAggregator::sumPaidNonCash($transactions);
 
-        $hanyaCashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', 'cash')
-            ->sum('grand_total');
-
-        $nonCashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', '!=', 'cash')
-            ->sum('grand_total');
-
-        $totalPenjualan = (int) (clone $transactionsQuery)->sum('grand_total');
-
-        $nonTunai = (int) (clone $transactionsQuery)
-            ->whereIn('payment_method', ['qris', 'transfer', 'digital'])
-            ->sum('grand_total');
+        $totalPenjualan = (int) $transactions->sum('grand_total');
+        $nonTunai = TransactionPaymentAggregator::sumNonCashForDrawer($transactions);
 
         $approvedReturnsQuery = ReturnTransaction::query()
             ->where('cashier_id', $shift->user_id)
@@ -56,13 +47,19 @@ class ShiftCashReconciliation
         $tunaiDariPenjualan = $totalPenjualan - $nonTunai - $cashRefunds - $expenseAmount;
         $kasSeharusnya = $kasAwal + $tunaiDariPenjualan;
 
-        $kasDisetor = $shift->actual_cash !== null
-            ? (int) $shift->actual_cash
-            : $kasSeharusnya + (int) ($shift->cash_overage ?? 0);
+        $shiftOpen = $shift->isOpen() || $shift->closed_at === null;
+        $cashOverage = (int) ($shift->cash_overage ?? 0);
 
-        $selisih = $kasDisetor - $kasSeharusnya;
+        if ($shiftOpen) {
+            $kasDisetor = $kasSeharusnya + $cashOverage;
+            $selisih = $cashOverage;
+        } else {
+            $kasDisetor = (int) $shift->actual_cash;
+            $selisih = $kasDisetor - $kasSeharusnya;
+        }
 
         return [
+            'shift_open'          => $shiftOpen,
             'hanya_cash_sales'    => $hanyaCashSales,
             'non_cash_sales'      => $nonCashSales,
             'cash_refunds'        => $cashRefunds,

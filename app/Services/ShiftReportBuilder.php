@@ -50,24 +50,18 @@ class ShiftReportBuilder
         $ppobTransaksi = (int) (clone $ppobCashQuery)->distinct()->count('transactions.id');
 
         $transactionsQuery = Transaction::query()
+            ->with('payments')
             ->where('cashier_id', $shift->user_id)
             ->where('status', '!=', 'voided')
             ->whereBetween('created_at', [$startedAt, $endedAt]);
 
-        $nonCashTransactions = (clone $transactionsQuery)
-            ->whereIn('payment_method', ['qris', 'transfer', 'digital'])
+        $daftarNonTunai = (clone $transactionsQuery)
             ->orderBy('created_at')
-            ->get(['invoice', 'grand_total', 'payment_method', 'payment_status', 'created_at']);
-
-        $daftarNonTunai = $nonCashTransactions->map(function (Transaction $transaction) {
-            return [
-                'jam' => ($transaction->created_at ?? now())->format('H:i'),
-                'metode' => $this->paymentMethodLabel($transaction->payment_method),
-                'total' => (int) $transaction->grand_total,
-                'invoice' => $transaction->invoice,
-                'isPending' => $transaction->payment_status !== 'paid',
-            ];
-        })->values()->all();
+            ->get()
+            ->filter(fn (Transaction $transaction) => TransactionPaymentAggregator::transactionHasNonCashPart($transaction))
+            ->map(fn (Transaction $transaction) => $this->buildNonCashEntry($transaction))
+            ->values()
+            ->all();
 
         $shift->loadMissing('user:id,name');
 
@@ -179,8 +173,15 @@ class ShiftReportBuilder
             $lines[] = 'Tidak ada transaksi non-tunai.';
         } else {
             foreach ($daftarNonTunai as $item) {
-                $lines[] = '- ' . $item['jam'] . ' ' . $item['metode'] . ' '
-                    . TelegramFormatter::idr($item['total']) . ' (' . $item['invoice'] . ')';
+                $line = '- ' . $item['jam'] . ' ' . $item['metode'] . ' '
+                    . TelegramFormatter::idr($item['total']);
+
+                if (! empty($item['breakdown'])) {
+                    $line .= ' ' . $item['breakdown'];
+                }
+
+                $line .= ' (' . $item['invoice'] . ')';
+                $lines[] = $line;
 
                 if ($item['isPending']) {
                     $lines[] = '  *menunggu konfirmasi — cek rekening*';
@@ -214,5 +215,31 @@ class ShiftReportBuilder
             'digital' => 'Digital',
             default => ucfirst($method),
         };
+    }
+
+    protected function buildNonCashEntry(Transaction $transaction): array
+    {
+        $isSplit = $transaction->isSplitPayment();
+
+        return [
+            'jam' => ($transaction->created_at ?? now())->format('H:i'),
+            'metode' => $isSplit ? 'CAMPURAN' : $this->paymentMethodLabel((string) $transaction->payment_method),
+            'total' => (int) $transaction->grand_total,
+            'breakdown' => $isSplit ? $this->formatSplitBreakdown($transaction) : null,
+            'invoice' => $transaction->invoice,
+            'isPending' => TransactionPaymentAggregator::hasPendingNonCashPart($transaction),
+        ];
+    }
+
+    protected function formatSplitBreakdown(Transaction $transaction): string
+    {
+        $parts = [];
+
+        foreach ($transaction->paymentBreakdown() as $method => $amount) {
+            $label = $method === 'cash' ? 'Tunai' : $this->paymentMethodLabel($method);
+            $parts[] = $label . ' Rp ' . number_format((int) $amount, 0, ',', '.');
+        }
+
+        return '(' . implode(' + ', $parts) . ')';
     }
 }

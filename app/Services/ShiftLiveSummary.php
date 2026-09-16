@@ -22,22 +22,15 @@ class ShiftLiveSummary
         $endedAt = Carbon::now();
 
         $transactionsQuery = Transaction::query()
+            ->with('payments')
             ->where('cashier_id', $shift->user_id)
             ->where('status', '!=', 'voided')
             ->whereBetween('created_at', [$startedAt, $endedAt]);
 
+        $transactions = (clone $transactionsQuery)->get();
+
         $paidTransactionsQuery = (clone $transactionsQuery)
             ->where('payment_status', 'paid');
-
-        $cashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', 'cash')
-            ->sum('grand_total');
-
-        $nonCashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', '!=', 'cash')
-            ->sum('grand_total');
-
-        $totalSales = (int) (clone $paidTransactionsQuery)->sum('grand_total');
 
         $approvedReturnsQuery = ReturnTransaction::query()
             ->where('cashier_id', $shift->user_id)
@@ -55,9 +48,9 @@ class ShiftLiveSummary
         $reconciliation = $this->shiftCashReconciliation->build($shift, $endedAt);
 
         return [
-            'total_sales'        => $totalSales,
-            'cash_sales'         => $cashSales,
-            'non_cash_sales'     => $nonCashSales,
+            'total_sales'        => (int) (clone $paidTransactionsQuery)->sum('grand_total'),
+            'cash_sales'         => $reconciliation['hanya_cash_sales'],
+            'non_cash_sales'     => $reconciliation['non_cash_sales'],
             'cash_refunds'       => $cashRefunds,
             'non_cash_refunds'   => $nonCashRefunds,
             'expected_cash'      => $reconciliation['kas_seharusnya'],
@@ -66,7 +59,7 @@ class ShiftLiveSummary
             'kas_disetor'        => $reconciliation['kas_disetor'],
             'selisih'            => $reconciliation['selisih'],
             'expense_amount'     => $reconciliation['expense_amount'],
-            'total_transactions' => (int) (clone $transactionsQuery)->count(),
+            'total_transactions' => $transactions->count(),
             'paid_transactions'  => (int) (clone $paidTransactionsQuery)->count(),
         ];
     }

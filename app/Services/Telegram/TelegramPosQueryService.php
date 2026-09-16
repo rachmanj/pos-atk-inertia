@@ -7,7 +7,9 @@ use App\Models\PpobAccount;
 use App\Models\Product;
 use App\Models\ReturnTransaction;
 use App\Models\Transaction;
+use App\Models\TransactionPayment;
 use App\Models\User;
+use App\Services\TransactionPaymentAggregator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -124,7 +126,7 @@ class TelegramPosQueryService
 
             $lines[] = ($index + 1) . '. <b>' . e($transaction->invoice) . '</b>'
                 . ' — ' . TelegramFormatter::idr((int) $transaction->grand_total)
-                . ' (' . $this->paymentMethodLabel($transaction->payment_method) . ')'
+                . ' (' . $this->transactionMethodLabel($transaction) . ')'
                 . ' · ' . $time;
         }
 
@@ -194,20 +196,24 @@ class TelegramPosQueryService
             return '✅ Tidak ada transfer yang menunggu konfirmasi.';
         }
 
-        $totalAmount = (int) (clone $baseQuery)->sum('grand_total');
-        $remainingCount = max(0, $totalCount - 10);
-
         $transactions = (clone $baseQuery)
-            ->with('cashier:id,name')
+            ->with(['cashier:id,name', 'payments'])
             ->orderBy('created_at')
-            ->limit(10)
             ->get([
                 'id',
                 'invoice',
                 'grand_total',
+                'payment_method',
+                'payment_status',
                 'cashier_id',
                 'created_at',
             ]);
+
+        $totalAmount = (int) $transactions->sum(
+            fn (Transaction $transaction) => TransactionPaymentAggregator::pendingTransferAmount($transaction),
+        );
+        $remainingCount = max(0, $totalCount - 10);
+        $transactions = $transactions->take(10);
 
         $lines = [
             '🏦 <b>Transfer Menunggu Konfirmasi</b>',
@@ -219,8 +225,10 @@ class TelegramPosQueryService
                 ? $transaction->created_at
                 : Carbon::parse($transaction->created_at);
 
+            $transferAmount = TransactionPaymentAggregator::pendingTransferAmount($transaction);
+
             $lines[] = ($index + 1) . '. <b>' . e($transaction->invoice) . '</b>'
-                . ' — ' . TelegramFormatter::idr((int) $transaction->grand_total)
+                . ' — ' . TelegramFormatter::idr($transferAmount)
                 . ' · ' . e($transaction->cashier?->name ?? '—')
                 . ' · ' . $createdAt->format('H:i')
                 . ' (' . $this->formatPendingAge($createdAt) . ')';
@@ -243,16 +251,26 @@ class TelegramPosQueryService
 
         $query = $this->todayPaidTransactionsQuery($user);
 
-        $totalSales = (int) (clone $query)->sum('grand_total');
-        $totalTransactions = (int) (clone $query)->count();
+        $transactions = (clone $query)
+            ->with('payments')
+            ->get([
+                'id',
+                'grand_total',
+                'payment_method',
+                'payment_status',
+            ]);
+
+        $totalSales = (int) $transactions->sum('grand_total');
+        $totalTransactions = $transactions->count();
         $averageSale = $totalTransactions > 0
             ? (int) round($totalSales / $totalTransactions)
             : 0;
 
-        $cashSales = (int) (clone $query)->where('payment_method', 'cash')->sum('grand_total');
-        $digitalSales = (int) (clone $query)->where('payment_method', 'digital')->sum('grand_total');
-        $qrisSales = (int) (clone $query)->where('payment_method', 'qris')->sum('grand_total');
-        $transferSales = (int) (clone $query)->where('payment_method', 'transfer')->sum('grand_total');
+        $methodTotals = TransactionPaymentAggregator::sumPaidByMethod($transactions);
+        $cashSales = $methodTotals[TransactionPayment::METHOD_CASH];
+        $digitalSales = $methodTotals[TransactionPayment::METHOD_DIGITAL];
+        $qrisSales = $methodTotals[TransactionPayment::METHOD_QRIS];
+        $transferSales = $methodTotals[TransactionPayment::METHOD_TRANSFER];
 
         $totalItems = (int) (clone $query)
             ->join('transaction_details', 'transactions.id', '=', 'transaction_details.transaction_id')
@@ -336,16 +354,35 @@ class TelegramPosQueryService
             'digital' => 'Digital',
             'qris' => 'QRIS',
             'transfer' => 'Transfer',
+            'split' => 'Campuran',
             default => ucfirst((string) $method),
         };
+    }
+
+    protected function transactionMethodLabel(Transaction $transaction): string
+    {
+        if ($transaction->payment_method === 'split' || $transaction->isSplitPayment()) {
+            return 'Campuran';
+        }
+
+        return $this->paymentMethodLabel($transaction->payment_method);
     }
 
     protected function pendingTransferTransactionsQuery(User $user)
     {
         return Transaction::query()
-            ->where('payment_method', 'transfer')
-            ->where('payment_status', 'pending')
             ->where('status', '!=', 'voided')
+            ->where(function ($query) {
+                $query->where(function ($legacyQuery) {
+                    $legacyQuery
+                        ->where('payment_method', TransactionPayment::METHOD_TRANSFER)
+                        ->where('payment_status', 'pending');
+                })->orWhereHas('payments', function ($paymentQuery) {
+                    $paymentQuery
+                        ->where('method', TransactionPayment::METHOD_TRANSFER)
+                        ->where('payment_status', TransactionPayment::STATUS_PENDING);
+                });
+            })
             ->when(! $user->isAdminUser(), function ($query) use ($user) {
                 $query->where('cashier_id', $user->id);
             });
@@ -392,21 +429,12 @@ class TelegramPosQueryService
 
         $endedAt = Carbon::now();
 
-        $transactionsQuery = Transaction::query()
+        $transactions = Transaction::query()
+            ->with('payments')
             ->where('cashier_id', $shift->user_id)
             ->where('status', '!=', 'voided')
-            ->whereBetween('created_at', [$startedAt, $endedAt]);
-
-        $paidTransactionsQuery = (clone $transactionsQuery)
-            ->where('payment_status', 'paid');
-
-        $cashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', 'cash')
-            ->sum('grand_total');
-
-        $nonCashSales = (int) (clone $paidTransactionsQuery)
-            ->where('payment_method', '!=', 'cash')
-            ->sum('grand_total');
+            ->whereBetween('created_at', [$startedAt, $endedAt])
+            ->get();
 
         $cashRefunds = (int) ReturnTransaction::query()
             ->where('cashier_id', $shift->user_id)
@@ -415,11 +443,13 @@ class TelegramPosQueryService
             ->whereBetween('updated_at', [$startedAt, $endedAt])
             ->sum('total_refund');
 
+        $reconciliation = app(\App\Services\ShiftCashReconciliation::class)->build($shift, $endedAt);
+
         return [
-            'cash_sales' => $cashSales,
-            'non_cash_sales' => $nonCashSales,
-            'expected_cash' => (int) $shift->cash_in_hand + $cashSales - $cashRefunds,
-            'total_transactions' => (int) (clone $transactionsQuery)->count(),
+            'cash_sales' => $reconciliation['hanya_cash_sales'],
+            'non_cash_sales' => $reconciliation['non_cash_sales'],
+            'expected_cash' => $reconciliation['kas_seharusnya'],
+            'total_transactions' => $transactions->count(),
         ];
     }
 }

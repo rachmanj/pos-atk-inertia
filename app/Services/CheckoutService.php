@@ -499,6 +499,12 @@ class CheckoutService
                 ],
             );
 
+            if ($transaction->payments()->exists()) {
+                $transaction->payments()->update([
+                    'payment_status' => TransactionPayment::STATUS_FAILED,
+                ]);
+            }
+
             $transaction->update([
                 'status' => 'voided',
                 'void_reason' => $voidReason,
