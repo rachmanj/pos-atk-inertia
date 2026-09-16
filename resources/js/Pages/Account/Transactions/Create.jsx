@@ -1123,17 +1123,23 @@ export default function TransactionCreate() {
             ? paymentParts.some((part) => part.method === "transfer")
             : paymentMethod === "transfer";
 
+        const singlePaymentConfirmMessage = {
+            transfer:
+                "Transaksi transfer akan disimpan sebagai pending. Konfirmasi setelah dana masuk ke rekening toko.",
+            digital: "Pembayaran digital akan diproses melalui Midtrans.",
+            cash: "Pastikan uang yang diterima sudah sesuai.",
+            qris:
+                "Pastikan nominal QRIS sudah sesuai dengan total dan pembayaran sudah masuk.",
+        };
+
         Modal.confirm({
             title: "Proses Pembayaran?",
             content: splitMode
                 ? hasTransferPart
                     ? "Transaksi campuran dengan transfer akan disimpan sebagai pending untuk bagian transfer. Konfirmasi setelah dana masuk."
                     : "Pastikan nominal tiap metode pembayaran sudah sesuai."
-                : paymentMethod === "transfer"
-                  ? "Transaksi transfer akan disimpan sebagai pending. Konfirmasi setelah dana masuk ke rekening toko."
-                  : isCashPayment
-                    ? "Pastikan uang yang diterima sudah sesuai."
-                    : "Pembayaran digital akan diproses melalui Midtrans.",
+                : (singlePaymentConfirmMessage[paymentMethod] ??
+                  "Pastikan nominal pembayaran sudah sesuai."),
             okText: "Ya, Bayar!",
             cancelText: "Batal",
             width: getModalWidth(isMobile),

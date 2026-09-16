@@ -230,6 +230,36 @@ class SplitPaymentCheckoutTest extends TestCase
         $this->assertDatabaseCount('profits', 0);
     }
 
+    public function test_single_method_qris_checkout_is_saved_as_paid_without_split_rows(): void
+    {
+        $user = $this->createCashierUser();
+        $this->openCashierShift($user);
+        $catalog = $this->createPhysicalProduct();
+        $this->addCartItem($user, $catalog['product'], $catalog['unit'], 2, 10_000);
+
+        $response = $this->actingAs($user)->postJson(route('account.transactions.store'), [
+            'payment_method' => 'qris',
+        ]);
+
+        $response->assertOk()->assertJson([
+            'success' => true,
+            'payment_method' => 'qris',
+            'payment_status' => 'paid',
+        ])->assertJsonMissing(['snap_token']);
+
+        $transaction = Transaction::where('invoice', $response->json('invoice'))->firstOrFail();
+
+        $this->assertSame('qris', $transaction->payment_method);
+        $this->assertSame('paid', $transaction->payment_status);
+        $this->assertSame('completed', $transaction->status);
+        $this->assertSame(0, $transaction->cash);
+        $this->assertSame(0, $transaction->change);
+        $this->assertSame('qris', $transaction->payment_channel);
+        $this->assertNotNull($transaction->paid_at);
+        $this->assertDatabaseCount('transaction_payments', 0);
+        $this->assertDatabaseCount('profits', 1);
+    }
+
     public function test_single_method_checkout_remains_unchanged_without_payments_payload(): void
     {
         $user = $this->createCashierUser();

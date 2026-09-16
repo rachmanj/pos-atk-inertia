@@ -426,6 +426,15 @@ export default function PosPaymentSummary({
                 />
             )}
 
+            {paymentMethod === "qris" && !splitMode && (
+                <Alert
+                    type="info"
+                    showIcon
+                    className="pos-payment-alert"
+                    message="QRIS dicatat manual — pastikan pembayaran sudah masuk sebelum menyelesaikan struk."
+                />
+            )}
+
             <div className="pos-summary-box">
                 <div>
                     <span>Subtotal</span>

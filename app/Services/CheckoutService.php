@@ -81,7 +81,7 @@ class CheckoutService
 
         return DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $discountType, $activeShift, $lines) {
             $isImmediatePayment = in_array($paymentMethod, ['cash', 'qris'], true);
-            $isCashLikePayment = in_array($paymentMethod, ['cash', 'qris'], true);
+            $isCashLikePayment = $paymentMethod === 'cash';
 
             $productIds = collect($lines)->pluck('product_id')->unique()->values()->all();
 
