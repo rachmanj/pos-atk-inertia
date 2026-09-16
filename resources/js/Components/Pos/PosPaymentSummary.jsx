@@ -20,9 +20,10 @@ const { Text } = Typography;
 
 const fieldLabelClassName = "pos-field-label";
 
-const SPLIT_METHODS = ["cash", "qris", "transfer"];
+// Digital (Midtrans) disembunyikan atas permintaan Iwan 16 Sep 2026 — backend masih mendukung
+const AVAILABLE_METHODS = ["cash", "qris", "transfer"];
 
-const splitMethodLabels = {
+const methodLabels = {
     cash: "Tunai",
     qris: "QRIS",
     transfer: "Transfer",
@@ -59,8 +60,6 @@ export default function PosPaymentSummary({
 }) {
     const isMobile = useMobile();
     const isManualTransfer = paymentMethod === "transfer";
-    const isDigital = paymentMethod === "digital";
-    const canUseSplit = !isDigital;
     const cashPartAmount = hasCashPart
         ? Number(
               paymentParts.find((part) => part.method === "cash")?.amount || 0,
@@ -68,7 +67,7 @@ export default function PosPaymentSummary({
         : 0;
 
     const availableMethodsForRow = (rowIndex) =>
-        SPLIT_METHODS.filter(
+        AVAILABLE_METHODS.filter(
             (method) =>
                 method === paymentParts[rowIndex]?.method ||
                 !paymentParts.some((part, index) => index !== rowIndex && part.method === method),
@@ -197,14 +196,6 @@ export default function PosPaymentSummary({
             );
         }
 
-        if (paymentMethod === "digital") {
-            return (
-                <Text type="success" strong>
-                    Menunggu pembayaran
-                </Text>
-            );
-        }
-
         return (
             <Text type="success" strong>
                 Lunas
@@ -236,18 +227,15 @@ export default function PosPaymentSummary({
                     optionType="button"
                     buttonStyle="solid"
                 >
-                    <Radio.Button value="cash" className="pos-method-option">
-                        Tunai
-                    </Radio.Button>
-                    <Radio.Button value="digital" className="pos-method-option">
-                        Digital
-                    </Radio.Button>
-                    <Radio.Button value="qris" className="pos-method-option">
-                        QRIS
-                    </Radio.Button>
-                    <Radio.Button value="transfer" className="pos-method-option">
-                        Transfer
-                    </Radio.Button>
+                    {AVAILABLE_METHODS.map((method) => (
+                        <Radio.Button
+                            key={method}
+                            value={method}
+                            className="pos-method-option"
+                        >
+                            {methodLabels[method]}
+                        </Radio.Button>
+                    ))}
                 </Radio.Group>
             </div>
 
@@ -322,7 +310,7 @@ export default function PosPaymentSummary({
                                 >
                                     {index === 0 ? (
                                         <Text strong>
-                                            {splitMethodLabels[part.method]}
+                                            {methodLabels[part.method]}
                                         </Text>
                                     ) : (
                                         <Select
@@ -337,7 +325,7 @@ export default function PosPaymentSummary({
                                                 index,
                                             ).map((method) => ({
                                                 value: method,
-                                                label: splitMethodLabels[method],
+                                                label: methodLabels[method],
                                             }))}
                                             style={{ width: "100%" }}
                                         />
@@ -364,7 +352,7 @@ export default function PosPaymentSummary({
                             </div>
                         ))}
 
-                        {canUseSplit && paymentParts.length < 3 && (
+                        {paymentParts.length < 3 && (
                             <Button
                                 type="dashed"
                                 icon={<PlusOutlined />}
@@ -394,28 +382,17 @@ export default function PosPaymentSummary({
                     <>
                         {renderSingleMethodCashField()}
 
-                        {canUseSplit && (
-                            <Button
-                                type="dashed"
-                                icon={<PlusOutlined />}
-                                onClick={onEnterSplitMode}
-                                block
-                            >
-                                Tambah metode
-                            </Button>
-                        )}
+                        <Button
+                            type="dashed"
+                            icon={<PlusOutlined />}
+                            onClick={onEnterSplitMode}
+                            block
+                        >
+                            Tambah metode
+                        </Button>
                     </>
                 )}
             </div>
-
-            {isDigital && (
-                <Alert
-                    type="info"
-                    showIcon
-                    className="pos-payment-alert"
-                    message="Pembayaran digital akan diproses melalui Midtrans. Kasir tidak perlu mengisi uang tunai."
-                />
-            )}
 
             {isManualTransfer && !splitMode && (
                 <Alert

@@ -25,6 +25,7 @@ const { Text } = Typography;
 
 const SHIFT_SUMMARY_REFRESH_MS = 60_000;
 
+// Digital (Midtrans) disembunyikan atas permintaan Iwan 16 Sep 2026 — backend masih mendukung
 const SPLIT_METHODS = ["cash", "qris", "transfer"];
 
 const nextAvailableSplitMethod = (usedMethods) =>
@@ -320,14 +321,6 @@ export default function TransactionCreate() {
 
     const handlePaymentMethodChange = (value) => {
         setPaymentMethod(value);
-
-        if (value === "digital") {
-            if (splitMode) {
-                exitSplitMode();
-            }
-            setCash("");
-            return;
-        }
 
         if (splitMode) {
             setPaymentParts((currentParts) => {
@@ -1009,6 +1002,7 @@ export default function TransactionCreate() {
         router.get(`/account/transactions/${invoice}`);
     };
 
+    // Midtrans Snap — tidak dipanggil dari UI saat Digital disembunyikan; tetap ada untuk reaktivasi nanti
     const openMidtransPopup = (snapToken, invoice) => {
         if (!window.snap) {
             notification.error({
@@ -1126,7 +1120,6 @@ export default function TransactionCreate() {
         const singlePaymentConfirmMessage = {
             transfer:
                 "Transaksi transfer akan disimpan sebagai pending. Konfirmasi setelah dana masuk ke rekening toko.",
-            digital: "Pembayaran digital akan diproses melalui Midtrans.",
             cash: "Pastikan uang yang diterima sudah sesuai.",
             qris:
                 "Pastikan nominal QRIS sudah sesuai dengan total dan pembayaran sudah masuk.",
@@ -1195,6 +1188,7 @@ export default function TransactionCreate() {
                         );
                     }
 
+                    // Respons digital/Midtrans — jalur UI tersembunyi; handler tetap untuk reaktivasi
                     if (data.payment_method === "digital") {
                         if (!data.snap_token) {
                             throw new Error("Snap token tidak tersedia.");
