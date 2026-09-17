@@ -11,7 +11,7 @@ class TelegramNotificationService
 {
     public function recipients(): array
     {
-        $raw = Setting::value('telegram.admin_chat_ids', '268015883');
+        $raw = Setting::value('telegram.admin_chat_ids', '');
 
         if (blank($raw)) {
             return [];
@@ -34,6 +34,11 @@ class TelegramNotificationService
 
     public function sendText(string $chatId, string $text): string
     {
+        // test TIDAK BOLEH mengirim notifikasi nyata
+        if (app()->runningUnitTests() || app()->environment('testing')) {
+            return 'sent';
+        }
+
         $chatId = trim($chatId);
 
         if (! preg_match('/^-?\d+$/', $chatId)) {

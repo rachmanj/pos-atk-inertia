@@ -4,6 +4,7 @@ namespace Tests\Feature\Telegram;
 
 use App\Models\PpobAccount;
 use App\Models\Transaction;
+use App\Services\Telegram\TelegramBotClient;
 use App\Services\Telegram\TelegramPosQueryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -20,6 +21,8 @@ class TelegramPosCommandsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->app->instance(TelegramBotClient::class, new TelegramBotClient());
 
         config([
             'telegram.token' => 'test-bot-token',

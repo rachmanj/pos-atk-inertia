@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Telegram;
 
+use App\Services\Telegram\TelegramBotClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -13,6 +14,8 @@ class TelegramWebhookTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->app->instance(TelegramBotClient::class, new TelegramBotClient());
 
         config([
             'telegram.token' => 'test-bot-token',
