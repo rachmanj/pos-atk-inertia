@@ -119,6 +119,18 @@ export default function PurchaseIndex() {
             render: (value) => <Text strong>{value}</Text>,
         },
         {
+            title: "DPP",
+            align: "right",
+            dataIndex: "dpp_amount",
+            render: (value) => formatRupiah(value ?? 0),
+        },
+        {
+            title: "PPN",
+            align: "right",
+            dataIndex: "tax_amount",
+            render: (value) => formatRupiah(value ?? 0),
+        },
+        {
             title: "Total",
             align: "right",
             dataIndex: "total_amount",

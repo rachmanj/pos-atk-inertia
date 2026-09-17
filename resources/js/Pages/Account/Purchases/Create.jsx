@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
@@ -17,6 +17,7 @@ import {
     Select,
     Space,
     Spin,
+    Switch,
     Table,
     Typography,
 } from "antd";
@@ -50,6 +51,10 @@ export default function PurchaseCreate() {
     const [purchaseDate, setPurchaseDate] = useState(defaultPurchaseDate);
     const [note, setNote] = useState("");
     const [items, setItems] = useState([createEmptyItem()]);
+    const [taxRate, setTaxRate] = useState(11);
+    const [taxAmount, setTaxAmount] = useState(0);
+    const [taxAmountManual, setTaxAmountManual] = useState(false);
+    const [taxIncluded, setTaxIncluded] = useState(false);
 
     const productMap = useMemo(() => {
         return products.reduce((acc, product) => {
@@ -134,7 +139,7 @@ export default function PurchaseCreate() {
         );
     };
 
-    const totalAmount = items.reduce(
+    const itemsSubtotal = items.reduce(
         (sum, item) =>
             sum + Number(item.qty || 0) * Number(item.buy_price || 0),
         0,
@@ -144,6 +149,26 @@ export default function PurchaseCreate() {
         (sum, item) => sum + Number(item.qty || 0),
         0,
     );
+
+    useEffect(() => {
+        if (taxAmountManual) {
+            return;
+        }
+
+        const rate = Number(taxRate);
+        if (taxRate === "" || taxRate === null || Number.isNaN(rate) || rate <= 0) {
+            setTaxAmount(0);
+            return;
+        }
+
+        setTaxAmount(Math.round(itemsSubtotal * rate / 100));
+    }, [itemsSubtotal, taxRate, taxAmountManual]);
+
+    const effectiveTaxAmount = Number(taxAmount || 0);
+    const dppAmount = taxIncluded
+        ? Math.max(0, itemsSubtotal - effectiveTaxAmount)
+        : itemsSubtotal;
+    const totalPaid = dppAmount + effectiveTaxAmount;
 
     const storePurchase = (e) => {
         e.preventDefault();
@@ -159,6 +184,9 @@ export default function PurchaseCreate() {
                 qty: Number(item.qty),
                 buy_price: Number(item.buy_price),
             })),
+            tax_amount: effectiveTaxAmount,
+            tax_rate: taxRate === "" || taxRate === null ? null : Number(taxRate),
+            tax_included: taxIncluded,
         });
     };
 
@@ -479,7 +507,7 @@ export default function PurchaseCreate() {
                                                     display: "block",
                                                 }}
                                             >
-                                                Total Pembelian
+                                                Total Item
                                             </Text>
                                             <Text
                                                 strong
@@ -487,7 +515,7 @@ export default function PurchaseCreate() {
                                                     color: "var(--semantic-success)",
                                                 }}
                                             >
-                                                {formatRupiah(totalAmount)}
+                                                {formatRupiah(itemsSubtotal)}
                                             </Text>
                                         </Card>
                                     </Form.Item>
@@ -517,6 +545,124 @@ export default function PurchaseCreate() {
                                 scroll={{ x: "max-content" }}
                                 style={{ marginBottom: 16 }}
                             />
+
+                            <Card
+                                size="small"
+                                title="PPN"
+                                style={{
+                                    marginBottom: 16,
+                                    background: "var(--bg-subtle)",
+                                }}
+                            >
+                                <Row gutter={[16, 16]}>
+                                    <Col xs={24} sm={8}>
+                                        <Form.Item
+                                            label="Tarif PPN (%)"
+                                            validateStatus={
+                                                errors.tax_rate ? "error" : ""
+                                            }
+                                            help={errors.tax_rate}
+                                        >
+                                            <InputNumber
+                                                min={0}
+                                                max={100}
+                                                step={0.01}
+                                                style={{ width: "100%" }}
+                                                placeholder="11"
+                                                value={taxRate}
+                                                onChange={(value) =>
+                                                    setTaxRate(value ?? "")
+                                                }
+                                                disabled={!canSubmit}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} sm={8}>
+                                        <Form.Item
+                                            label="Nilai PPN (Rp)"
+                                            validateStatus={
+                                                errors.tax_amount ? "error" : ""
+                                            }
+                                            help={errors.tax_amount}
+                                        >
+                                            <InputNumber
+                                                min={0}
+                                                style={{ width: "100%" }}
+                                                value={taxAmount}
+                                                onChange={(value) => {
+                                                    setTaxAmountManual(true);
+                                                    setTaxAmount(value ?? 0);
+                                                }}
+                                                disabled={!canSubmit}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} sm={8}>
+                                        <Form.Item label="Harga sudah termasuk PPN">
+                                            <Switch
+                                                checked={taxIncluded}
+                                                onChange={setTaxIncluded}
+                                                disabled={!canSubmit}
+                                                checkedChildren="Ya"
+                                                unCheckedChildren="Tidak"
+                                            />
+                                            <Text
+                                                type="secondary"
+                                                style={{
+                                                    display: "block",
+                                                    marginTop: 8,
+                                                    fontSize: 12,
+                                                }}
+                                            >
+                                                Harga item sudah termasuk PPN
+                                            </Text>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                            </Card>
+
+                            <Row justify="end" style={{ marginBottom: 16 }}>
+                                <Col xs={24} sm={12} md={8}>
+                                    <Card
+                                        size="small"
+                                        style={{ background: "var(--bg-subtle)" }}
+                                    >
+                                        <Space
+                                            direction="vertical"
+                                            size={4}
+                                            style={{ width: "100%" }}
+                                        >
+                                            <Row justify="space-between">
+                                                <Text type="secondary">DPP</Text>
+                                                <Text strong>
+                                                    {formatRupiah(dppAmount)}
+                                                </Text>
+                                            </Row>
+                                            <Row justify="space-between">
+                                                <Text type="secondary">PPN</Text>
+                                                <Text strong>
+                                                    {formatRupiah(
+                                                        effectiveTaxAmount,
+                                                    )}
+                                                </Text>
+                                            </Row>
+                                            <Row justify="space-between">
+                                                <Text type="secondary">
+                                                    Total Dibayar
+                                                </Text>
+                                                <Text
+                                                    strong
+                                                    style={{
+                                                        color: "var(--semantic-success)",
+                                                    }}
+                                                >
+                                                    {formatRupiah(totalPaid)}
+                                                </Text>
+                                            </Row>
+                                        </Space>
+                                    </Card>
+                                </Col>
+                            </Row>
 
                             <Space>
                                 <Button

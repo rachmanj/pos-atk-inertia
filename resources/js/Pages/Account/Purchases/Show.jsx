@@ -81,6 +81,12 @@ export default function PurchaseShow() {
                 </Text>
             ),
         },
+        {
+            title: "PPN",
+            align: "right",
+            dataIndex: "tax_amount",
+            render: (value) => formatRupiah(value ?? 0),
+        },
     ];
 
     return (
@@ -238,6 +244,57 @@ export default function PurchaseShow() {
                                         }}
                                     >
                                         Total Qty: {purchase.total_qty}
+                                    </Text>
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            fontSize: 12,
+                                            display: "block",
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        DPP
+                                    </Text>
+                                    <Text
+                                        strong
+                                        style={{
+                                            display: "block",
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        {formatRupiah(purchase.dpp_amount ?? 0)}
+                                    </Text>
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            fontSize: 12,
+                                            display: "block",
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        PPN
+                                        {purchase.tax_rate
+                                            ? ` (${purchase.tax_rate}%)`
+                                            : ""}
+                                    </Text>
+                                    <Text
+                                        strong
+                                        style={{
+                                            display: "block",
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        {formatRupiah(purchase.tax_amount ?? 0)}
+                                    </Text>
+                                    <Text
+                                        type="secondary"
+                                        style={{
+                                            fontSize: 12,
+                                            display: "block",
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        Total
                                     </Text>
                                     <Text
                                         strong
