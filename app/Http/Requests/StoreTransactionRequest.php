@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Cart;
+use App\Support\PpobTokenLineValidator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreTransactionRequest extends FormRequest
 {
@@ -34,6 +37,32 @@ class StoreTransactionRequest extends FormRequest
             'payments.*.amount' => 'required_with:payments|integer|min:1',
             'payments.*.reference' => 'nullable|string|max:100',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $carts = Cart::query()
+                ->where('cashier_id', $this->user()->id)
+                ->where('is_held', false)
+                ->whereNotNull('ppob_cost')
+                ->get();
+
+            foreach ($carts as $cart) {
+                PpobTokenLineValidator::validateTokenLine(
+                    $validator,
+                    $cart->product_id,
+                    $cart->token_nominal !== null ? (int) $cart->token_nominal : null,
+                    (int) $cart->ppob_cost,
+                    (int) $cart->admin_fee,
+                    "cart.{$cart->id}",
+                );
+            }
+        });
     }
 
     public function messages(): array

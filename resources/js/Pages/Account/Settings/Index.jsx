@@ -54,6 +54,12 @@ export default function SettingIndex() {
     const [ppobMinBalanceDefault, setPpobMinBalanceDefault] = useState(
         Number(ppob.ppob_min_balance_default || 100000),
     );
+    const [ppobTokenFee, setPpobTokenFee] = useState(
+        Number(ppob.ppob_token_fee || 4500),
+    );
+    const [ppobTokenProductIds, setPpobTokenProductIds] = useState(
+        ppob.ppob_token_product_ids || "3207",
+    );
     const [telegramAdminChatIds, setTelegramAdminChatIds] = useState(
         telegram.admin_chat_ids || "",
     );
@@ -99,6 +105,8 @@ export default function SettingIndex() {
                 receipt_paper_size: receiptPaperSize,
                 ppob_admin_fee: ppobAdminFee,
                 ppob_min_balance_default: ppobMinBalanceDefault,
+                ppob_token_fee: ppobTokenFee,
+                ppob_token_product_ids: ppobTokenProductIds,
                 logo,
                 remove_logo: removeLogo,
             },
@@ -133,6 +141,8 @@ export default function SettingIndex() {
         setPpobMinBalanceDefault(
             Number(ppob.ppob_min_balance_default || 100000),
         );
+        setPpobTokenFee(Number(ppob.ppob_token_fee || 4500));
+        setPpobTokenProductIds(ppob.ppob_token_product_ids || "3207");
         setLogo(null);
         setRemoveLogo(false);
 
@@ -490,6 +500,42 @@ export default function SettingIndex() {
                                         onChange={(value) =>
                                             setPpobMinBalanceDefault(value ?? 0)
                                         }
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item label="Fee token dari provider (Rp/token)">
+                                    <InputNumber
+                                        min={0}
+                                        style={{ width: "100%" }}
+                                        value={ppobTokenFee}
+                                        onChange={(value) =>
+                                            setPpobTokenFee(value ?? 0)
+                                        }
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Produk token (ID produk, pisahkan koma)"
+                                    validateStatus={
+                                        errors.ppob_token_product_ids
+                                            ? "error"
+                                            : ""
+                                    }
+                                    help={
+                                        errors.ppob_token_product_ids ||
+                                        "Contoh: 3207 atau 3207, 3208"
+                                    }
+                                >
+                                    <Input
+                                        value={ppobTokenProductIds}
+                                        onChange={(e) =>
+                                            setPpobTokenProductIds(
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="3207"
                                     />
                                 </Form.Item>
                             </Col>

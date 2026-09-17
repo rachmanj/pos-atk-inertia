@@ -44,7 +44,39 @@ class Setting extends Model
         return [
             'ppob_admin_fee' => (int) ($settings->get('ppob_admin_fee') ?: 2000),
             'ppob_min_balance_default' => (int) ($settings->get('ppob_min_balance_default') ?: 100000),
+            'ppob_token_fee' => (int) ($settings->get('ppob_token_fee') ?: 4500),
+            'ppob_token_product_ids' => $settings->get('ppob_token_product_ids') ?: '3207',
         ];
+    }
+
+    /**
+     * @return list<int>
+     */
+    public static function ppobTokenProductIds(): array
+    {
+        $raw = static::ppobSettings()['ppob_token_product_ids'];
+        $ids = [];
+
+        foreach (explode(',', (string) $raw) as $part) {
+            $part = trim($part);
+
+            if ($part !== '' && ctype_digit($part)) {
+                $ids[] = (int) $part;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    public static function isPpobTokenProduct(?int $productId): bool
+    {
+        return $productId !== null
+            && in_array($productId, static::ppobTokenProductIds(), true);
+    }
+
+    public static function expectedPpobCostForToken(int $tokenNominal): int
+    {
+        return $tokenNominal + static::ppobSettings()['ppob_token_fee'];
     }
 
     public static function getValue(string $key, mixed $default = null): mixed

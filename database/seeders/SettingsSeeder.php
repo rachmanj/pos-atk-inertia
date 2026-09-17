@@ -24,5 +24,21 @@ class SettingsSeeder extends Seeder
                 'group' => 'ppob',
             ],
         );
+
+        Setting::updateOrCreate(
+            ['key' => 'ppob_token_fee'],
+            [
+                'value' => '4500',
+                'group' => 'ppob',
+            ],
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'ppob_token_product_ids'],
+            [
+                'value' => '3207',
+                'group' => 'ppob',
+            ],
+        );
     }
 }

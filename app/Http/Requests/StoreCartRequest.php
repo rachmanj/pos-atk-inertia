@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Product;
+use App\Support\PpobTokenLineValidator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -21,6 +22,7 @@ class StoreCartRequest extends FormRequest
             'customer_ref' => 'nullable|string|max:100',
             'ppob_cost' => 'nullable|integer|min:0',
             'admin_fee' => 'nullable|integer|min:0',
+            'token_nominal' => 'nullable|integer|min:0',
         ];
     }
 
@@ -33,17 +35,25 @@ class StoreCartRequest extends FormRequest
 
             $product = Product::query()->find($this->input('product_id'));
 
-            if (!$product?->isPpob()) {
+            if (! $product?->isPpob()) {
                 return;
             }
 
-            if (!filled($this->input('ppob_cost')) || (int) $this->input('ppob_cost') < 1) {
+            if (! filled($this->input('ppob_cost')) || (int) $this->input('ppob_cost') < 1) {
                 $validator->errors()->add('ppob_cost', 'Biaya PPOB wajib diisi.');
             }
 
-            if (!filled($this->input('admin_fee')) || (int) $this->input('admin_fee') < 0) {
+            if (! filled($this->input('admin_fee')) || (int) $this->input('admin_fee') < 0) {
                 $validator->errors()->add('admin_fee', 'Biaya admin wajib diisi.');
             }
+
+            PpobTokenLineValidator::validateTokenLine(
+                $validator,
+                $product->id,
+                filled($this->input('token_nominal')) ? (int) $this->input('token_nominal') : null,
+                filled($this->input('ppob_cost')) ? (int) $this->input('ppob_cost') : null,
+                filled($this->input('admin_fee')) ? (int) $this->input('admin_fee') : null,
+            );
         });
     }
 }

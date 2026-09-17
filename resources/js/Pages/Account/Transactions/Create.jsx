@@ -15,7 +15,10 @@ import { getModalWidth } from "../../../Utils/responsive";
 import PosProductGrid from "../../../Components/Pos/PosProductGrid";
 import PosCartPanel from "../../../Components/Pos/PosCartPanel";
 import PosPaymentSummary from "../../../Components/Pos/PosPaymentSummary";
-import PosPpobModal from "../../../Components/Pos/PosPpobModal";
+import PosPpobModal, {
+    defaultTokenSellPrice,
+    isPpobTokenProduct,
+} from "../../../Components/Pos/PosPpobModal";
 import PosUnitModal from "../../../Components/Pos/PosUnitModal";
 import PosQuickCustomerModal from "../../../Components/Pos/PosQuickCustomerModal";
 import BarcodeScanner from "../../../Components/BarcodeScanner";
@@ -86,6 +89,9 @@ export default function TransactionCreate() {
     const [adminFee, setAdminFee] = useState(
         String(ppobSettings.ppob_admin_fee || 2000),
     );
+    const [tokenNominal, setTokenNominal] = useState("");
+    const [sellPrice, setSellPrice] = useState("");
+    const [sellPriceError, setSellPriceError] = useState("");
 
     const [customerSearch, setCustomerSearch] = useState("");
     const [customerResults, setCustomerResults] = useState([]);
@@ -579,12 +585,28 @@ export default function TransactionCreate() {
         }
     };
 
+    const handleTokenNominalChange = (value) => {
+        setTokenNominal(value);
+        setSellPriceError("");
+
+        if (value) {
+            setSellPrice(
+                String(defaultTokenSellPrice(value, ppobSettings)),
+            );
+        } else {
+            setSellPrice("");
+        }
+    };
+
     const addToCart = (product) => {
         if (product.product_type === "ppob") {
             setPpobModalProduct(product);
             setCustomerRef("");
             setPpobCost("");
             setAdminFee(String(ppobSettings.ppob_admin_fee || 2000));
+            setTokenNominal("");
+            setSellPrice("");
+            setSellPriceError("");
             return;
         }
 
@@ -653,9 +675,40 @@ export default function TransactionCreate() {
 
     const submitPpobCart = (e) => {
         e.preventDefault();
+
+        const isToken = isPpobTokenProduct(ppobModalProduct, ppobSettings);
+        let cost;
+        let fee;
+        let price;
+        let nominal = null;
+
+        if (isToken) {
+            nominal = Number(tokenNominal || 0);
+            const tokenFee = Number(ppobSettings.ppob_token_fee || 4500);
+            cost = nominal + tokenFee;
+            price = Number(sellPrice || 0);
+            fee = price - cost;
+
+            if (!nominal || nominal < 1) {
+                setSellPriceError("Nominal token wajib diisi.");
+                return;
+            }
+
+            if (price < cost) {
+                setSellPriceError(
+                    "Harga jual tidak boleh kurang dari biaya provider.",
+                );
+                return;
+            }
+
+            setSellPriceError("");
+        } else {
+            fee = Number(adminFee || 0);
+            cost = Number(ppobCost || 0);
+            price = cost + fee;
+        }
+
         const snapshot = localCarts;
-        const fee = Number(adminFee || 0);
-        const cost = Number(ppobCost || 0);
 
         setLocalCarts((prev) => [
             ...prev,
@@ -664,7 +717,7 @@ export default function TransactionCreate() {
                 product_id: ppobModalProduct.id,
                 unit_id: null,
                 qty: 1,
-                price: cost + fee,
+                price,
                 product: ppobModalProduct,
                 unit: null,
                 is_held: false,
@@ -672,6 +725,7 @@ export default function TransactionCreate() {
                 discount_type: "nominal",
                 ppob_cost: cost,
                 admin_fee: fee,
+                token_nominal: nominal,
                 customer_ref: customerRef || null,
             },
         ]);
@@ -681,8 +735,9 @@ export default function TransactionCreate() {
             {
                 product_id: ppobModalProduct.id,
                 customer_ref: customerRef,
-                ppob_cost: ppobCost,
-                admin_fee: adminFee,
+                ppob_cost: cost,
+                admin_fee: fee,
+                token_nominal: nominal,
             },
             inertiaCartOptions(snapshot, {
                 onSuccess: () => {
@@ -1496,12 +1551,21 @@ export default function TransactionCreate() {
                 <PosPpobModal
                     product={ppobModalProduct}
                     open={!!ppobModalProduct}
+                    ppobSettings={ppobSettings}
                     customerRef={customerRef}
                     ppobCost={ppobCost}
                     adminFee={adminFee}
+                    tokenNominal={tokenNominal}
+                    sellPrice={sellPrice}
+                    sellPriceError={sellPriceError}
                     onCustomerRefChange={setCustomerRef}
                     onPpobCostChange={setPpobCost}
                     onAdminFeeChange={setAdminFee}
+                    onTokenNominalChange={handleTokenNominalChange}
+                    onSellPriceChange={(value) => {
+                        setSellPrice(value);
+                        setSellPriceError("");
+                    }}
                     onCancel={() => setPpobModalProduct(null)}
                     onSubmit={submitPpobCart}
                 />

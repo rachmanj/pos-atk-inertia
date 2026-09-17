@@ -38,6 +38,8 @@ class SettingController extends Controller
             'receipt_paper_size' => 'nullable|in:58,80',
             'ppob_admin_fee' => 'nullable|integer|min:0',
             'ppob_min_balance_default' => 'nullable|integer|min:0',
+            'ppob_token_fee' => 'nullable|integer|min:0',
+            'ppob_token_product_ids' => ['nullable', 'string', 'max:500', 'regex:/^[\d,\s]*$/'],
         ]);
 
         $currentLogo = Setting::query()
@@ -69,6 +71,11 @@ class SettingController extends Controller
         $this->setStoreValue('receipt.paper_size', $request->input('receipt_paper_size', '58'));
         $this->setPpobValue('ppob_admin_fee', (string) (int) $request->input('ppob_admin_fee', 2000));
         $this->setPpobValue('ppob_min_balance_default', (string) (int) $request->input('ppob_min_balance_default', 100000));
+        $this->setPpobValue('ppob_token_fee', (string) (int) $request->input('ppob_token_fee', 4500));
+        $this->setPpobValue(
+            'ppob_token_product_ids',
+            $this->normalizePpobTokenProductIds($request->input('ppob_token_product_ids', '3207')),
+        );
 
         return redirect()
             ->route('account.settings.index')
@@ -192,6 +199,27 @@ class SettingController extends Controller
                 'group' => 'store',
             ],
         );
+    }
+
+    protected function normalizePpobTokenProductIds(?string $raw): string
+    {
+        $raw = trim((string) $raw);
+
+        if ($raw === '') {
+            return '3207';
+        }
+
+        $ids = [];
+
+        foreach (explode(',', $raw) as $part) {
+            $part = trim($part);
+
+            if ($part !== '' && ctype_digit($part)) {
+                $ids[] = $part;
+            }
+        }
+
+        return $ids !== [] ? implode(',', array_values(array_unique($ids))) : '3207';
     }
 
     protected function setPpobValue(string $key, ?string $value): void

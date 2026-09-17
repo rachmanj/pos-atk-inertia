@@ -258,6 +258,7 @@ class CartController extends Controller
             'customer_ref' => filled($request->customer_ref) ? trim($request->customer_ref) : null,
             'ppob_cost' => $ppobCost,
             'admin_fee' => $adminFee,
+            'token_nominal' => filled($request->token_nominal) ? (int) $request->token_nominal : null,
         ]);
 
         return back();

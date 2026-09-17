@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Cart;
 use App\Models\PpobAccount;
 use App\Models\Product;
+use App\Support\PpobTokenLineValidator;
 use App\Models\Profit;
 use App\Models\StockMovement;
 use App\Models\Transaction;
@@ -49,6 +50,7 @@ class CheckoutService
                 'unit_id' => $cart->unit_id,
                 'ppob_cost' => $cart->ppob_cost,
                 'admin_fee' => $cart->admin_fee,
+                'token_nominal' => $cart->token_nominal,
                 'customer_ref' => $cart->customer_ref,
                 'discount' => (int) ($cart->discount ?? 0),
                 'discount_type' => $cart->discount_type ?? 'nominal',
@@ -223,6 +225,20 @@ class CheckoutService
                 if ($product->isPpob()) {
                     $ppobCost = (int) ($line['ppob_cost'] ?? 0);
                     $adminFee = (int) ($line['admin_fee'] ?? 0);
+                    $tokenNominal = isset($line['token_nominal'])
+                        ? (int) $line['token_nominal']
+                        : null;
+                    $tokenErrors = PpobTokenLineValidator::tokenLineErrors(
+                        $product->id,
+                        $tokenNominal,
+                        $ppobCost,
+                        $adminFee,
+                    );
+
+                    if ($tokenErrors !== []) {
+                        throw ValidationException::withMessages($tokenErrors);
+                    }
+
                     $itemCost = $ppobCost * (int) $line['qty'];
 
                     TransactionDetail::create([
@@ -237,6 +253,7 @@ class CheckoutService
                         'customer_ref' => $line['customer_ref'] ?? null,
                         'ppob_cost' => $ppobCost,
                         'admin_fee' => $adminFee,
+                        'token_nominal' => $tokenNominal,
                         'discount_type' => $lineDiscountType,
                         'discount_amount' => $itemDiscount,
                     ]);

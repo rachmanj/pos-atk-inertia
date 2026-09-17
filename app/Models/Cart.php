@@ -15,6 +15,7 @@ class Cart extends Model
             'price' => 'integer',
             'ppob_cost' => 'integer',
             'admin_fee' => 'integer',
+            'token_nominal' => 'integer',
             'discount' => 'integer',
             'is_held' => 'boolean',
         ];
@@ -29,6 +30,7 @@ class Cart extends Model
         'customer_ref',
         'ppob_cost',
         'admin_fee',
+        'token_nominal',
         'discount_type',
         'discount',
         'is_held',
