@@ -13,9 +13,14 @@ class Purchase extends Model
     {
         return [
             'purchase_date' => 'date',
-            'total_items'   => 'integer',
-            'total_qty'     => 'integer',
-            'total_amount'  => 'integer',
+            'total_items' => 'integer',
+            'total_qty' => 'integer',
+            'total_amount' => 'integer',
+            'dpp_amount' => 'integer',
+            'tax_amount' => 'integer',
+            'tax_rate' => 'decimal:2',
+            'tax_included' => 'boolean',
+            'hpp_includes_tax' => 'boolean',
         ];
     }
 
@@ -27,6 +32,11 @@ class Purchase extends Model
         'total_items',
         'total_qty',
         'total_amount',
+        'dpp_amount',
+        'tax_amount',
+        'tax_rate',
+        'tax_included',
+        'hpp_includes_tax',
         'note',
     ];
 

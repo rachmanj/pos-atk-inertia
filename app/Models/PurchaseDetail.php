@@ -15,6 +15,7 @@ class PurchaseDetail extends Model
             'qty' => 'integer',
             'buy_price' => 'integer',
             'subtotal' => 'integer',
+            'tax_amount' => 'integer',
             'conversion_factor' => 'decimal:4',
         ];
     }
@@ -27,6 +28,7 @@ class PurchaseDetail extends Model
         'qty',
         'buy_price',
         'subtotal',
+        'tax_amount',
     ];
 
     public function purchase(): BelongsTo

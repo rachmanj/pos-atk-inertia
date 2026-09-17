@@ -8,6 +8,7 @@ use App\Models\Purchase;
 use App\Models\PurchaseDetail;
 use App\Models\StockMovement;
 use App\Models\Supplier;
+use App\Services\PurchaseTaxCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,10 @@ use Inertia\Inertia;
 
 class PurchaseController extends Controller
 {
+    public function __construct(
+        protected PurchaseTaxCalculator $purchaseTaxCalculator,
+    ) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -113,6 +118,10 @@ class PurchaseController extends Controller
             'supplier_id' => 'required|exists:suppliers,id',
             'purchase_date' => 'required|date',
             'note' => 'nullable|string|max:1000',
+            'tax_amount' => 'nullable|integer|min:0',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'tax_included' => 'nullable|boolean',
+            'hpp_includes_tax' => 'nullable|boolean',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.unit_id' => 'nullable|exists:units,id',
@@ -146,17 +155,42 @@ class PurchaseController extends Controller
             ]);
         }
 
-        $purchase = DB::transaction(function () use ($request, $items) {
+        $taxAmount = (int) ($request->input('tax_amount', 0));
+        $taxIncluded = $request->boolean('tax_included');
+        $hppIncludesTax = $request->has('hpp_includes_tax')
+            ? $request->boolean('hpp_includes_tax')
+            : true;
+
+        $lines = $items
+            ->map(fn (array $item) => array_merge($item, [
+                'subtotal' => $item['qty'] * $item['buy_price'],
+            ]))
+            ->values()
+            ->all();
+
+        $allocatedItems = $this->purchaseTaxCalculator->allocate($lines, $taxAmount);
+        $dppAmount = $this->purchaseTaxCalculator->dppAmount($lines, $taxAmount, $taxIncluded);
+        $totalAmount = $this->purchaseTaxCalculator->totalAmount($dppAmount, $taxAmount);
+
+        $purchase = DB::transaction(function () use (
+            $request,
+            $allocatedItems,
+            $dppAmount,
+            $taxAmount,
+            $taxIncluded,
+            $hppIncludesTax,
+            $totalAmount,
+        ) {
             $lockedProducts = Product::query()
                 ->physical()
                 ->with(['productUnits'])
-                ->whereIn('id', $items->pluck('product_id')->all())
+                ->whereIn('id', collect($allocatedItems)->pluck('product_id')->all())
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
-            foreach ($items as $index => $item) {
+            foreach ($allocatedItems as $index => $item) {
                 $product = $lockedProducts->get($item['product_id']);
 
                 if (!$product) {
@@ -183,13 +217,18 @@ class PurchaseController extends Controller
                 'user_id' => $request->user()->id,
                 'invoice' => $this->generatePurchaseInvoice(),
                 'purchase_date' => $request->purchase_date,
-                'total_items' => $items->count(),
-                'total_qty' => $items->sum('qty'),
-                'total_amount' => $items->sum(fn($item) => $item['qty'] * $item['buy_price']),
+                'total_items' => count($allocatedItems),
+                'total_qty' => collect($allocatedItems)->sum('qty'),
+                'total_amount' => $totalAmount,
+                'dpp_amount' => $dppAmount,
+                'tax_amount' => $taxAmount,
+                'tax_rate' => $request->input('tax_rate'),
+                'tax_included' => $taxIncluded,
+                'hpp_includes_tax' => $hppIncludesTax,
                 'note' => filled($request->note) ? trim($request->note) : null,
             ]);
 
-            foreach ($items as $item) {
+            foreach ($allocatedItems as $item) {
                 $product = $lockedProducts->get($item['product_id']);
 
                 if (!$product) {
@@ -201,10 +240,14 @@ class PurchaseController extends Controller
                 $stockBefore = (int) $product->stock;
                 $qtyInBase = (int) round($item['qty'] * $item['conversion_factor']);
                 $stockAfter = $stockBefore + $qtyInBase;
-                $subtotal = $item['qty'] * $item['buy_price'];
-                $buyPricePerBase = $qtyInBase > 0
-                    ? (int) round($subtotal / $qtyInBase)
-                    : (int) $item['buy_price'];
+                $subtotal = $item['subtotal'];
+                $lineTax = (int) $item['tax_amount'];
+                $buyPricePerBase = $this->purchaseTaxCalculator->buyPricePerBase(
+                    $subtotal,
+                    $lineTax,
+                    $qtyInBase,
+                    $hppIncludesTax,
+                );
 
                 $currentAvgCost = (int) $product->avg_cost;
                 $newAvgCost = $stockAfter > 0
@@ -219,11 +262,12 @@ class PurchaseController extends Controller
                     'qty' => $item['qty'],
                     'buy_price' => $item['buy_price'],
                     'subtotal' => $subtotal,
+                    'tax_amount' => $lineTax,
                 ]);
 
                 $product->update([
                     'stock' => $stockAfter,
-                    'buy_price' => $item['buy_price'],
+                    'buy_price' => $buyPricePerBase,
                     'avg_cost' => $newAvgCost,
                 ]);
 
