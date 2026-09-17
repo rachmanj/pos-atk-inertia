@@ -34,6 +34,7 @@ export const NAV_MENUS = [
     { id: 'report-ppob',     label: 'Laporan PPOB',        group: 'Laporan',              permission: 'reports.ppob',             href: '/account/reports/ppob' },
     { id: 'report-profit',   label: 'Laporan Laba',        group: 'Laporan',              permission: 'profits.index',            href: '/account/reports/profit' },
     { id: 'report-expense',  label: 'Laporan Biaya',       group: 'Laporan',              permission: 'reports.expense',          href: '/account/reports/expense' },
+    { id: 'report-purchase-tax', label: 'PPN Masukan',   group: 'Laporan',              permission: 'purchases.index',          href: '/account/reports/purchase-tax' },
     { id: 'report-customers', label: 'Laporan Pelanggan',  group: 'Laporan',              permission: 'reports.customers',        href: '/account/reports/customers' },
     { id: 'report-stock',    label: 'Laporan Stok',        group: 'Laporan',              permission: 'reports.stock',            href: '/account/reports/stock' },
     { id: 'roles',         label: 'Role',                group: 'Pengaturan Sistem',    permission: 'roles.index',              href: '/account/roles' },

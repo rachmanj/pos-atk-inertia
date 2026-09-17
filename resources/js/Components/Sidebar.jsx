@@ -58,6 +58,7 @@ const MENU_ICONS = {
     "report-ppob": MobileOutlined,
     "report-profit": DollarOutlined,
     "report-expense": FileTextOutlined,
+    "report-purchase-tax": FileDoneOutlined,
     "report-customers": TeamOutlined,
     "report-stock": BarChartOutlined,
 };

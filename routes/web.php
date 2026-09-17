@@ -28,6 +28,7 @@ use App\Http\Controllers\Account\ProductSalesReportController;
 use App\Http\Controllers\Account\PpobReportController;
 use App\Http\Controllers\Account\ExpenseReportController;
 use App\Http\Controllers\Account\CustomerReportController;
+use App\Http\Controllers\Account\PurchaseTaxReportController;
 use App\Http\Controllers\Account\SettingController;
 use App\Http\Controllers\Account\PpobAccountController;
 use App\Http\Controllers\Account\PpobBalanceLogController;
@@ -357,6 +358,14 @@ Route::middleware(['auth'])
         Route::get('/reports/expense/export', [ExpenseReportController::class, 'export'])
             ->middleware('permission:reports.export')
             ->name('reports.expense.export');
+
+        Route::get('/reports/purchase-tax', [PurchaseTaxReportController::class, 'index'])
+            ->middleware('permission:purchases.index')
+            ->name('reports.purchase-tax');
+
+        Route::get('/reports/purchase-tax/export', [PurchaseTaxReportController::class, 'export'])
+            ->middleware('permission:purchases.index')
+            ->name('reports.purchase-tax.export');
 
         Route::get('/reports/customers', [CustomerReportController::class, 'index'])
             ->middleware('permission:reports.customers')
