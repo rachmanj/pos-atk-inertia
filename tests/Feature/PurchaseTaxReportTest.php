@@ -98,6 +98,40 @@ class PurchaseTaxReportTest extends TestCase
                 ->has('purchases.data', 2));
     }
 
+    public function test_report_purchase_date_is_parseable_for_frontend(): void
+    {
+        Carbon::setTestNow('2026-09-17 14:30:00');
+
+        $user = $this->createReportUser();
+        $supplier = $this->createSupplier();
+
+        $this->createPurchaseRecord($user, $supplier, 'PO-DATE-001', '2026-09-17', 100_000, 11_000, 11.0);
+
+        $response = $this->actingAs($user)
+            ->get(route('account.reports.purchase-tax', [
+                'start_date' => '2026-09-01',
+                'end_date' => '2026-09-30',
+            ]));
+
+        $response->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('purchases.data', 1)
+                ->where('purchases.data.0.invoice', 'PO-DATE-001'));
+
+        $purchase = Purchase::query()->where('invoice', 'PO-DATE-001')->firstOrFail();
+        $this->assertSame('2026-09-17', $purchase->purchase_date->toDateString());
+
+        $purchaseDate = $response->original->getData()['page']['props']['purchases']['data'][0]['purchase_date'];
+        $this->assertNotEmpty($purchaseDate);
+        $this->assertMatchesRegularExpression(
+            '/^\d{4}-\d{2}-\d{2}(T|\s|$)/',
+            $purchaseDate,
+            'purchase_date must be YYYY-MM-DD or ISO datetime for frontend Date parsing',
+        );
+
+        Carbon::setTestNow();
+    }
+
     public function test_report_filters_by_supplier(): void
     {
         $user = $this->createReportUser();

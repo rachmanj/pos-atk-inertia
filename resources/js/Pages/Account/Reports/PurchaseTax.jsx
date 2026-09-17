@@ -27,13 +27,6 @@ import dayjs from "dayjs";
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-const formatDate = (value) => {
-    if (!value) return "-";
-    return new Date(`${value}T00:00:00`).toLocaleDateString("id-ID", {
-        dateStyle: "medium",
-    });
-};
-
 const formatTaxRate = (value) => {
     if (value === null || value === undefined || value === "") {
         return "-";
@@ -109,7 +102,8 @@ export default function PurchaseTaxReport() {
         {
             title: "Tanggal",
             dataIndex: "purchase_date",
-            render: (value) => formatDate(value),
+            render: (value) =>
+                value ? new Date(value).toLocaleDateString("id-ID") : "-",
         },
         {
             title: "Invoice",
