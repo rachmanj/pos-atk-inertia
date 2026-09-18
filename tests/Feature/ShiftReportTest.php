@@ -51,9 +51,10 @@ class ShiftReportTest extends TestCase
         $this->assertSame($actualCash, $report['tunaiDisetor']);
         $this->assertSame($selisih, $report['selisih']);
         $this->assertStringContainsString(
-            str_pad('Tunai dari Penjualan', 21) . ': ' . TelegramFormatter::idr($tunaiDariPenjualan),
+            str_pad('Penjualan Tunai', 21) . ': ' . TelegramFormatter::idr($tunaiDariPenjualan),
             $report['messageText']
         );
+        $this->assertStringNotContainsString('Tunai dari Penjualan', $report['messageText']);
         $this->assertStringContainsString(
             str_pad('Kas Seharusnya', 21) . ': ' . TelegramFormatter::idr($kasSeharusnya),
             $report['messageText']
@@ -139,6 +140,124 @@ class ShiftReportTest extends TestCase
             str_pad('Tunai Disetor', 21) . ': ' . TelegramFormatter::idr($tunaiDisetorFallback),
             $report['messageText']
         );
+    }
+
+    public function test_report_non_tunai_nol_tanpa_minus_di_rekap(): void
+    {
+        $user = $this->createCashierUser();
+        $openedAt = Carbon::parse('2026-09-18 08:00:00');
+        $closedAt = Carbon::parse('2026-09-18 16:00:00');
+
+        $shift = CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => $openedAt,
+            'closed_at' => $closedAt,
+            'cash_in_hand' => 100_000,
+            'status' => 'closed',
+            'actual_cash' => 600_000,
+        ]);
+
+        $this->createShiftTransaction($user, $openedAt->copy()->addHour(), 500_000, 'cash');
+
+        $report = app(ShiftReportBuilder::class)->build($shift);
+
+        $this->assertSame(0, $report['nonTunai']);
+        $this->assertStringContainsString(
+            str_pad('Non-Tunai QRIS/Trf', 21) . ': ' . TelegramFormatter::idr(0),
+            $report['messageText'],
+        );
+        $this->assertStringNotContainsString('-Rp 0', $report['messageText']);
+    }
+
+    public function test_report_non_tunai_positif_ditampilkan_dengan_minus(): void
+    {
+        $user = $this->createCashierUser();
+        $openedAt = Carbon::parse('2026-09-18 08:00:00');
+        $closedAt = Carbon::parse('2026-09-18 16:00:00');
+
+        $shift = CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => $openedAt,
+            'closed_at' => $closedAt,
+            'cash_in_hand' => 100_000,
+            'status' => 'closed',
+            'actual_cash' => 100_000,
+        ]);
+
+        $this->createShiftTransaction($user, $openedAt->copy()->addHour(), 500_000, 'qris');
+
+        $report = app(ShiftReportBuilder::class)->build($shift);
+
+        $this->assertSame(500_000, $report['nonTunai']);
+        $this->assertStringContainsString(
+            str_pad('Non-Tunai QRIS/Trf', 21) . ': -Rp 500.000',
+            $report['messageText'],
+        );
+    }
+
+    public function test_report_tanpa_penjualan_dengan_pengeluaran_menampilkan_penjualan_tunai_nol(): void
+    {
+        $user = $this->createCashierUser();
+        $openedAt = Carbon::parse('2026-09-18 08:00:00');
+        $closedAt = Carbon::parse('2026-09-18 16:00:00');
+
+        $shift = CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => $openedAt,
+            'closed_at' => $closedAt,
+            'cash_in_hand' => 100_000,
+            'status' => 'closed',
+            'actual_cash' => 80_000,
+            'expense_amount' => 20_000,
+        ]);
+
+        $report = app(ShiftReportBuilder::class)->build($shift, 20_000);
+
+        $this->assertStringContainsString(
+            str_pad('Penjualan Tunai', 21) . ': ' . TelegramFormatter::idr(0),
+            $report['messageText'],
+        );
+        $this->assertStringContainsString(
+            str_pad('Pengeluaran dari Laci', 21) . ': -Rp 20.000',
+            $report['messageText'],
+        );
+        $this->assertStringContainsString(
+            str_pad('Kas Seharusnya', 21) . ': ' . TelegramFormatter::idr(80_000),
+            $report['messageText'],
+        );
+        $this->assertStringNotContainsString('Tunai dari Penjualan', $report['messageText']);
+    }
+
+    public function test_report_penjualan_tunai_bruto_dan_kas_seharusnya_dengan_pengeluaran(): void
+    {
+        $user = $this->createCashierUser();
+        $openedAt = Carbon::parse('2026-09-18 08:00:00');
+        $closedAt = Carbon::parse('2026-09-18 16:00:00');
+
+        $shift = CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => $openedAt,
+            'closed_at' => $closedAt,
+            'cash_in_hand' => 100_000,
+            'status' => 'closed',
+            'actual_cash' => 580_000,
+            'expense_amount' => 20_000,
+        ]);
+
+        $this->createShiftTransaction($user, $openedAt->copy()->addHour(), 500_000, 'cash');
+
+        $report = app(ShiftReportBuilder::class)->build($shift, 20_000);
+
+        $this->assertSame(580_000, $report['kas_seharusnya']);
+        $this->assertStringContainsString(
+            str_pad('Penjualan Tunai', 21) . ': ' . TelegramFormatter::idr(500_000),
+            $report['messageText'],
+        );
+        $this->assertStringContainsString(
+            str_pad('Kas Seharusnya', 21) . ': ' . TelegramFormatter::idr(580_000),
+            $report['messageText'],
+        );
+        $this->assertStringNotContainsString('Tunai dari Penjualan', $report['messageText']);
     }
 
     protected function createShiftTransaction(

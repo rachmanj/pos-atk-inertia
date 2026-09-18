@@ -48,10 +48,12 @@ class SplitPaymentShiftReconciliationTest extends TestCase
         $this->assertSame(40_000, $reconciliation['hanya_cash_sales']);
         $this->assertSame(60_000, $reconciliation['non_cash_sales']);
         $this->assertSame(60_000, $reconciliation['non_tunai']);
+        $this->assertSame(40_000, $reconciliation['penjualan_tunai']);
         $this->assertSame(40_000, $reconciliation['tunai_dari_penjualan']);
         $this->assertSame(140_000, $reconciliation['kas_seharusnya']);
 
         $report = app(ShiftReportBuilder::class)->build($shift);
+        $this->assertStringNotContainsString('Tunai dari Penjualan', $report['messageText']);
         $this->assertStringContainsString('CAMPURAN', $report['messageText']);
         $this->assertStringContainsString('Tunai Rp 40.000 + QRIS Rp 60.000', $report['messageText']);
         $this->assertStringContainsString($transaction->invoice, $report['messageText']);

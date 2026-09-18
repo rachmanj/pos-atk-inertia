@@ -32,6 +32,7 @@ class ShiftReportBuilder
         $totalPenjualan = $reconciliation['total_penjualan'];
         $nonTunai = $reconciliation['non_tunai'];
         $refundTunai = $reconciliation['cash_refunds'];
+        $penjualanTunai = $reconciliation['penjualan_tunai'];
         $tunaiDariPenjualan = $reconciliation['tunai_dari_penjualan'];
         $kasAwal = $reconciliation['kas_awal'];
         $kasSeharusnya = $reconciliation['kas_seharusnya'];
@@ -76,7 +77,7 @@ class ShiftReportBuilder
             expenseAmount: $expenseAmount,
             expenseNote: $expenseNote,
             expenseLines: $expenseLines,
-            tunaiDariPenjualan: $tunaiDariPenjualan,
+            penjualanTunai: $penjualanTunai,
             kasSeharusnya: $kasSeharusnya,
             selisih: $selisih,
             tunaiDisetor: $tunaiDisetor,
@@ -112,7 +113,7 @@ class ShiftReportBuilder
         int $expenseAmount,
         ?string $expenseNote,
         array $expenseLines,
-        int $tunaiDariPenjualan,
+        int $penjualanTunai,
         int $kasSeharusnya,
         int $selisih,
         int $tunaiDisetor,
@@ -131,6 +132,7 @@ class ShiftReportBuilder
             $this->labelLine('Kas Awal', TelegramFormatter::idr($kasAwal)),
             $this->labelLine('Total Penjualan', TelegramFormatter::idr($totalPenjualan)),
             $this->labelLine('Non-Tunai QRIS/Trf', $this->formatMinus($nonTunai)),
+            $this->labelLine('Penjualan Tunai', TelegramFormatter::idr($penjualanTunai)),
         ];
 
         if ($refundTunai > 0) {
@@ -149,8 +151,6 @@ class ShiftReportBuilder
                 $lines[array_key_last($lines)] .= ' (' . trim($expenseNote) . ')';
             }
         }
-
-        $lines[] = $this->labelLine('Tunai dari Penjualan', TelegramFormatter::idr($tunaiDariPenjualan));
         $lines[] = $this->labelLine('Kas Seharusnya', TelegramFormatter::idr($kasSeharusnya));
 
         if ($selisih > 0) {
@@ -204,6 +204,10 @@ class ShiftReportBuilder
 
     protected function formatMinus(int $amount): string
     {
+        if ($amount === 0) {
+            return TelegramFormatter::idr(0);
+        }
+
         return '-Rp ' . number_format($amount, 0, ',', '.');
     }
 

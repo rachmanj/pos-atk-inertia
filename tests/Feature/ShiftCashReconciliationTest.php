@@ -42,8 +42,13 @@ class ShiftCashReconciliationTest extends TestCase
         $this->assertSame(51_200, $reconciliation['non_cash_sales']);
         $this->assertSame(130_000, $reconciliation['expense_amount']);
         $this->assertSame(405_000, $reconciliation['kas_awal']);
+        $this->assertSame(2_225_087, $reconciliation['penjualan_tunai']);
         $this->assertSame(2_095_087, $reconciliation['tunai_dari_penjualan']);
         $this->assertSame(2_500_087, $reconciliation['kas_seharusnya']);
+        $this->assertSame(
+            $reconciliation['total_penjualan'] - $reconciliation['non_tunai'],
+            $reconciliation['penjualan_tunai'],
+        );
         $this->assertSame(2_662_087, $reconciliation['kas_disetor']);
         $this->assertSame(162_000, $reconciliation['selisih']);
     }
@@ -104,6 +109,11 @@ class ShiftCashReconciliationTest extends TestCase
             $report['messageText'],
         );
         $this->assertStringContainsString(
+            str_pad('Penjualan Tunai', 21) . ': ' . TelegramFormatter::idr(2_225_087),
+            $report['messageText'],
+        );
+        $this->assertStringNotContainsString('Tunai dari Penjualan', $report['messageText']);
+        $this->assertStringContainsString(
             str_pad('Pengeluaran dari Laci', 21) . ': -Rp 130.000',
             $report['messageText'],
         );
@@ -118,6 +128,60 @@ class ShiftCashReconciliationTest extends TestCase
         $this->assertStringContainsString(
             str_pad('Tunai Disetor', 21) . ': ' . TelegramFormatter::idr(2_662_087),
             $report['messageText'],
+        );
+    }
+
+    public function test_penjualan_tunai_nol_saat_hanya_pengeluaran_tanpa_penjualan(): void
+    {
+        $user = $this->createCashierUser();
+        $openedAt = Carbon::parse('2026-09-18 08:00:00');
+        $closedAt = Carbon::parse('2026-09-18 16:00:00');
+
+        $shift = CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => $openedAt,
+            'closed_at' => $closedAt,
+            'cash_in_hand' => 100_000,
+            'status' => 'closed',
+            'actual_cash' => 80_000,
+            'expense_amount' => 20_000,
+        ]);
+
+        $reconciliation = app(ShiftCashReconciliation::class)->build($shift);
+
+        $this->assertSame(0, $reconciliation['penjualan_tunai']);
+        $this->assertSame(-20_000, $reconciliation['tunai_dari_penjualan']);
+        $this->assertSame(80_000, $reconciliation['kas_seharusnya']);
+        $this->assertSame(0, $reconciliation['total_penjualan']);
+        $this->assertSame(0, $reconciliation['non_tunai']);
+    }
+
+    public function test_penjualan_tunai_bruto_tidak_terpengaruh_pengeluaran(): void
+    {
+        $user = $this->createCashierUser();
+        $openedAt = Carbon::parse('2026-09-18 08:00:00');
+        $closedAt = Carbon::parse('2026-09-18 16:00:00');
+
+        $shift = CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => $openedAt,
+            'closed_at' => $closedAt,
+            'cash_in_hand' => 100_000,
+            'status' => 'closed',
+            'actual_cash' => 580_000,
+            'expense_amount' => 20_000,
+        ]);
+
+        $this->createShiftTransaction($user, $openedAt->copy()->addHour(), 500_000, 'cash');
+
+        $reconciliation = app(ShiftCashReconciliation::class)->build($shift);
+
+        $this->assertSame(500_000, $reconciliation['penjualan_tunai']);
+        $this->assertSame(480_000, $reconciliation['tunai_dari_penjualan']);
+        $this->assertSame(580_000, $reconciliation['kas_seharusnya']);
+        $this->assertSame(
+            $reconciliation['total_penjualan'] - $reconciliation['non_tunai'],
+            $reconciliation['penjualan_tunai'],
         );
     }
 

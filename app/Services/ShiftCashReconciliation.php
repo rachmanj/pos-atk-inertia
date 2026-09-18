@@ -44,7 +44,8 @@ class ShiftCashReconciliation
         $expenseAmount = (int) ($shift->expense_amount ?? 0);
         $kasAwal = (int) $shift->cash_in_hand;
 
-        $tunaiDariPenjualan = $totalPenjualan - $nonTunai - $cashRefunds - $expenseAmount;
+        $penjualanTunai = $totalPenjualan - $nonTunai;
+        $tunaiDariPenjualan = $penjualanTunai - $cashRefunds - $expenseAmount;
         $kasSeharusnya = $kasAwal + $tunaiDariPenjualan;
 
         $shiftOpen = $shift->isOpen() || $shift->closed_at === null;
@@ -69,6 +70,7 @@ class ShiftCashReconciliation
             'kas_disetor'         => $kasDisetor,
             'selisih'             => $selisih,
             'tunai_dari_penjualan' => $tunaiDariPenjualan,
+            'penjualan_tunai'     => $penjualanTunai,
             'total_penjualan'     => $totalPenjualan,
             'non_tunai'           => $nonTunai,
         ];
