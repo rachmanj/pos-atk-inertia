@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Http\Controllers\Account\Concerns\AuthorizesCashierShift;
 use App\Http\Controllers\Controller;
 use App\Models\CashierShift;
 use App\Models\PpobAccount;
@@ -24,6 +25,8 @@ use Throwable;
 
 class CashierShiftController extends Controller
 {
+    use AuthorizesCashierShift;
+
     public function __construct(
         protected ShiftReportBuilder $shiftReportBuilder,
         protected ShiftLiveSummary $shiftLiveSummary,
@@ -219,6 +222,7 @@ class CashierShiftController extends Controller
                 'summary'            => $summary,
             ],
             'canSendWaReport' => $canSendWaReport,
+            'canReopen' => $request->user()->isAdminUser() && $cashierShift->status === 'closed',
             'whatsappLogs' => $whatsappLogs,
         ]);
     }
@@ -342,16 +346,70 @@ class CashierShiftController extends Controller
         ], 422);
     }
 
+    public function saveExpenses(Request $request, CashierShift $cashierShift)
+    {
+        $this->authorizeShiftOwnerOrAdmin($request, $cashierShift);
+
+        if (!$cashierShift->isOpen()) {
+            throw ValidationException::withMessages([
+                'expenses' => 'Shift sudah ditutup, pengeluaran tidak bisa diubah.',
+            ]);
+        }
+
+        $expenseInput = $this->validateShiftExpenseInput($request, required: true);
+        $this->syncShiftExpenseLines($cashierShift, $expenseInput['lines']);
+
+        return back()->with('success', 'Pengeluaran shift berhasil disimpan.');
+    }
+
+    public function reopen(Request $request, CashierShift $cashierShift)
+    {
+        $this->authorizeShiftAdmin($request);
+
+        $validated = $request->validate([
+            'reason' => 'required|string|min:3|max:255',
+        ]);
+
+        if ($cashierShift->isOpen()) {
+            throw ValidationException::withMessages([
+                'reason' => 'Shift masih terbuka.',
+            ]);
+        }
+
+        $admin = $request->user();
+        $auditLine = sprintf(
+            '[BUKA KEMBALI %s oleh %s] %s',
+            now()->format('d/m/Y H:i'),
+            $admin->name,
+            trim($validated['reason']),
+        );
+
+        $existingNote = filled($cashierShift->note) ? trim($cashierShift->note) : null;
+        $note = $existingNote ? $existingNote . "\n\n" . $auditLine : $auditLine;
+
+        $cashierShift->update([
+            'status' => 'open',
+            'closed_at' => null,
+            'difference' => null,
+            'actual_cash' => null,
+            'cash_overage' => 0,
+            'overage_note' => null,
+            'expected_cash' => null,
+            'note' => $note,
+        ]);
+
+        return back()->with('success', 'Shift berhasil dibuka kembali.');
+    }
+
     public function close(Request $request, CashierShift $cashierShift)
     {
         $request->validate([
             'actual_cash'  => 'required|integer|min:0',
-            'cash_overage' => 'nullable|integer|min:0',
             'overage_note' => 'nullable|string|max:255',
             'note'         => 'nullable|string|max:1000',
         ]);
 
-        $this->authorizeClose($request, $cashierShift);
+        $this->authorizeShiftOwnerOrAdmin($request, $cashierShift);
 
         if (!$cashierShift->isOpen()) {
             return redirect()
@@ -359,7 +417,17 @@ class CashierShiftController extends Controller
                 ->with('error', 'Shift ini sudah ditutup sebelumnya.');
         }
 
-        $cashOverage = (int) ($request->cash_overage ?? 0);
+        if ($request->has('expenses')) {
+            $expenseInput = $this->validateShiftExpenseInput($request, required: false);
+            $this->syncShiftExpenseLines($cashierShift, $expenseInput['lines']);
+            $cashierShift->refresh();
+        }
+
+        $summary = $this->buildShiftSummary($cashierShift);
+        $physicalCash = (int) $request->actual_cash;
+        $expectedCash = $summary['expected_cash'];
+        $difference = $physicalCash - $expectedCash;
+        $cashOverage = max(0, $difference);
         $overageNote = filled($request->overage_note) ? trim($request->overage_note) : null;
 
         if ($cashOverage > 0 && !filled($overageNote)) {
@@ -368,10 +436,6 @@ class CashierShiftController extends Controller
             ]);
         }
 
-        $summary = $this->buildShiftSummary($cashierShift);
-        $actualCash = (int) $request->actual_cash;
-        $physicalCash = $actualCash + $cashOverage;
-        $expectedCash = $summary['expected_cash'];
         $closeNote = filled($request->note) ? trim($request->note) : null;
 
         // PPOB balance is not counted per shift (it's a shared pool across cashiers);
@@ -382,7 +446,7 @@ class CashierShiftController extends Controller
             'actual_cash'        => $physicalCash,
             'cash_overage'       => $cashOverage,
             'overage_note'       => $overageNote,
-            'difference'         => $physicalCash - $expectedCash,
+            'difference'         => $difference,
             'total_transactions' => $summary['total_transactions'],
             'ppob_expected_balance' => $summary['ppob_expected_balance'],
             'note'               => $this->mergeNotes($cashierShift->note, $closeNote),
@@ -395,15 +459,6 @@ class CashierShiftController extends Controller
     }
 
     protected function authorizeView(Request $request, CashierShift $cashierShift): void
-    {
-        $user = $request->user();
-
-        if ($cashierShift->user_id !== $user->id && !$user->isAdminUser()) {
-            abort(403);
-        }
-    }
-
-    protected function authorizeClose(Request $request, CashierShift $cashierShift): void
     {
         $user = $request->user();
 
@@ -492,6 +547,71 @@ class CashierShiftController extends Controller
         ]);
 
         return $parts ? implode("\n\n", $parts) : null;
+    }
+
+    /**
+     * @return array{lines: array<int, array{title: string, amount: int}>, amount: int}
+     */
+    protected function validateShiftExpenseInput(Request $request, bool $required): array
+    {
+        $expensesRule = $required ? 'required' : 'nullable';
+
+        $validated = $request->validate([
+            'expenses' => $expensesRule . '|array|max:20',
+            'expenses.*.title' => 'nullable|string|max:255',
+            'expenses.*.amount' => 'nullable|integer|min:0',
+        ]);
+
+        $lines = [];
+
+        foreach ($validated['expenses'] ?? [] as $row) {
+            $amount = (int) ($row['amount'] ?? 0);
+            $title = filled($row['title'] ?? null) ? trim($row['title']) : null;
+
+            if ($amount < 1) {
+                continue;
+            }
+
+            if (!filled($title)) {
+                throw ValidationException::withMessages([
+                    'expenses' => 'Keterangan wajib diisi untuk setiap baris pengeluaran.',
+                ]);
+            }
+
+            $lines[] = [
+                'title' => $title,
+                'amount' => $amount,
+            ];
+        }
+
+        return [
+            'lines' => $lines,
+            'amount' => array_sum(array_column($lines, 'amount')),
+        ];
+    }
+
+    /**
+     * @param  array<int, array{title: string, amount: int}>  $lines
+     */
+    protected function syncShiftExpenseLines(CashierShift $shift, array $lines): void
+    {
+        $amount = array_sum(array_column($lines, 'amount'));
+
+        DB::transaction(function () use ($shift, $lines, $amount) {
+            $shift->shiftExpenses()->delete();
+
+            foreach ($lines as $line) {
+                $shift->shiftExpenses()->create([
+                    'title' => $line['title'],
+                    'amount' => $line['amount'],
+                ]);
+            }
+
+            $shift->update([
+                'expense_amount' => $amount,
+                'expense_note' => null,
+            ]);
+        });
     }
 
     protected function validateReportExpenseInput(Request $request): array

@@ -233,6 +233,13 @@ Route::middleware(['auth'])
             ->middleware('permission:cashier_shifts.close')
             ->name('cashier-shifts.close');
 
+        Route::put('/cashier-shifts/{cashierShift}/expenses', [CashierShiftController::class, 'saveExpenses'])
+            ->middleware('permission:cashier_shifts.close')
+            ->name('cashier-shifts.expenses.save');
+
+        Route::put('/cashier-shifts/{cashierShift}/reopen', [CashierShiftController::class, 'reopen'])
+            ->name('cashier-shifts.reopen');
+
         Route::post('/cashier-shifts/{cashierShift}/report/preview', [CashierShiftController::class, 'reportPreview'])
             ->middleware('permission:cashier_shifts.index')
             ->name('cashier-shifts.report.preview');

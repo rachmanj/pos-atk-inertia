@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
 import axios from "axios";
+import ShiftExpenseLinesEditor from "./ShiftExpenseLinesEditor";
 import {
     Alert,
     Button,
@@ -19,7 +20,6 @@ import {
     Space,
     Spin,
     Statistic,
-    Table,
     Tag,
     Typography,
     notification,
@@ -28,17 +28,17 @@ import {
     ArrowLeftOutlined,
     ClockCircleOutlined,
     CloseCircleOutlined,
-    DeleteOutlined,
     DollarOutlined,
     EyeOutlined,
     FallOutlined,
     MoneyCollectOutlined,
-    PlusOutlined,
     RedoOutlined,
     RiseOutlined,
+    SaveOutlined,
     SendOutlined,
     ShoppingCartOutlined,
     SwapOutlined,
+    UnlockOutlined,
     WalletOutlined,
     CheckCircleOutlined,
 } from "@ant-design/icons";
@@ -78,6 +78,19 @@ const buildExpenseLinesFromShift = (shift) => {
     return [createEmptyExpenseLine()];
 };
 
+const buildExpensePayloadSilent = (lines) =>
+    lines
+        .filter(
+            (line) => Number(line.amount || 0) >= 1 && String(line.title || "").trim(),
+        )
+        .map((line) => ({
+            title: String(line.title).trim(),
+            amount: Number(line.amount),
+        }));
+
+const expensePayloadsEqual = (a, b) =>
+    JSON.stringify(a) === JSON.stringify(b);
+
 const validateAndBuildExpensePayload = (lines) => {
     const hasMissingTitle = lines.some(
         (line) => Number(line.amount || 0) >= 1 && !String(line.title || "").trim(),
@@ -90,15 +103,7 @@ const validateAndBuildExpensePayload = (lines) => {
         return null;
     }
 
-    const expenses = lines
-        .filter(
-            (line) => Number(line.amount || 0) >= 1 && String(line.title || "").trim(),
-        )
-        .map((line) => ({
-            title: String(line.title).trim(),
-            amount: Number(line.amount),
-        }));
-
+    const expenses = buildExpensePayloadSilent(lines);
     const expense_amount = expenses.reduce((sum, line) => sum + line.amount, 0);
 
     return { expenses, expense_amount };
@@ -122,41 +127,52 @@ const readCsrfToken = () => {
 };
 
 export default function CashierShiftShow() {
-    const { shift, flash, errors, auth, canSendWaReport = false, whatsappLogs = [] } = usePage().props;
+    const {
+        shift,
+        flash,
+        errors,
+        auth,
+        canSendWaReport = false,
+        canReopen = false,
+        whatsappLogs = [],
+    } = usePage().props;
     const permissions = auth?.permissions || {};
     const loading = useInertiaLoading();
+    const expensesCardRef = useRef(null);
 
     const [actualCash, setActualCash] = useState(
         shift.status === "open" ? shift.summary?.expected_cash || 0 : shift.actual_cash,
     );
-    const [cashOverage, setCashOverage] = useState(0);
     const [overageNote, setOverageNote] = useState("");
     const [note, setNote] = useState("");
 
-    const [waModalOpen, setWaModalOpen] = useState(false);
     const [expenseLines, setExpenseLines] = useState(() => buildExpenseLinesFromShift(shift));
+    const [saveExpensesLoading, setSaveExpensesLoading] = useState(false);
+
+    const [waModalOpen, setWaModalOpen] = useState(false);
     const [previewText, setPreviewText] = useState("");
     const [previewOk, setPreviewOk] = useState(false);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [sendLoading, setSendLoading] = useState(false);
     const [viewMessageLog, setViewMessageLog] = useState(null);
 
-    const physicalCash = useMemo(() => {
-        const value = Number(actualCash || 0) + Number(cashOverage || 0);
-        return Number.isNaN(value) ? 0 : value;
-    }, [actualCash, cashOverage]);
+    const [reopenModalOpen, setReopenModalOpen] = useState(false);
+    const [reopenReason, setReopenReason] = useState("");
+    const [reopenLoading, setReopenLoading] = useState(false);
 
-    const estimatedDifference = useMemo(() => {
-        const value = physicalCash - Number(shift.summary?.expected_cash || 0);
-        return Number.isNaN(value) ? 0 : value;
-    }, [physicalCash, shift.summary?.expected_cash]);
+    const savedExpensePayload = useMemo(
+        () => buildExpensePayloadSilent(buildExpenseLinesFromShift(shift)),
+        [shift],
+    );
 
-    const countedCash = useMemo(() => {
-        if (shift.status !== "closed" || !shift.cash_overage) {
-            return shift.actual_cash;
-        }
-        return Number(shift.actual_cash || 0) - Number(shift.cash_overage || 0);
-    }, [shift.status, shift.actual_cash, shift.cash_overage]);
+    const expensesDirty = useMemo(() => {
+        const current = buildExpensePayloadSilent(expenseLines);
+        return !expensePayloadsEqual(current, savedExpensePayload);
+    }, [expenseLines, savedExpensePayload]);
+
+    useEffect(() => {
+        setExpenseLines(buildExpenseLinesFromShift(shift));
+    }, [shift.id, shift.status, savedExpensePayload]);
 
     const totalExpenseAmount = useMemo(
         () =>
@@ -167,72 +183,41 @@ export default function CashierShiftShow() {
         [expenseLines],
     );
 
-    const updateExpenseLine = (index, field, value) => {
-        setExpenseLines((lines) =>
-            lines.map((line, lineIndex) =>
-                lineIndex === index ? { ...line, [field]: value } : line,
-            ),
-        );
-    };
+    const savedExpenseAmount = Number(shift.summary?.expense_amount ?? 0);
 
-    const addExpenseLine = () => {
-        setExpenseLines((lines) => [...lines, createEmptyExpenseLine()]);
-    };
+    const kasSeharusnyaLive = useMemo(() => {
+        const kasAwal = Number(shift.summary?.kas_awal ?? shift.cash_in_hand ?? 0);
+        const tunai = Number(shift.summary?.tunai_dari_penjualan ?? 0);
+        const expenseDelta = totalExpenseAmount - savedExpenseAmount;
+        return kasAwal + tunai - expenseDelta;
+    }, [shift.summary?.kas_awal, shift.cash_in_hand, shift.summary?.tunai_dari_penjualan, totalExpenseAmount, savedExpenseAmount]);
 
-    const removeExpenseLine = (index) => {
-        setExpenseLines((lines) => {
-            if (lines.length === 1) {
-                return lines;
+    const liveCashDifference = useMemo(() => {
+        const value = Number(actualCash || 0) - kasSeharusnyaLive;
+        return Number.isNaN(value) ? 0 : value;
+    }, [actualCash, kasSeharusnyaLive]);
+
+    const countedCash = useMemo(() => {
+        if (shift.status !== "closed" || !shift.cash_overage) {
+            return shift.actual_cash;
+        }
+        return Number(shift.actual_cash || 0) - Number(shift.cash_overage || 0);
+    }, [shift.status, shift.actual_cash, shift.cash_overage]);
+
+    const savedExpenseLinesForDisplay = useMemo(
+        () => {
+            const lines = buildExpenseLinesFromShift(shift);
+            const payload = buildExpensePayloadSilent(lines);
+            if (payload.length === 0) {
+                return [];
             }
-            return lines.filter((_, lineIndex) => lineIndex !== index);
-        });
-    };
-
-    const expenseLineColumns = [
-        {
-            title: "Keterangan",
-            render: (_, line, index) => (
-                <Input
-                    value={line.title}
-                    maxLength={150}
-                    placeholder="Beli bensin"
-                    onChange={(e) => updateExpenseLine(index, "title", e.target.value)}
-                />
-            ),
+            return payload;
         },
-        {
-            title: "Nominal",
-            align: "right",
-            width: 160,
-            render: (_, line, index) => (
-                <InputNumber
-                    min={0}
-                    style={{ width: "100%" }}
-                    value={line.amount}
-                    onChange={(value) => updateExpenseLine(index, "amount", value ?? 0)}
-                    formatter={(v) => formatRupiah(v)}
-                    parser={(v) => v?.replace(/\D/g, "")}
-                />
-            ),
-        },
-        {
-            title: "Aksi",
-            align: "center",
-            width: 70,
-            render: (_, __, index) => (
-                <Button
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={() => removeExpenseLine(index)}
-                    disabled={expenseLines.length === 1}
-                />
-            ),
-        },
-    ];
+        [shift],
+    );
 
     const loadPreview = useCallback(async () => {
-        const payload = validateAndBuildExpensePayload(expenseLines);
+        const payload = validateAndBuildExpensePayload(buildExpenseLinesFromShift(shift));
         if (payload === null) {
             setPreviewText("");
             setPreviewOk(false);
@@ -268,10 +253,9 @@ export default function CashierShiftShow() {
         } finally {
             setPreviewLoading(false);
         }
-    }, [shift.id, expenseLines]);
+    }, [shift]);
 
     const openWaModal = () => {
-        setExpenseLines(buildExpenseLinesFromShift(shift));
         setPreviewText("");
         setPreviewOk(false);
         setWaModalOpen(true);
@@ -289,7 +273,7 @@ export default function CashierShiftShow() {
             return;
         }
 
-        const payload = validateAndBuildExpensePayload(expenseLines);
+        const payload = validateAndBuildExpensePayload(buildExpenseLinesFromShift(shift));
         if (payload === null) {
             return;
         }
@@ -326,13 +310,49 @@ export default function CashierShiftShow() {
         }
     };
 
+    const saveExpenses = () => {
+        const payload = validateAndBuildExpensePayload(expenseLines);
+        if (payload === null) {
+            return;
+        }
+
+        setSaveExpensesLoading(true);
+        router.put(
+            `/account/cashier-shifts/${shift.id}/expenses`,
+            { expenses: payload.expenses },
+            {
+                preserveScroll: true,
+                onError: () => {
+                    notification.error({
+                        message: "Gagal",
+                        description: "Penyimpanan pengeluaran gagal. Periksa data dan coba lagi.",
+                    });
+                },
+                onFinish: () => setSaveExpensesLoading(false),
+            },
+        );
+    };
+
     const closeShift = () => {
+        const payload = validateAndBuildExpensePayload(expenseLines);
+        if (payload === null) {
+            return;
+        }
+
+        if (liveCashDifference > 0 && !String(overageNote || "").trim()) {
+            notification.error({
+                message: "Validasi gagal",
+                description: "Keterangan kelebihan uang wajib diisi.",
+            });
+            return;
+        }
+
         router.put(
             `/account/cashier-shifts/${shift.id}/close`,
             {
                 actual_cash: actualCash,
-                cash_overage: cashOverage || 0,
-                overage_note: cashOverage > 0 ? overageNote : null,
+                expenses: payload.expenses,
+                overage_note: liveCashDifference > 0 ? overageNote : null,
                 note,
             },
             {
@@ -344,6 +364,103 @@ export default function CashierShiftShow() {
                     });
                 },
             },
+        );
+    };
+
+    const submitReopen = () => {
+        const reason = String(reopenReason || "").trim();
+        if (reason.length < 3) {
+            notification.error({
+                message: "Validasi gagal",
+                description: "Alasan pembukaan kembali wajib diisi (minimal 3 karakter).",
+            });
+            return;
+        }
+
+        setReopenLoading(true);
+        router.put(
+            `/account/cashier-shifts/${shift.id}/reopen`,
+            { reason },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setReopenModalOpen(false);
+                    setReopenReason("");
+                },
+                onError: () => {
+                    notification.error({
+                        message: "Gagal",
+                        description: "Shift tidak dapat dibuka kembali. Periksa hak akses dan data.",
+                    });
+                },
+                onFinish: () => setReopenLoading(false),
+            },
+        );
+    };
+
+    const focusExpenseCard = () => {
+        setWaModalOpen(false);
+        window.setTimeout(() => {
+            expensesCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+    };
+
+    const canEditExpenses =
+        shift.status === "open" && hasAnyPermission(["cashier_shifts.close"], permissions);
+
+    const expenseSaveStatusTag = expensesDirty
+        ? <Tag color="warning">Ada perubahan belum disimpan</Tag>
+        : <Tag color="success">Tersimpan</Tag>;
+
+    const renderLiveDifference = () => {
+        if (liveCashDifference > 0) {
+            return (
+                <>
+                    <Col xs={24} md={8}>
+                        <Form.Item label="Kelebihan Uang (Rp)">
+                            <InputNumber
+                                style={{ width: "100%" }}
+                                value={liveCashDifference}
+                                disabled
+                                formatter={(v) => formatRupiah(v)}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} md={8}>
+                        <Form.Item
+                            label="Keterangan Kelebihan"
+                            required
+                            validateStatus={errors.overage_note ? "error" : ""}
+                            help={errors.overage_note}
+                        >
+                            <Input
+                                value={overageNote}
+                                onChange={(e) => setOverageNote(e.target.value)}
+                                placeholder="Contoh: uang kembalian pelanggan tertinggal"
+                                maxLength={255}
+                            />
+                        </Form.Item>
+                    </Col>
+                </>
+            );
+        }
+
+        if (liveCashDifference < 0) {
+            return (
+                <Col xs={24}>
+                    <Alert
+                        type="error"
+                        showIcon
+                        message={`Kekurangan ${formatRupiah(Math.abs(liveCashDifference))}`}
+                    />
+                </Col>
+            );
+        }
+
+        return (
+            <Col xs={24}>
+                <Alert type="success" showIcon message="Pas" />
+            </Col>
         );
     };
 
@@ -501,6 +618,36 @@ export default function CashierShiftShow() {
                         </Card>
                     )}
 
+                    {canEditExpenses && (
+                        <div ref={expensesCardRef}>
+                        <Card
+                            title={(
+                                <Space wrap>
+                                    <FallOutlined style={{ color: "var(--semantic-warning)" }} />
+                                    <span>Pengeluaran dari Laci</span>
+                                    {expenseSaveStatusTag}
+                                </Space>
+                            )}
+                        >
+                            <ShiftExpenseLinesEditor
+                                lines={expenseLines}
+                                onChange={setExpenseLines}
+                                totalAmount={totalExpenseAmount}
+                            />
+                            <Button
+                                type="primary"
+                                icon={<SaveOutlined />}
+                                onClick={saveExpenses}
+                                loading={saveExpensesLoading}
+                                disabled={!expensesDirty || saveExpensesLoading}
+                                style={{ marginTop: 16 }}
+                            >
+                                Simpan Pengeluaran
+                            </Button>
+                        </Card>
+                        </div>
+                    )}
+
                     {shift.status === "open" && hasAnyPermission(["cashier_shifts.close"], permissions) ? (
                         <Card
                             title={<Space><CloseCircleOutlined style={{ color: "var(--semantic-error)" }} />TUTUP SHIFT</Space>}
@@ -508,6 +655,15 @@ export default function CashierShiftShow() {
                         >
                             <Form layout="vertical" onFinish={closeShift}>
                                 <Row gutter={[16, 16]}>
+                                    <Col xs={24}>
+                                        <Form.Item label="Pengeluaran dari Laci">
+                                            <ShiftExpenseLinesEditor
+                                                lines={expenseLines}
+                                                onChange={setExpenseLines}
+                                                totalAmount={totalExpenseAmount}
+                                            />
+                                        </Form.Item>
+                                    </Col>
                                     <Col xs={24} md={8}>
                                         <Form.Item
                                             label="Kas Aktual"
@@ -525,64 +681,26 @@ export default function CashierShiftShow() {
                                         </Form.Item>
                                     </Col>
                                     <Col xs={24} md={8}>
-                                        <Form.Item label="Kas Seharusnya">
-                                            <InputNumber style={{ width: "100%" }} value={shift.summary?.expected_cash || 0} disabled formatter={v => formatRupiah(v)} />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col xs={24} md={8}>
                                         <Form.Item
-                                            label="Kelebihan Uang (Rp)"
-                                            validateStatus={errors.cash_overage ? "error" : ""}
-                                            help={errors.cash_overage}
+                                            label="Kas Seharusnya"
+                                            extra={totalExpenseAmount > 0
+                                                ? `(termasuk pengeluaran ${formatRupiah(totalExpenseAmount)})`
+                                                : undefined}
                                         >
                                             <InputNumber
-                                                min={0}
                                                 style={{ width: "100%" }}
-                                                value={cashOverage}
-                                                onChange={v => {
-                                                    const next = v || 0;
-                                                    setCashOverage(next);
-                                                    if (next === 0) {
-                                                        setOverageNote("");
-                                                    }
-                                                }}
-                                                formatter={v => formatRupiah(v)}
-                                                parser={v => v?.replace(/\D/g, "")}
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                    {cashOverage > 0 && (
-                                        <Col xs={24} md={8}>
-                                            <Form.Item
-                                                label="Keterangan Kelebihan"
-                                                required
-                                                validateStatus={errors.overage_note ? "error" : ""}
-                                                help={errors.overage_note}
-                                            >
-                                                <Input
-                                                    value={overageNote}
-                                                    onChange={e => setOverageNote(e.target.value)}
-                                                    placeholder="Contoh: uang kembalian pelanggan tertinggal"
-                                                    maxLength={255}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                    )}
-                                    <Col xs={24} md={8}>
-                                        <Form.Item label="Total Fisik Kas">
-                                            <InputNumber
-                                                style={{ width: "100%" }}
-                                                value={physicalCash}
+                                                value={kasSeharusnyaLive}
                                                 disabled
                                                 formatter={v => formatRupiah(v)}
                                             />
                                         </Form.Item>
                                     </Col>
+                                    {renderLiveDifference()}
                                     <Col xs={24} md={8}>
-                                        <Form.Item label="Perkiraan Selisih">
+                                        <Form.Item label="Total Fisik Kas">
                                             <InputNumber
-                                                style={{ width: "100%", color: estimatedDifference < 0 ? "var(--semantic-error)" : estimatedDifference > 0 ? "var(--semantic-warning)" : "var(--semantic-success)" }}
-                                                value={estimatedDifference}
+                                                style={{ width: "100%" }}
+                                                value={actualCash}
                                                 disabled
                                                 formatter={v => formatRupiah(v)}
                                             />
@@ -592,8 +710,8 @@ export default function CashierShiftShow() {
                                         <Alert
                                             type="info"
                                             showIcon
-                                            message={`Kas Aktual + Kelebihan = ${formatRupiah(physicalCash)} (Total Fisik Kas)`}
-                                            description={`Selisih terhadap kas seharusnya: ${formatRupiah(estimatedDifference)}`}
+                                            message={`Total Fisik Kas: ${formatRupiah(actualCash)}`}
+                                            description={`Kas Seharusnya (live): ${formatRupiah(kasSeharusnyaLive)} · Selisih: ${formatRupiah(liveCashDifference)}`}
                                         />
                                     </Col>
                                     <Col xs={24}>
@@ -609,6 +727,16 @@ export default function CashierShiftShow() {
                         </Card>
                     ) : shift.status === "closed" ? (
                         <>
+                            <Card title={<Space><FallOutlined style={{ color: "var(--semantic-warning)" }} />Pengeluaran dari Laci</Space>}>
+                                <ShiftExpenseLinesEditor
+                                    lines={savedExpenseLinesForDisplay.length > 0
+                                        ? savedExpenseLinesForDisplay
+                                        : [{ title: "-", amount: 0 }]}
+                                    readOnly
+                                    totalAmount={shift.summary?.expense_amount || 0}
+                                />
+                            </Card>
+
                             <Card title="Hasil Penutupan">
                                 <Row gutter={[16, 16]}>
                                     <Col xs={24} sm={8}>
@@ -653,6 +781,23 @@ export default function CashierShiftShow() {
                                     </Col>
                                 </Row>
                             </Card>
+
+                            {canReopen && (
+                                <Card title="Administrasi Shift">
+                                    <Space direction="vertical">
+                                        <Text type="secondary">
+                                            Buka kembali shift yang sudah ditutup untuk mengoreksi pengeluaran atau penutupan.
+                                        </Text>
+                                        <Button
+                                            type="primary"
+                                            icon={<UnlockOutlined />}
+                                            onClick={() => setReopenModalOpen(true)}
+                                        >
+                                            Buka Kembali Shift
+                                        </Button>
+                                    </Space>
+                                </Card>
+                            )}
 
                             {canSendWaReport && (
                                 <Card title="Kirim Rekap ke Telegram">
@@ -736,30 +881,22 @@ export default function CashierShiftShow() {
                     destroyOnClose
                 >
                     <Form layout="vertical">
-                        <Form.Item label="Pengeluaran dari Laci">
-                            <Table
-                                rowKey={(_, index) => index}
-                                columns={expenseLineColumns}
-                                dataSource={expenseLines}
-                                pagination={false}
-                                scroll={{ x: "max-content" }}
-                                size="small"
-                                style={{ marginBottom: 8 }}
+                        <Form.Item
+                            label="Pengeluaran dari Laci"
+                            extra="Pengeluaran diisi sebelum shift ditutup."
+                        >
+                            <ShiftExpenseLinesEditor
+                                lines={savedExpenseLinesForDisplay.length > 0
+                                    ? savedExpenseLinesForDisplay
+                                    : [{ title: "-", amount: 0 }]}
+                                readOnly
+                                totalAmount={shift.summary?.expense_amount || 0}
                             />
-                            <Space direction="vertical" style={{ width: "100%" }}>
-                                <Button
-                                    type="dashed"
-                                    icon={<PlusOutlined />}
-                                    onClick={addExpenseLine}
-                                    block
-                                >
-                                    Tambah Baris
+                            {shift.status === "open" && (
+                                <Button type="link" onClick={focusExpenseCard} style={{ paddingLeft: 0, marginTop: 8 }}>
+                                    Ubah Pengeluaran
                                 </Button>
-                                <Text>
-                                    Total Pengeluaran dari Laci:{" "}
-                                    <Text strong>{formatRupiah(totalExpenseAmount)}</Text>
-                                </Text>
-                            </Space>
+                            )}
                         </Form.Item>
                         <Space style={{ marginBottom: 16 }}>
                             <Button loading={previewLoading} onClick={loadPreview}>
@@ -794,6 +931,36 @@ export default function CashierShiftShow() {
                             >
                                 {previewLoading ? "Memuat pratinjau..." : (previewText || "Klik Pratinjau untuk melihat isi pesan.")}
                             </pre>
+                        </Form.Item>
+                    </Form>
+                </Modal>
+
+                <Modal
+                    title="Buka Kembali Shift"
+                    open={reopenModalOpen}
+                    onCancel={() => {
+                        if (!reopenLoading) {
+                            setReopenModalOpen(false);
+                        }
+                    }}
+                    onOk={submitReopen}
+                    okText="Buka Kembali"
+                    confirmLoading={reopenLoading}
+                    destroyOnClose
+                >
+                    <Form layout="vertical">
+                        <Form.Item
+                            label="Alasan"
+                            required
+                            help="Wajib diisi untuk jejak audit (minimal 3 karakter)."
+                        >
+                            <Input.TextArea
+                                rows={4}
+                                value={reopenReason}
+                                onChange={(e) => setReopenReason(e.target.value)}
+                                placeholder="Contoh: perlu koreksi pengeluaran dari laci sebelum tutup."
+                                maxLength={255}
+                            />
                         </Form.Item>
                     </Form>
                 </Modal>
