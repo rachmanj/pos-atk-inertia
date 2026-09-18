@@ -21,6 +21,8 @@ class Product extends Model
             'avg_cost'   => 'integer',
             'stock'      => 'integer',
             'is_active'  => 'boolean',
+            'is_quick_access' => 'boolean',
+            'quick_access_order' => 'integer',
         ];
     }
 
@@ -38,6 +40,8 @@ class Product extends Model
         'unit',
         'stock',
         'is_active',
+        'is_quick_access',
+        'quick_access_order',
     ];
 
     public function category(): BelongsTo

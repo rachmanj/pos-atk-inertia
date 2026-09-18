@@ -61,6 +61,7 @@ const readCsrfToken = () => {
 export default function TransactionCreate() {
     const {
         products = { data: [], links: [] },
+        quickProducts = [],
         carts = [],
         ppobSettings = { ppob_admin_fee: 2000 },
         ppobAccount = null,
@@ -598,7 +599,7 @@ export default function TransactionCreate() {
         }
     };
 
-    const addToCart = (product) => {
+    const addToCartWithQty = (product, qty = 1) => {
         if (product.product_type === "ppob") {
             setPpobModalProduct(product);
             setCustomerRef("");
@@ -634,12 +635,15 @@ export default function TransactionCreate() {
                 Number(cart.unit_id || 0) === Number(unitId || 0) &&
                 cart.ppob_cost == null,
         );
+        const nextQty = existing
+            ? Number(existing.qty || 0) + qty
+            : qty;
 
         if (existing) {
             setLocalCarts((prev) =>
                 prev.map((cart) =>
                     cart.id === existing.id
-                        ? { ...cart, qty: Number(cart.qty || 0) + 1 }
+                        ? { ...cart, qty: nextQty }
                         : cart,
                 ),
             );
@@ -650,7 +654,7 @@ export default function TransactionCreate() {
                     id: `temp-${Date.now()}`,
                     product_id: product.id,
                     unit_id: unitId,
-                    qty: 1,
+                    qty,
                     price,
                     product,
                     unit: units[0]?.unit || null,
@@ -667,11 +671,40 @@ export default function TransactionCreate() {
         router.post(
             "/account/carts",
             { product_id: product.id, unit_id: unitId },
-            inertiaCartOptions(snapshot),
+            inertiaCartOptions(snapshot, {
+                onSuccess: (page) => {
+                    if (qty <= 1 && !existing) {
+                        return;
+                    }
+
+                    const serverCarts = page.props.carts || [];
+                    const match = serverCarts.find(
+                        (cart) =>
+                            !cart.is_held &&
+                            cart.product_id === product.id &&
+                            Number(cart.unit_id || 0) === Number(unitId || 0) &&
+                            cart.ppob_cost == null,
+                    );
+
+                    if (match && Number(match.qty) !== nextQty) {
+                        router.put(
+                            `/account/carts/${match.id}`,
+                            {
+                                qty: nextQty,
+                                discount: match.discount ?? 0,
+                                discount_type: match.discount_type || "nominal",
+                            },
+                            inertiaCartOptions(localCarts),
+                        );
+                    }
+                },
+            }),
         );
 
         resetProductSearch();
     };
+
+    const addToCart = (product) => addToCartWithQty(product, 1);
 
     const submitPpobCart = (e) => {
         e.preventDefault();
@@ -1503,10 +1536,12 @@ export default function TransactionCreate() {
                         <PosProductGrid
                             searchInputRef={searchInputRef}
                             products={products}
+                            quickProducts={quickProducts}
                             searchQuery={searchQuery}
                             onSearchQueryChange={handleSearchQueryChange}
                             onSearchDebounced={handleSearchDebounced}
                             onAddToCart={addToCart}
+                            onAddToCartWithQty={addToCartWithQty}
                             showScannerButton
                             onOpenScanner={() => setShowBarcodeScanner(true)}
                         />

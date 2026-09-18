@@ -25,6 +25,7 @@ import {
     UploadOutlined,
     EditOutlined,
     FileExcelOutlined,
+    ThunderboltOutlined,
 } from "@ant-design/icons";
 import Pagination from "../../../Shared/Pagination";
 import Search from "../../../Shared/Search";
@@ -59,6 +60,16 @@ export default function ProductIndex() {
             .join("&");
 
         window.open(`/account/products/print-barcodes?${queryParams}`, "_blank");
+    };
+
+    const handleToggleQuickAccess = (product) => {
+        router.post(
+            `/account/products/${product.id}/quick-access`,
+            {},
+            {
+                preserveScroll: true,
+            },
+        );
     };
 
     const handleImportSubmit = () => {
@@ -174,6 +185,29 @@ export default function ProductIndex() {
                         : "Stok Habis"}
                 </Tag>
             ),
+        },
+        {
+            title: "Produk Cepat",
+            align: "center",
+            width: 110,
+            render: (_, product) =>
+                hasAnyPermission(["products.edit"], allPermissions) ? (
+                    <Button
+                        size="small"
+                        type={product.is_quick_access ? "primary" : "default"}
+                        icon={<ThunderboltOutlined />}
+                        title={
+                            product.is_quick_access
+                                ? "Lepas dari Produk Cepat"
+                                : "Pin ke Produk Cepat POS"
+                        }
+                        onClick={() => handleToggleQuickAccess(product)}
+                    />
+                ) : product.is_quick_access ? (
+                    <Tag color="gold">Cepat</Tag>
+                ) : (
+                    <Text type="secondary">-</Text>
+                ),
         },
         {
             title: "Aksi",

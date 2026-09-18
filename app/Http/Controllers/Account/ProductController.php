@@ -575,4 +575,25 @@ class ProductController extends Controller
             ]);
         }
     }
+
+    public function toggleQuickAccess(Product $product)
+    {
+        if ($product->is_quick_access) {
+            $product->update([
+                'is_quick_access' => false,
+                'quick_access_order' => 0,
+            ]);
+        } else {
+            $maxOrder = (int) Product::query()
+                ->where('is_quick_access', true)
+                ->max('quick_access_order');
+
+            $product->update([
+                'is_quick_access' => true,
+                'quick_access_order' => $maxOrder + 1,
+            ]);
+        }
+
+        return back();
+    }
 }

@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\TransactionPaymentAggregator;
 use App\Models\WhatsappOutboundLog;
 use App\Services\CheckoutService;
+use App\Services\QuickProductService;
 use App\Services\Telegram\TelegramFormatter;
 use App\Services\TelegramNotificationService;
 use DomainException;
@@ -36,6 +37,7 @@ class TransactionController extends Controller
     public function __construct(
         protected CheckoutService $checkoutService,
         protected TelegramNotificationService $telegramNotificationService,
+        protected QuickProductService $quickProductService,
     ) {}
 
     public function create(Request $request)
@@ -104,6 +106,7 @@ class TransactionController extends Controller
         return Inertia::render('Account/Transactions/Create', [
             'categories' => $categories,
             'products' => $products,
+            'quickProducts' => $this->quickProductService->forPos(),
             'carts' => $carts,
             'ppobSettings' => Setting::ppobSettings(),
             'ppobAccount' => $ppobAccount ? [

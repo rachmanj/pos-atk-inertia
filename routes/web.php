@@ -161,6 +161,10 @@ Route::middleware(['auth'])
             ->middleware('permission:products.create')
             ->name('products.import');
 
+        Route::post('products/{product}/quick-access', [ProductController::class, 'toggleQuickAccess'])
+            ->middleware('permission:products.edit')
+            ->name('products.quick-access');
+
         Route::get('products/{product}/sales-history', [ProductController::class, 'salesHistory'])
             ->middleware('permission:products.index')
             ->name('products.sales-history');
