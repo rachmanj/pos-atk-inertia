@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Account;
 
 use App\Exports\ExpenseReportExport;
 use App\Http\Controllers\Controller;
+use App\Models\Expense;
 use App\Models\ExpenseLine;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class ExpenseReportController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'category' => 'nullable|string|max:100',
+            'payment_source' => 'nullable|in:cash,bank,ppob',
             'cashier_id' => 'nullable|exists:users,id',
         ]);
 
@@ -41,6 +43,7 @@ class ExpenseReportController extends Controller
             'start_date' => $startDate->toDateString(),
             'end_date' => $endDate->toDateString(),
             'category' => $request->category,
+            'payment_source' => $request->payment_source,
             'cashier_id' => $user->isAdminUser() ? $request->cashier_id : $user->id,
         ];
 
@@ -56,18 +59,34 @@ class ExpenseReportController extends Controller
             ->orderByDesc('total_amount')
             ->get();
 
-        $byMonth = (clone $baseQuery)
+        $byPaymentSource = (clone $baseQuery)
             ->select(
-                DB::raw("DATE_FORMAT(expenses.expense_date, '%Y-%m') as month"),
+                'expenses.payment_source',
                 DB::raw('SUM(expense_lines.amount) as total_amount'),
                 DB::raw('COUNT(*) as total_count')
             )
-            ->groupBy(DB::raw("DATE_FORMAT(expenses.expense_date, '%Y-%m')"))
+            ->groupBy('expenses.payment_source')
+            ->orderByDesc('total_amount')
+            ->get();
+
+        $expenseMonthExpression = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', expenses.expense_date)"
+            : "DATE_FORMAT(expenses.expense_date, '%Y-%m')";
+
+        $byMonth = (clone $baseQuery)
+            ->select(
+                DB::raw("{$expenseMonthExpression} as month"),
+                DB::raw('SUM(expense_lines.amount) as total_amount'),
+                DB::raw('COUNT(*) as total_count')
+            )
+            ->groupBy(DB::raw($expenseMonthExpression))
             ->orderBy('month')
             ->get();
 
+        $paymentSourceLabels = Expense::paymentSourceLabels();
+
         $expenses = (clone $baseQuery)
-            ->with(['expense.user:id,name'])
+            ->with(['expense.user:id,name', 'expense.balanceLog:id,note,created_at'])
             ->orderByDesc('expenses.expense_date')
             ->orderByDesc('expense_lines.id')
             ->paginate(10)
@@ -85,7 +104,17 @@ class ExpenseReportController extends Controller
         return Inertia::render('Account/Reports/Expense', [
             'expenses' => $expenses,
             'byCategory' => $byCategory,
+            'byPaymentSource' => $byPaymentSource->map(fn ($row) => [
+                'payment_source' => $row->payment_source,
+                'payment_source_label' => $paymentSourceLabels[$row->payment_source] ?? $row->payment_source,
+                'total_amount' => (int) $row->total_amount,
+                'total_count' => (int) $row->total_count,
+            ])->values()->all(),
             'byMonth' => $byMonth,
+            'paymentSources' => collect($paymentSourceLabels)
+                ->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])
+                ->values()
+                ->all(),
             'summary' => [
                 'total_amount' => $totalAmount,
                 'total_count' => $totalCount,
@@ -98,6 +127,7 @@ class ExpenseReportController extends Controller
                 'start_date' => $startDate->toDateString(),
                 'end_date' => $endDate->toDateString(),
                 'category' => $request->category ?? '',
+                'payment_source' => $request->payment_source ?? '',
                 'cashier_id' => $request->cashier_id ?? '',
             ],
             'categoryList' => $categories,
@@ -123,6 +153,7 @@ class ExpenseReportController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'category' => 'nullable|string|max:100',
+            'payment_source' => 'nullable|in:cash,bank,ppob',
             'cashier_id' => 'nullable|exists:users,id',
         ]);
 
@@ -131,6 +162,7 @@ class ExpenseReportController extends Controller
             'start_date' => $request->start_date ?: now()->startOfMonth()->toDateString(),
             'end_date' => $request->end_date ?: now()->toDateString(),
             'category' => $request->category,
+            'payment_source' => $request->payment_source,
             'cashier_id' => !$user->isAdminUser() ? $user->id : $request->cashier_id,
         ];
 

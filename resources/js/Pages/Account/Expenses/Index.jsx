@@ -2,7 +2,7 @@ import LayoutAccount from "../../../Layouts/Account";
 import Pagination from "../../../Shared/Pagination";
 import Delete from "../../../Shared/Delete";
 import hasAnyPermission from "../../../Utils/Permissions";
-import { formatRupiah } from "../../../Utils/format";
+import { formatDateOnly, formatRupiah } from "../../../Utils/format";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
@@ -18,6 +18,7 @@ import {
     Spin,
     Statistic,
     Table,
+    Tag,
     Typography,
 } from "antd";
 import {
@@ -31,11 +32,10 @@ import dayjs from "dayjs";
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-const formatDate = (value) => {
-    if (!value) return "-";
-    return new Date(`${value}T00:00:00`).toLocaleDateString("id-ID", {
-        dateStyle: "medium",
-    });
+const paymentSourceColor = (source) => {
+    if (source === "ppob") return "purple";
+    if (source === "bank") return "blue";
+    return "green";
 };
 
 const formatLinesSummary = (record) => {
@@ -102,7 +102,7 @@ export default function ExpenseIndex() {
         {
             title: "Tanggal",
             dataIndex: "expense_date",
-            render: (value) => formatDate(value),
+            render: (value) => formatDateOnly(value),
         },
         {
             title: "Kode",
@@ -117,6 +117,14 @@ export default function ExpenseIndex() {
             title: "Ringkasan Baris",
             render: (_, record) => (
                 <Text type="secondary">{formatLinesSummary(record)}</Text>
+            ),
+        },
+        {
+            title: "Sumber Dana",
+            render: (_, record) => (
+                <Tag color={paymentSourceColor(record.payment_source)}>
+                    {record.payment_source_label || record.payment_source}
+                </Tag>
             ),
         },
         {

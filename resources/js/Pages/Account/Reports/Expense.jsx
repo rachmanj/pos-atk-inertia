@@ -2,8 +2,12 @@ import LayoutAccount from "../../../Layouts/Account";
 import Pagination from "../../../Shared/Pagination";
 import DatePreset from "../../../Shared/DatePreset";
 import hasAnyPermission from "../../../Utils/Permissions";
-import { formatRupiah, formatRupiahAxis } from "../../../Utils/format";
-import { Head, router, usePage } from "@inertiajs/react";
+import {
+    formatDateOnly,
+    formatRupiah,
+    formatRupiahAxis,
+} from "../../../Utils/format";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useMemo, useState } from "react";
 import {
     Button,
@@ -56,21 +60,21 @@ const EXPENSE_CATEGORY_LABELS = {
 const categoryLabel = (value) =>
     EXPENSE_CATEGORY_LABELS[value] || value || "-";
 
-const formatDate = (value) => {
-    if (!value) return "-";
-    return new Date(`${value}T00:00:00`).toLocaleDateString("id-ID", {
-        dateStyle: "medium",
-    });
-};
+const paymentSourceLabel = (value, paymentSources = []) =>
+    paymentSources.find((item) => item.value === value)?.label ||
+    value ||
+    "-";
 
 export default function ExpenseReport() {
     const {
         expenses,
         byCategory = [],
+        byPaymentSource = [],
         byMonth = [],
         summary,
         filters = {},
         categoryList = [],
+        paymentSources = [],
         cashiers = [],
         isAdmin = false,
         auth = {},
@@ -84,6 +88,9 @@ export default function ExpenseReport() {
         dayjs(filters.end_date),
     ]);
     const [category, setCategory] = useState(filters.category || undefined);
+    const [paymentSource, setPaymentSource] = useState(
+        filters.payment_source || undefined,
+    );
     const [cashierId, setCashierId] = useState(
         filters.cashier_id || undefined,
     );
@@ -107,6 +114,7 @@ export default function ExpenseReport() {
             start_date: startDate,
             end_date: endDate,
             category: category || "",
+            payment_source: paymentSource || "",
             cashier_id: cashierId || "",
         });
     };
@@ -116,6 +124,7 @@ export default function ExpenseReport() {
         setSearch("");
         setDateRange(defaultRange);
         setCategory(undefined);
+        setPaymentSource(undefined);
         setCashierId(undefined);
         router.get("/account/reports/expense", {
             start_date: defaultRange[0].format("YYYY-MM-DD"),
@@ -130,6 +139,7 @@ export default function ExpenseReport() {
             start_date: start,
             end_date: end,
             category: category || "",
+            payment_source: paymentSource || "",
             cashier_id: cashierId || "",
         });
     };
@@ -140,6 +150,7 @@ export default function ExpenseReport() {
             start_date: startDate,
             end_date: endDate,
             category: category || "",
+            payment_source: paymentSource || "",
             cashier_id: cashierId || "",
         });
         window.location.href = `/account/reports/expense/export?${params.toString()}`;
@@ -163,7 +174,18 @@ export default function ExpenseReport() {
         },
         {
             title: "Tanggal",
-            render: (_, row) => formatDate(row.expense?.expense_date),
+            render: (_, row) => formatDateOnly(row.expense?.expense_date),
+        },
+        {
+            title: "Sumber Dana",
+            render: (_, row) => (
+                <Tag>
+                    {paymentSourceLabel(
+                        row.expense?.payment_source,
+                        paymentSources,
+                    )}
+                </Tag>
+            ),
         },
         {
             title: "Kategori",
@@ -188,6 +210,20 @@ export default function ExpenseReport() {
                     {formatRupiah(value)}
                 </Text>
             ),
+        },
+        {
+            title: "Bukti PPOB",
+            render: (_, row) =>
+                row.expense?.payment_source === "ppob" &&
+                row.expense?.balance_log_id ? (
+                    <Link
+                        href={`/account/ppob-balance-logs?search=${encodeURIComponent(row.expense?.code || "")}`}
+                    >
+                        Riwayat saldo
+                    </Link>
+                ) : (
+                    "-"
+                ),
         },
     ];
 
@@ -247,6 +283,19 @@ export default function ExpenseReport() {
                                     }))}
                                 />
                             </Col>
+                            <Col xs={24} lg={4}>
+                                <Select
+                                    style={{ width: "100%" }}
+                                    placeholder="Semua Sumber Dana"
+                                    allowClear
+                                    value={paymentSource}
+                                    onChange={setPaymentSource}
+                                    options={paymentSources.map((item) => ({
+                                        value: item.value,
+                                        label: item.label,
+                                    }))}
+                                />
+                            </Col>
                             {isAdmin && (
                                 <Col xs={24} lg={4}>
                                     <Select
@@ -284,6 +333,32 @@ export default function ExpenseReport() {
                             </Col>
                         </Row>
                     </form>
+
+                    {byPaymentSource.length > 0 && (
+                        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                            {byPaymentSource.map((item) => (
+                                <Col xs={24} sm={8} key={item.payment_source}>
+                                    <Card size="small">
+                                        <Statistic
+                                            title={item.payment_source_label}
+                                            value={formatRupiah(
+                                                item.total_amount,
+                                            )}
+                                            suffix={
+                                                <Text type="secondary">
+                                                    ({item.total_count} baris)
+                                                </Text>
+                                            }
+                                            valueStyle={{
+                                                color: "var(--semantic-error)",
+                                                fontSize: 16,
+                                            }}
+                                        />
+                                    </Card>
+                                </Col>
+                            ))}
+                        </Row>
+                    )}
 
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
                         <Col xs={12} sm={6} md={8}>

@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
-import { formatRupiah } from "../../../Utils/format";
+import { formatRupiah, normalizeDateInput } from "../../../Utils/format";
 import {
+    Alert,
     Button,
     Card,
     Col,
@@ -37,12 +38,20 @@ const createEmptyLine = () => ({
 });
 
 export default function ExpenseCreate() {
-    const { categories = [], defaultExpenseDate = "" } = usePage().props;
+    const {
+        categories = [],
+        defaultExpenseDate = "",
+        paymentSources = [],
+        ppobAccounts = [],
+    } = usePage().props;
     const loading = useInertiaLoading();
+    const initialExpenseDate = normalizeDateInput(defaultExpenseDate) || "";
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        expense_date: defaultExpenseDate,
+        expense_date: initialExpenseDate,
         note: "",
+        payment_source: "cash",
+        ppob_account_id: ppobAccounts[0]?.id ?? null,
         lines: [createEmptyLine()],
     });
 
@@ -54,6 +63,20 @@ export default function ExpenseCreate() {
             ),
         [data.lines],
     );
+
+    const selectedPpobAccount = ppobAccounts.find(
+        (account) => account.id === data.ppob_account_id,
+    );
+    const ppobBalance = selectedPpobAccount?.current_balance ?? 0;
+    const ppobInsufficient =
+        data.payment_source === "ppob" && totalAmount > ppobBalance;
+
+    const paymentSourceHelp =
+        data.payment_source === "cash"
+            ? "Dicatat ke kas laci bila ada shift terbuka milik Anda."
+            : data.payment_source === "bank"
+              ? "Tidak memotong kas laci maupun saldo PPOB."
+              : "Nominal akan memotong saldo akun PPOB yang dipilih.";
 
     const updateLine = (index, field, value) => {
         setData(
@@ -96,8 +119,10 @@ export default function ExpenseCreate() {
     const resetForm = () => {
         reset();
         setData({
-            expense_date: defaultExpenseDate,
+            expense_date: initialExpenseDate,
             note: "",
+            payment_source: "cash",
+            ppob_account_id: ppobAccounts[0]?.id ?? null,
             lines: [createEmptyLine()],
         });
     };
@@ -238,7 +263,11 @@ export default function ExpenseCreate() {
                                             format="YYYY-MM-DD"
                                             value={
                                                 data.expense_date
-                                                    ? dayjs(data.expense_date)
+                                                    ? dayjs(
+                                                          normalizeDateInput(
+                                                              data.expense_date,
+                                                          ) || data.expense_date,
+                                                      )
                                                     : null
                                             }
                                             onChange={(_, dateString) =>
@@ -250,7 +279,66 @@ export default function ExpenseCreate() {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col xs={24} md={12}>
+                                <Col xs={24} md={8}>
+                                    <Form.Item
+                                        label="Sumber Dana"
+                                        validateStatus={
+                                            errors.payment_source ? "error" : ""
+                                        }
+                                        help={
+                                            errors.payment_source ||
+                                            paymentSourceHelp
+                                        }
+                                        required
+                                    >
+                                        <Select
+                                            value={data.payment_source}
+                                            onChange={(value) =>
+                                                setData("payment_source", value)
+                                            }
+                                            options={paymentSources.map(
+                                                (item) => ({
+                                                    value: item.value,
+                                                    label: item.label,
+                                                }),
+                                            )}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                {data.payment_source === "ppob" && (
+                                    <Col xs={24} md={8}>
+                                        <Form.Item
+                                            label="Akun PPOB"
+                                            validateStatus={
+                                                errors.ppob_account_id
+                                                    ? "error"
+                                                    : ""
+                                            }
+                                            help={
+                                                errors.ppob_account_id ||
+                                                `Saldo saat ini ${formatRupiah(ppobBalance)}`
+                                            }
+                                            required
+                                        >
+                                            <Select
+                                                value={data.ppob_account_id}
+                                                onChange={(value) =>
+                                                    setData(
+                                                        "ppob_account_id",
+                                                        value,
+                                                    )
+                                                }
+                                                options={ppobAccounts.map(
+                                                    (account) => ({
+                                                        value: account.id,
+                                                        label: account.name,
+                                                    }),
+                                                )}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                )}
+                                <Col xs={24} md={data.payment_source === "ppob" ? 8 : 12}>
                                     <Form.Item
                                         label="Keterangan"
                                         validateStatus={
@@ -269,6 +357,15 @@ export default function ExpenseCreate() {
                                     </Form.Item>
                                 </Col>
                             </Row>
+
+                            {ppobInsufficient && (
+                                <Alert
+                                    type="warning"
+                                    showIcon
+                                    style={{ marginBottom: 16 }}
+                                    message="Saldo PPOB tidak mencukupi untuk total pengeluaran ini."
+                                />
+                            )}
 
                             {errors.lines && (
                                 <Text

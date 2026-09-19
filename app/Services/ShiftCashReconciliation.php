@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CashierShift;
+use App\Models\Expense;
 use App\Models\ReturnTransaction;
 use App\Models\Transaction;
 use Illuminate\Support\Carbon;
@@ -42,11 +43,15 @@ class ShiftCashReconciliation
             ->sum('total_refund');
 
         $expenseAmount = (int) ($shift->expense_amount ?? 0);
+        $moduleExpenseAmount = (int) Expense::query()
+            ->where('cashier_shift_id', $shift->id)
+            ->where('payment_source', Expense::PAYMENT_SOURCE_CASH)
+            ->sum('amount');
         $kasAwal = (int) $shift->cash_in_hand;
 
         $penjualanTunai = $totalPenjualan - $nonTunai;
         $tunaiDariPenjualan = $penjualanTunai - $cashRefunds - $expenseAmount;
-        $kasSeharusnya = $kasAwal + $tunaiDariPenjualan;
+        $kasSeharusnya = $kasAwal + $tunaiDariPenjualan - $moduleExpenseAmount;
 
         $shiftOpen = $shift->isOpen() || $shift->closed_at === null;
         $cashOverage = (int) ($shift->cash_overage ?? 0);
@@ -65,6 +70,7 @@ class ShiftCashReconciliation
             'non_cash_sales'      => $nonCashSales,
             'cash_refunds'        => $cashRefunds,
             'expense_amount'      => $expenseAmount,
+            'module_expense_amount' => $moduleExpenseAmount,
             'kas_awal'            => $kasAwal,
             'kas_seharusnya'      => $kasSeharusnya,
             'kas_disetor'         => $kasDisetor,

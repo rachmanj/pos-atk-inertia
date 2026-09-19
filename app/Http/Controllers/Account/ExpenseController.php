@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
+use App\Models\PpobAccount;
 use App\Models\User;
+use App\Services\ExpenseFundingService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,10 +15,15 @@ use Inertia\Inertia;
 
 class ExpenseController extends Controller
 {
+    public function __construct(
+        protected ExpenseFundingService $expenseFundingService,
+    ) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
         $categories = $this->expenseCategories();
+        $paymentSources = Expense::paymentSourceLabels();
 
         $request->validate([
             'q'            => 'nullable|string|max:100',
@@ -38,7 +45,7 @@ class ExpenseController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $expenses->through(function (Expense $expense) use ($categories) {
+        $expenses->through(function (Expense $expense) use ($categories, $paymentSources) {
             $categoryLabels = collect($expense->lines)
                 ->pluck('category')
                 ->unique()
@@ -52,6 +59,8 @@ class ExpenseController extends Controller
                 'expense_date'    => $expense->expense_date?->toDateString(),
                 'amount'          => $expense->amount,
                 'note'            => $expense->note,
+                'payment_source'  => $expense->payment_source,
+                'payment_source_label' => $paymentSources[$expense->payment_source] ?? $expense->payment_source,
                 'user'            => $expense->user,
                 'lines_count'     => $expense->lines_count,
                 'category_labels' => $categoryLabels,
@@ -86,6 +95,8 @@ class ExpenseController extends Controller
         return Inertia::render('Account/Expenses/Create', [
             'categories' => $this->formatCategories($this->expenseCategories()),
             'defaultExpenseDate' => now()->toDateString(),
+            'paymentSources' => $this->formatPaymentSources(),
+            'ppobAccounts' => $this->ppobAccountsForForm(),
         ]);
     }
 
@@ -96,10 +107,19 @@ class ExpenseController extends Controller
         $validated = $request->validate([
             'expense_date'       => 'required|date',
             'note'               => 'nullable|string|max:1000',
+            'payment_source'     => ['required', Rule::in(array_keys(Expense::paymentSourceLabels()))],
+            'ppob_account_id'    => [
+                'nullable',
+                'required_if:payment_source,ppob',
+                'exists:ppob_accounts,id',
+            ],
             'lines'              => 'required|array|min:1',
             'lines.*.category'   => ['required', Rule::in(array_keys($categories))],
             'lines.*.title'      => 'required|string|max:150',
             'lines.*.amount'     => 'required|integer|min:1',
+        ], [
+            'payment_source.required' => 'Sumber dana wajib dipilih.',
+            'ppob_account_id.required_if' => 'Akun PPOB wajib dipilih untuk sumber Saldo PPOB.',
         ]);
 
         $lines = collect($validated['lines'])->map(fn (array $line) => [
@@ -108,16 +128,30 @@ class ExpenseController extends Controller
             'amount'   => (int) $line['amount'],
         ]);
 
-        DB::transaction(function () use ($request, $validated, $lines) {
+        $user = $request->user();
+        $paymentSource = $validated['payment_source'];
+        $totalAmount = (int) $lines->sum('amount');
+
+        DB::transaction(function () use ($user, $validated, $lines, $paymentSource, $totalAmount) {
             $expense = Expense::create([
-                'user_id'      => $request->user()->id,
-                'code'         => $this->generateExpenseCode(),
-                'expense_date' => $validated['expense_date'],
-                'amount'       => (int) $lines->sum('amount'),
-                'note'         => filled($validated['note'] ?? null) ? trim($validated['note']) : null,
+                'user_id'           => $user->id,
+                'code'              => $this->generateExpenseCode(),
+                'expense_date'      => $validated['expense_date'],
+                'amount'            => $totalAmount,
+                'note'              => filled($validated['note'] ?? null) ? trim($validated['note']) : null,
+                'payment_source'    => $paymentSource,
+                'ppob_account_id'   => $paymentSource === Expense::PAYMENT_SOURCE_PPOB
+                    ? (int) $validated['ppob_account_id']
+                    : null,
+                'cashier_shift_id'  => $this->expenseFundingService->resolveCashierShiftId($user, $paymentSource),
             ]);
 
             $expense->lines()->createMany($lines->all());
+
+            if ($paymentSource === Expense::PAYMENT_SOURCE_PPOB) {
+                $account = PpobAccount::query()->findOrFail($validated['ppob_account_id']);
+                $this->expenseFundingService->applyPpobCharge($expense, $account, $user);
+            }
         });
 
         return redirect()->route('account.expenses.index');
@@ -135,6 +169,9 @@ class ExpenseController extends Controller
                 'expense_date' => $expense->expense_date?->toDateString(),
                 'amount'       => $expense->amount,
                 'note'         => $expense->note,
+                'payment_source' => $expense->payment_source,
+                'ppob_account_id' => $expense->ppob_account_id,
+                'balance_log_id' => $expense->balance_log_id,
                 'lines'        => $expense->lines->map(fn ($line) => [
                     'id'       => $line->id,
                     'category' => $line->category,
@@ -143,6 +180,8 @@ class ExpenseController extends Controller
                 ])->values()->all(),
             ],
             'categories' => $this->formatCategories($this->expenseCategories()),
+            'paymentSources' => $this->formatPaymentSources(),
+            'ppobAccounts' => $this->ppobAccountsForForm(),
         ]);
     }
 
@@ -154,10 +193,19 @@ class ExpenseController extends Controller
         $validated = $request->validate([
             'expense_date'       => 'required|date',
             'note'               => 'nullable|string|max:1000',
+            'payment_source'     => ['required', Rule::in(array_keys(Expense::paymentSourceLabels()))],
+            'ppob_account_id'    => [
+                'nullable',
+                'required_if:payment_source,ppob',
+                'exists:ppob_accounts,id',
+            ],
             'lines'              => 'required|array|min:1',
             'lines.*.category'   => ['required', Rule::in(array_keys($categories))],
             'lines.*.title'      => 'required|string|max:150',
             'lines.*.amount'     => 'required|integer|min:1',
+        ], [
+            'payment_source.required' => 'Sumber dana wajib dipilih.',
+            'ppob_account_id.required_if' => 'Akun PPOB wajib dipilih untuk sumber Saldo PPOB.',
         ]);
 
         $lines = collect($validated['lines'])->map(fn (array $line) => [
@@ -166,15 +214,57 @@ class ExpenseController extends Controller
             'amount'   => (int) $line['amount'],
         ]);
 
-        DB::transaction(function () use ($expense, $validated, $lines) {
+        $user = $request->user();
+        $previousPaymentSource = $expense->payment_source;
+        $previousPpobAccountId = $expense->ppob_account_id;
+        $previousAmount = (int) $expense->amount;
+        $paymentSource = $validated['payment_source'];
+        $totalAmount = (int) $lines->sum('amount');
+
+        DB::transaction(function () use (
+            $expense,
+            $validated,
+            $lines,
+            $user,
+            $previousPaymentSource,
+            $previousPpobAccountId,
+            $previousAmount,
+            $paymentSource,
+            $totalAmount,
+        ) {
             $expense->update([
                 'expense_date' => $validated['expense_date'],
-                'amount'       => (int) $lines->sum('amount'),
+                'amount'       => $totalAmount,
                 'note'         => filled($validated['note'] ?? null) ? trim($validated['note']) : null,
+                'payment_source' => $paymentSource,
+                'ppob_account_id' => $paymentSource === Expense::PAYMENT_SOURCE_PPOB
+                    ? (int) $validated['ppob_account_id']
+                    : null,
+                'cashier_shift_id' => $this->expenseFundingService->resolveCashierShiftId($user, $paymentSource),
             ]);
 
             $expense->lines()->delete();
             $expense->lines()->createMany($lines->all());
+            $expense->refresh();
+
+            $ppobChanged = $previousPaymentSource !== $paymentSource
+                || (int) $previousPpobAccountId !== (int) ($validated['ppob_account_id'] ?? 0)
+                || $previousAmount !== $totalAmount;
+
+            if ($ppobChanged) {
+                $this->expenseFundingService->syncPpobOnUpdate(
+                    expense: $expense,
+                    previousPaymentSource: $previousPaymentSource,
+                    previousPpobAccountId: $previousPpobAccountId,
+                    previousAmount: $previousAmount,
+                    newPaymentSource: $paymentSource,
+                    newPpobAccountId: $paymentSource === Expense::PAYMENT_SOURCE_PPOB
+                        ? (int) $validated['ppob_account_id']
+                        : null,
+                    newAmount: $totalAmount,
+                    user: $user,
+                );
+            }
         });
 
         return redirect()->route('account.expenses.index');
@@ -184,7 +274,13 @@ class ExpenseController extends Controller
     {
         $this->authorizeExpenseOwner($request, $expense);
 
-        $expense->delete();
+        DB::transaction(function () use ($request, $expense) {
+            if ($expense->payment_source === Expense::PAYMENT_SOURCE_PPOB) {
+                $this->expenseFundingService->reversePpobCharge($expense, $request->user());
+            }
+
+            $expense->delete();
+        });
 
         return redirect()->route('account.expenses.index');
     }
@@ -251,6 +347,32 @@ class ExpenseController extends Controller
             ->map(fn (string $label, string $value) => [
                 'value' => $value,
                 'label' => $label,
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function formatPaymentSources(): array
+    {
+        return collect(Expense::paymentSourceLabels())
+            ->map(fn (string $label, string $value) => [
+                'value' => $value,
+                'label' => $label,
+            ])
+            ->values()
+            ->all();
+    }
+
+    protected function ppobAccountsForForm(): array
+    {
+        return PpobAccount::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'current_balance'])
+            ->map(fn (PpobAccount $account) => [
+                'id' => $account->id,
+                'name' => $account->name,
+                'current_balance' => $account->current_balance,
             ])
             ->values()
             ->all();

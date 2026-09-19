@@ -48,6 +48,7 @@ class ExpenseTest extends TestCase
         $response = $this->actingAs($user)->post(route('account.expenses.store'), [
             'expense_date' => '2026-09-12',
             'note' => 'Catatan pengeluaran',
+            'payment_source' => 'cash',
             'lines' => [
                 [
                     'category' => 'operational',
@@ -110,6 +111,7 @@ class ExpenseTest extends TestCase
         $response = $this->actingAs($user)->put(route('account.expenses.update', $expense), [
             'expense_date' => '2026-09-11',
             'note' => 'Diperbarui',
+            'payment_source' => 'cash',
             'lines' => [
                 [
                     'category' => 'utilities',

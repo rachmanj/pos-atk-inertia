@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\Expense;
 use App\Models\ExpenseLine;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,6 +40,10 @@ class ExpenseReportExport implements FromQuery, WithHeadings, WithMapping, Shoul
             $query->where('expense_lines.category', $filters['category']);
         }
 
+        if (!empty($filters['payment_source'])) {
+            $query->where('expenses.payment_source', $filters['payment_source']);
+        }
+
         if (!empty($filters['q'])) {
             $search = trim($filters['q']);
             $query->where(function (Builder $searchQuery) use ($search) {
@@ -65,6 +70,7 @@ class ExpenseReportExport implements FromQuery, WithHeadings, WithMapping, Shoul
             'No',
             'Kode',
             'Tanggal',
+            'Sumber Dana',
             'Kategori',
             'Judul',
             'Jumlah',
@@ -78,10 +84,13 @@ class ExpenseReportExport implements FromQuery, WithHeadings, WithMapping, Shoul
         static $no = 0;
         $no++;
 
+        $sourceLabels = Expense::paymentSourceLabels();
+
         return [
             $no,
             $row->expense?->code,
             $row->expense?->expense_date?->format('d/m/Y') ?? $row->expense?->expense_date,
+            $sourceLabels[$row->expense?->payment_source] ?? $row->expense?->payment_source,
             $row->category,
             $row->title,
             (int) $row->amount,

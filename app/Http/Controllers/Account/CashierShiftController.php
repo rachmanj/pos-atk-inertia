@@ -524,6 +524,7 @@ class CashierShiftController extends Controller
             'selisih'            => $reconciliation['selisih'],
             'shift_open'         => $reconciliation['shift_open'],
             'expense_amount'     => $reconciliation['expense_amount'],
+            'module_expense_amount' => $reconciliation['module_expense_amount'],
             'tunai_dari_penjualan' => $reconciliation['tunai_dari_penjualan'],
             'penjualan_tunai'      => $reconciliation['penjualan_tunai'],
             'total_transactions' => $totalTransactions,

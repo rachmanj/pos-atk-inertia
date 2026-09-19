@@ -60,6 +60,7 @@ class ShiftLiveSummary
             'selisih'            => $reconciliation['selisih'],
             'shift_open'         => $reconciliation['shift_open'],
             'expense_amount'     => $reconciliation['expense_amount'],
+            'module_expense_amount' => $reconciliation['module_expense_amount'],
             'total_transactions' => $transactions->count(),
             'paid_transactions'  => (int) (clone $paidTransactionsQuery)->count(),
         ];

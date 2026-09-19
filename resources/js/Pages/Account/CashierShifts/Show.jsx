@@ -533,6 +533,9 @@ export default function CashierShiftShow() {
                                 <Card size="small"><Statistic title="Pengeluaran dari Laci" value={shift.summary?.expense_amount || 0} prefix={<FallOutlined />} valueStyle={{ color: "var(--semantic-warning)" }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
+                                <Card size="small"><Statistic title="Pengeluaran Kas (Modul Pengeluaran)" value={shift.summary?.module_expense_amount || 0} prefix={<FallOutlined />} valueStyle={{ color: "var(--semantic-warning)" }} formatter={v => formatRupiah(v)} /></Card>
+                            </Col>
+                            <Col xs={12} sm={12} md={6}>
                                 <Card size="small"><Statistic title="Kas Seharusnya" value={shift.summary?.kas_seharusnya ?? shift.summary?.expected_cash ?? 0} prefix={<DollarOutlined />} valueStyle={{ color: "var(--brand-primary)" }} formatter={v => formatRupiah(v)} /></Card>
                             </Col>
                             <Col xs={12} sm={12} md={6}>
