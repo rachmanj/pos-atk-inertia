@@ -17,6 +17,7 @@ import {
     Space,
     Spin,
     Table,
+    Tag,
     Typography,
 } from "antd";
 import {
@@ -27,6 +28,12 @@ import {
     ShoppingOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import {
+    formatPurchaseDueDate,
+    purchaseOverdueDays,
+    purchasePaymentStatusColor,
+    purchasePaymentStatusLabel,
+} from "../../../Utils/purchasePayables";
 
 const { Title, Text } = Typography;
 
@@ -139,6 +146,44 @@ export default function PurchaseIndex() {
                     {formatRupiah(value)}
                 </Text>
             ),
+        },
+        {
+            title: "Status",
+            align: "center",
+            dataIndex: "payment_status",
+            render: (value) => (
+                <Tag color={purchasePaymentStatusColor(value)}>
+                    {purchasePaymentStatusLabel(value)}
+                </Tag>
+            ),
+        },
+        {
+            title: "Jatuh Tempo",
+            dataIndex: "due_date",
+            render: (value, record) => {
+                if (record.payment_status === "paid" || !value) {
+                    return <Text type="secondary">-</Text>;
+                }
+
+                const overdue = purchaseOverdueDays(
+                    value,
+                    record.payment_status,
+                );
+
+                return (
+                    <div>
+                        <Text>{formatPurchaseDueDate(value)}</Text>
+                        {overdue > 0 && (
+                            <Text
+                                type="danger"
+                                style={{ fontSize: 12, display: "block" }}
+                            >
+                                terlambat {overdue} hari
+                            </Text>
+                        )}
+                    </div>
+                );
+            },
         },
         {
             title: "Aksi",

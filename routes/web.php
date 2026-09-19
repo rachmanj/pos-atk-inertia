@@ -29,6 +29,8 @@ use App\Http\Controllers\Account\PpobReportController;
 use App\Http\Controllers\Account\ExpenseReportController;
 use App\Http\Controllers\Account\CustomerReportController;
 use App\Http\Controllers\Account\PurchaseTaxReportController;
+use App\Http\Controllers\Account\PurchasePayablesReportController;
+use App\Http\Controllers\Account\PurchasePaymentController;
 use App\Http\Controllers\Account\SettingController;
 use App\Http\Controllers\Account\PpobAccountController;
 use App\Http\Controllers\Account\PpobBalanceLogController;
@@ -203,6 +205,14 @@ Route::middleware(['auth'])
             ->middlewareFor(['create', 'store'], 'permission:purchases.create')
             ->middlewareFor('show', 'permission:purchases.show');
 
+        Route::post('purchases/{purchase}/payments', [PurchasePaymentController::class, 'store'])
+            ->middleware('permission:purchases.edit')
+            ->name('purchases.payments.store');
+
+        Route::delete('purchases/{purchase}/payments/{payment}', [PurchasePaymentController::class, 'destroy'])
+            ->middleware('permission:purchases.edit')
+            ->name('purchases.payments.destroy');
+
         Route::get('supplier-returns', [SupplierReturnController::class, 'index'])
             ->middleware('permission:supplier_returns.index')
             ->name('supplier-returns.index');
@@ -373,6 +383,10 @@ Route::middleware(['auth'])
         Route::get('/reports/purchase-tax', [PurchaseTaxReportController::class, 'index'])
             ->middleware('permission:purchases.index')
             ->name('reports.purchase-tax');
+
+        Route::get('/reports/purchase-payables', [PurchasePayablesReportController::class, 'index'])
+            ->middleware('permission:purchases.index')
+            ->name('reports.purchase-payables');
 
         Route::get('/reports/purchase-tax/export', [PurchaseTaxReportController::class, 'export'])
             ->middleware('permission:purchases.index')

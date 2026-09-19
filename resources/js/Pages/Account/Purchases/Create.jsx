@@ -29,6 +29,12 @@ import {
     ShoppingCartOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import {
+    PAYMENT_TERM_PRESET_OPTIONS,
+    computeDueDateFromPaymentTerm,
+    formatPurchaseDueDate,
+    purchasePaymentTermPayload,
+} from "../../../Utils/purchasePayables";
 
 const { Title, Text } = Typography;
 
@@ -55,6 +61,8 @@ export default function PurchaseCreate() {
     const [taxAmount, setTaxAmount] = useState(0);
     const [taxAmountManual, setTaxAmountManual] = useState(false);
     const [taxIncluded, setTaxIncluded] = useState(false);
+    const [paymentTermPreset, setPaymentTermPreset] = useState("30");
+    const [manualDueDate, setManualDueDate] = useState("");
 
     const productMap = useMemo(() => {
         return products.reduce((acc, product) => {
@@ -170,6 +178,21 @@ export default function PurchaseCreate() {
         : itemsSubtotal;
     const totalPaid = dppAmount + effectiveTaxAmount;
 
+    const computedDueDate = computeDueDateFromPaymentTerm(
+        purchaseDate,
+        paymentTermPreset,
+        manualDueDate,
+    );
+
+    const dueDatePreview =
+        paymentTermPreset === "0"
+            ? "Tunai — lunas saat disimpan"
+            : computedDueDate
+              ? formatPurchaseDueDate(computedDueDate)
+              : paymentTermPreset === "manual"
+                ? "Pilih tanggal jatuh tempo"
+                : "-";
+
     const storePurchase = (e) => {
         e.preventDefault();
 
@@ -187,6 +210,10 @@ export default function PurchaseCreate() {
             tax_amount: effectiveTaxAmount,
             tax_rate: taxRate === "" || taxRate === null ? null : Number(taxRate),
             tax_included: taxIncluded,
+            payment_term: purchasePaymentTermPayload(
+                paymentTermPreset,
+                manualDueDate,
+            ),
         });
     };
 
@@ -483,41 +510,50 @@ export default function PurchaseCreate() {
                                     </Form.Item>
                                 </Col>
                                 <Col xs={24} md={8}>
-                                    <Form.Item label="Ringkasan">
-                                        <Card
-                                            size="small"
+                                    <Form.Item
+                                        label="Termin Pembayaran"
+                                        validateStatus={
+                                            errors.payment_term ? "error" : ""
+                                        }
+                                        help={errors.payment_term}
+                                    >
+                                        <Select
+                                            value={paymentTermPreset}
+                                            onChange={setPaymentTermPreset}
+                                            disabled={!canSubmit}
+                                            options={PAYMENT_TERM_PRESET_OPTIONS}
+                                        />
+                                        {paymentTermPreset === "manual" && (
+                                            <DatePicker
+                                                style={{
+                                                    width: "100%",
+                                                    marginTop: 8,
+                                                }}
+                                                format="YYYY-MM-DD"
+                                                placeholder="Tanggal jatuh tempo"
+                                                value={
+                                                    manualDueDate
+                                                        ? dayjs(manualDueDate)
+                                                        : null
+                                                }
+                                                onChange={(_, dateString) =>
+                                                    setManualDueDate(
+                                                        dateString,
+                                                    )
+                                                }
+                                                disabled={!canSubmit}
+                                            />
+                                        )}
+                                        <Text
+                                            type="secondary"
                                             style={{
-                                                background: "var(--bg-subtle)",
+                                                fontSize: 12,
+                                                display: "block",
+                                                marginTop: 8,
                                             }}
                                         >
-                                            <Text
-                                                type="secondary"
-                                                style={{ fontSize: 12 }}
-                                            >
-                                                Total Qty
-                                            </Text>
-                                            <div>
-                                                <Text strong>{totalQty}</Text>
-                                            </div>
-                                            <Text
-                                                type="secondary"
-                                                style={{
-                                                    fontSize: 12,
-                                                    marginTop: 8,
-                                                    display: "block",
-                                                }}
-                                            >
-                                                Total Item
-                                            </Text>
-                                            <Text
-                                                strong
-                                                style={{
-                                                    color: "var(--semantic-success)",
-                                                }}
-                                            >
-                                                {formatRupiah(itemsSubtotal)}
-                                            </Text>
-                                        </Card>
+                                            Jatuh tempo: {dueDatePreview}
+                                        </Text>
                                     </Form.Item>
                                 </Col>
                             </Row>

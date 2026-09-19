@@ -38,6 +38,7 @@ class PermissionsTableSeeder extends Seeder
             'purchases.index',
             'purchases.create',
             'purchases.show',
+            'purchases.edit',
 
             // Supplier Returns
             'supplier_returns.index',

@@ -1,25 +1,45 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
 import {
+    formatPurchaseDueDate,
+    formatPurchasePaymentMethod,
+    formatPurchasePaymentTerm,
+    purchaseOverdueDays,
+    purchasePaymentStatusColor,
+    purchasePaymentStatusLabel,
+} from "../../../Utils/purchasePayables";
+import {
+    Alert,
     Button,
     Card,
     Col,
+    DatePicker,
+    Form,
+    Input,
+    InputNumber,
+    Modal,
+    Popconfirm,
     Row,
+    Select,
     Space,
     Spin,
     Table,
+    Tag,
     Typography,
 } from "antd";
 import {
     ArrowLeftOutlined,
+    DeleteOutlined,
     FileTextOutlined,
     PlusCircleOutlined,
     UndoOutlined,
+    WalletOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 
@@ -38,11 +58,77 @@ function InfoCard({ label, children }) {
 }
 
 export default function PurchaseShow() {
-    const { purchase, auth = {} } = usePage().props;
+    const {
+        purchase,
+        canRecordPayment = false,
+        auth = {},
+        flash = {},
+    } = usePage().props;
     const permissions = auth.permissions || {};
     const loading = useInertiaLoading();
 
-    const columns = [
+    const paidAmount = useMemo(() => {
+        const fromSum = purchase.paid_amount_sum;
+        if (fromSum != null && fromSum !== "") {
+            return Number(fromSum) || 0;
+        }
+
+        return (purchase.payments || []).reduce(
+            (sum, payment) => sum + Number(payment.amount || 0),
+            0,
+        );
+    }, [purchase]);
+
+    const remaining = Math.max(
+        0,
+        Number(purchase.total_amount || 0) - paidAmount,
+    );
+
+    const isFullyPaid = purchase.payment_status === "paid";
+
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [paidOn, setPaidOn] = useState(dayjs().format("YYYY-MM-DD"));
+    const [payAmount, setPayAmount] = useState(remaining);
+    const [payMethod, setPayMethod] = useState("tunai");
+    const [payNote, setPayNote] = useState("");
+
+    const openPaymentModal = () => {
+        setPaidOn(dayjs().format("YYYY-MM-DD"));
+        setPayAmount(remaining);
+        setPayMethod("tunai");
+        setPayNote("");
+        setPaymentModalOpen(true);
+    };
+
+    const submitPayment = () => {
+        router.post(
+            `/account/purchases/${purchase.invoice}/payments`,
+            {
+                paid_on: paidOn,
+                amount: Number(payAmount),
+                method: payMethod,
+                note: payNote || null,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => setPaymentModalOpen(false),
+            },
+        );
+    };
+
+    const deletePayment = (paymentId) => {
+        router.delete(
+            `/account/purchases/${purchase.invoice}/payments/${paymentId}`,
+            { preserveScroll: true },
+        );
+    };
+
+    const overdueDays = purchaseOverdueDays(
+        purchase.due_date,
+        purchase.payment_status,
+    );
+
+    const itemColumns = [
         {
             title: "Produk",
             render: (_, detail) => (
@@ -89,6 +175,52 @@ export default function PurchaseShow() {
         },
     ];
 
+    const paymentColumns = [
+        {
+            title: "Tanggal Bayar",
+            dataIndex: "paid_on",
+            render: (value) => formatPurchaseDueDate(value),
+        },
+        {
+            title: "Jumlah",
+            align: "right",
+            dataIndex: "amount",
+            render: (value) => formatRupiah(value),
+        },
+        {
+            title: "Metode",
+            dataIndex: "method",
+            render: (value) => formatPurchasePaymentMethod(value),
+        },
+        {
+            title: "Catatan",
+            dataIndex: "note",
+            render: (value) => value || "-",
+        },
+        {
+            title: "Aksi",
+            align: "center",
+            width: 80,
+            render: (_, payment) =>
+                canRecordPayment ? (
+                    <Popconfirm
+                        title="Hapus pembayaran ini?"
+                        description="Status utang akan dihitung ulang."
+                        okText="Hapus"
+                        cancelText="Batal"
+                        okButtonProps={{ danger: true }}
+                        onConfirm={() => deletePayment(payment.id)}
+                    >
+                        <Button
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                        />
+                    </Popconfirm>
+                ) : null,
+        },
+    ];
+
     return (
         <>
             <Head>
@@ -102,6 +234,13 @@ export default function PurchaseShow() {
                         size="large"
                         style={{ width: "100%" }}
                     >
+                        {flash.success && (
+                            <Alert type="success" message={flash.success} showIcon />
+                        )}
+                        {flash.error && (
+                            <Alert type="error" message={flash.error} showIcon />
+                        )}
+
                         <Space
                             style={{
                                 width: "100%",
@@ -111,7 +250,10 @@ export default function PurchaseShow() {
                         >
                             <Space>
                                 <FileTextOutlined
-                                    style={{ fontSize: 20, color: "var(--brand-primary)" }}
+                                    style={{
+                                        fontSize: 20,
+                                        color: "var(--brand-primary)",
+                                    }}
                                 />
                                 <div>
                                     <Title level={4} style={{ margin: 0 }}>
@@ -128,6 +270,15 @@ export default function PurchaseShow() {
                                         KEMBALI
                                     </Button>
                                 </Link>
+                                {canRecordPayment && !isFullyPaid && (
+                                    <Button
+                                        type="primary"
+                                        icon={<WalletOutlined />}
+                                        onClick={openPaymentModal}
+                                    >
+                                        CATAT PEMBAYARAN
+                                    </Button>
+                                )}
                                 {hasAnyPermission(
                                     ["purchases.create"],
                                     permissions,
@@ -148,16 +299,113 @@ export default function PurchaseShow() {
                                     <Link
                                         href={`/account/supplier-returns/create/${purchase.invoice}`}
                                     >
-                                        <Button
-                                            danger
-                                            icon={<UndoOutlined />}
-                                        >
+                                        <Button danger icon={<UndoOutlined />}>
                                             RETUR SUPPLIER
                                         </Button>
                                     </Link>
                                 )}
                             </Space>
                         </Space>
+
+                        <Card size="small" title="Utang & Pembayaran">
+                            <Row gutter={[16, 16]}>
+                                <Col xs={12} sm={8} md={4}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Status
+                                    </Text>
+                                    <div>
+                                        <Tag
+                                            color={purchasePaymentStatusColor(
+                                                purchase.payment_status,
+                                            )}
+                                        >
+                                            {purchasePaymentStatusLabel(
+                                                purchase.payment_status,
+                                            )}
+                                        </Tag>
+                                    </div>
+                                </Col>
+                                <Col xs={12} sm={8} md={4}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Termin
+                                    </Text>
+                                    <div>
+                                        <Text strong>
+                                            {formatPurchasePaymentTerm(
+                                                purchase.payment_term_days,
+                                                purchase.due_date,
+                                            )}
+                                        </Text>
+                                    </div>
+                                </Col>
+                                <Col xs={12} sm={8} md={4}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Jatuh Tempo
+                                    </Text>
+                                    <div>
+                                        <Text strong>
+                                            {formatPurchaseDueDate(
+                                                purchase.due_date,
+                                            )}
+                                        </Text>
+                                        {overdueDays > 0 && (
+                                            <Text
+                                                type="danger"
+                                                style={{
+                                                    fontSize: 12,
+                                                    display: "block",
+                                                }}
+                                            >
+                                                terlambat {overdueDays} hari
+                                            </Text>
+                                        )}
+                                    </div>
+                                </Col>
+                                <Col xs={12} sm={8} md={4}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Total
+                                    </Text>
+                                    <div>
+                                        <Text
+                                            strong
+                                            style={{
+                                                color: "var(--semantic-success)",
+                                            }}
+                                        >
+                                            {formatRupiah(purchase.total_amount)}
+                                        </Text>
+                                    </div>
+                                </Col>
+                                <Col xs={12} sm={8} md={4}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Dibayar
+                                    </Text>
+                                    <div>
+                                        <Text strong>
+                                            {formatRupiah(paidAmount)}
+                                        </Text>
+                                    </div>
+                                </Col>
+                                <Col xs={12} sm={8} md={4}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Sisa Utang
+                                    </Text>
+                                    <div>
+                                        <Text
+                                            strong
+                                            style={{
+                                                color:
+                                                    remaining > 0
+                                                        ? "var(--semantic-error)"
+                                                        : undefined,
+                                            }}
+                                        >
+                                            {formatRupiah(remaining)}
+                                        </Text>
+                                    </div>
+                                </Col>
+                            </Row>
+                        </Card>
 
                         <Row gutter={[16, 16]}>
                             <Col xs={24} lg={8}>
@@ -286,27 +534,6 @@ export default function PurchaseShow() {
                                     >
                                         {formatRupiah(purchase.tax_amount ?? 0)}
                                     </Text>
-                                    <Text
-                                        type="secondary"
-                                        style={{
-                                            fontSize: 12,
-                                            display: "block",
-                                            marginBottom: 4,
-                                        }}
-                                    >
-                                        Total
-                                    </Text>
-                                    <Text
-                                        strong
-                                        style={{
-                                            color: "var(--semantic-success)",
-                                            fontSize: 16,
-                                            display: "block",
-                                            marginBottom: 8,
-                                        }}
-                                    >
-                                        {formatRupiah(purchase.total_amount)}
-                                    </Text>
                                     <Text type="secondary" style={{ fontSize: 12 }}>
                                         Dibuat oleh: {purchase.user?.name || "-"}
                                     </Text>
@@ -320,10 +547,24 @@ export default function PurchaseShow() {
                             </Card>
                         )}
 
+                        <Card title="Riwayat Pembayaran">
+                            <Table
+                                rowKey="id"
+                                columns={paymentColumns}
+                                dataSource={purchase.payments || []}
+                                pagination={false}
+                                scroll={{ x: "max-content" }}
+                                locale={{
+                                    emptyText:
+                                        "Belum ada pembayaran tercatat untuk nota ini.",
+                                }}
+                            />
+                        </Card>
+
                         <Card title="Detail Item">
                             <Table
                                 rowKey="id"
-                                columns={columns}
+                                columns={itemColumns}
                                 dataSource={purchase.details}
                                 pagination={false}
                                 scroll={{ x: "max-content" }}
@@ -334,6 +575,70 @@ export default function PurchaseShow() {
                             />
                         </Card>
                     </Space>
+
+                    <Modal
+                        title="Catat Pembayaran Supplier"
+                        open={paymentModalOpen}
+                        onCancel={() => setPaymentModalOpen(false)}
+                        onOk={submitPayment}
+                        okText="Simpan"
+                        cancelText="Batal"
+                        confirmLoading={loading}
+                    >
+                        <Form layout="vertical">
+                            <Form.Item label="Tanggal Bayar" required>
+                                <DatePicker
+                                    style={{ width: "100%" }}
+                                    format="YYYY-MM-DD"
+                                    value={paidOn ? dayjs(paidOn) : null}
+                                    onChange={(_, dateString) =>
+                                        setPaidOn(dateString)
+                                    }
+                                />
+                            </Form.Item>
+                            <Form.Item
+                                label={`Jumlah (maks. ${formatRupiah(remaining)})`}
+                                required
+                            >
+                                <InputNumber
+                                    min={1}
+                                    max={remaining}
+                                    style={{ width: "100%" }}
+                                    value={payAmount}
+                                    onChange={(value) =>
+                                        setPayAmount(value ?? remaining)
+                                    }
+                                />
+                            </Form.Item>
+                            <Form.Item label="Metode" required>
+                                <Select
+                                    value={payMethod}
+                                    onChange={setPayMethod}
+                                    options={[
+                                        { value: "tunai", label: "Tunai" },
+                                        {
+                                            value: "transfer",
+                                            label: "Transfer",
+                                        },
+                                        {
+                                            value: "lainnya",
+                                            label: "Lainnya",
+                                        },
+                                    ]}
+                                />
+                            </Form.Item>
+                            <Form.Item label="Catatan">
+                                <Input.TextArea
+                                    rows={2}
+                                    value={payNote}
+                                    onChange={(e) =>
+                                        setPayNote(e.target.value)
+                                    }
+                                    placeholder="Opsional"
+                                />
+                            </Form.Item>
+                        </Form>
+                    </Modal>
                 </Spin>
             </LayoutAccount>
         </>

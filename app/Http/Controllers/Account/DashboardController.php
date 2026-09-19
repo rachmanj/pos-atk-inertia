@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CashierShift;
 use App\Models\Expense;
 use App\Models\Product;
+use App\Models\Purchase;
 use App\Models\Profit;
 use App\Models\PpobAccount;
 use App\Models\Transaction;
@@ -72,6 +73,18 @@ class DashboardController extends Controller
 
         $ppobAccount = PpobAccount::activeAccount();
 
+        $dueSoonPurchases = Purchase::query()
+            ->notFullyPaid()
+            ->whereNotNull('due_date')
+            ->where('due_date', '<=', Carbon::today()->addDays(7))
+            ->withSum('payments as paid_amount_sum', 'amount')
+            ->get(['id', 'total_amount', 'due_date', 'payment_status']);
+
+        $dueSoonPayables = [
+            'invoice_count' => $dueSoonPurchases->count(),
+            'total_remaining' => (int) $dueSoonPurchases->sum(fn (Purchase $purchase) => $purchase->remaining()),
+        ];
+
         $recentTransactions = Transaction::with(['cashier:id,name', 'customer:id,name'])
             ->select([
                 'id',
@@ -125,6 +138,7 @@ class DashboardController extends Controller
                 'min_balance_alert' => $ppobAccount->min_balance_alert,
                 'is_low_balance' => $ppobAccount->isLowBalance(),
             ] : null,
+            'dueSoonPayables' => $dueSoonPayables,
         ]);
     }
 

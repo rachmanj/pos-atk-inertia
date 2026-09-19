@@ -128,6 +128,26 @@ class PurchaseController extends Controller
             'items.*.conversion_factor' => 'nullable|numeric|min:0.0001',
             'items.*.qty' => 'required|integer|min:1',
             'items.*.buy_price' => 'required|integer|min:0',
+            'payment_term' => [
+                'nullable',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+
+                    $term = is_string($value) ? trim($value) : (string) $value;
+
+                    if (in_array($term, ['0', '14', '30', '60'], true)) {
+                        return;
+                    }
+
+                    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $term)) {
+                        return;
+                    }
+
+                    $fail('Termin pembayaran tidak valid.');
+                },
+            ],
         ]);
 
         $items = collect($request->items)
@@ -172,6 +192,11 @@ class PurchaseController extends Controller
         $dppAmount = $this->purchaseTaxCalculator->dppAmount($lines, $taxAmount, $taxIncluded);
         $totalAmount = $this->purchaseTaxCalculator->totalAmount($dppAmount, $taxAmount);
 
+        $paymentTerms = Purchase::resolvePaymentTerms(
+            $request->purchase_date,
+            $request->input('payment_term'),
+        );
+
         $purchase = DB::transaction(function () use (
             $request,
             $allocatedItems,
@@ -180,6 +205,7 @@ class PurchaseController extends Controller
             $taxIncluded,
             $hppIncludesTax,
             $totalAmount,
+            $paymentTerms,
         ) {
             $lockedProducts = Product::query()
                 ->physical()
@@ -226,6 +252,9 @@ class PurchaseController extends Controller
                 'tax_included' => $taxIncluded,
                 'hpp_includes_tax' => $hppIncludesTax,
                 'note' => filled($request->note) ? trim($request->note) : null,
+                'payment_status' => $paymentTerms['payment_status'],
+                'payment_term_days' => $paymentTerms['payment_term_days'],
+                'due_date' => $paymentTerms['due_date'],
             ]);
 
             foreach ($allocatedItems as $item) {
@@ -299,11 +328,14 @@ class PurchaseController extends Controller
         abort_unless($user->can('purchases.show'), 403);
 
         $purchase = Purchase::query()
+            ->withSum('payments as paid_amount_sum', 'amount')
             ->with([
                 'supplier:id,name,no_telp,email,address',
                 'user:id,name',
                 'details.product:id,title,barcode,unit',
                 'details.unit:id,name,abbreviation',
+                'payments' => fn ($query) => $query->latest('paid_on')->latest('id'),
+                'payments.user:id,name',
             ])
             ->where('invoice', $invoice)
             ->when(!$user->isAdminUser(), function ($query) use ($user) {
@@ -313,6 +345,7 @@ class PurchaseController extends Controller
 
         return Inertia::render('Account/Purchases/Show', [
             'purchase' => $purchase,
+            'canRecordPayment' => $user->can('purchases.edit'),
         ]);
     }
 

@@ -27,6 +27,7 @@ import {
     DollarOutlined,
     FileTextOutlined,
     BarChartOutlined,
+    AccountBookOutlined,
 } from "@ant-design/icons";
 import { NAV_MENUS } from "../Utils/navMenu";
 import hasAnyPermission from "../Utils/Permissions";
@@ -59,6 +60,7 @@ const MENU_ICONS = {
     "report-profit": DollarOutlined,
     "report-expense": FileTextOutlined,
     "report-purchase-tax": FileDoneOutlined,
+    "report-purchase-payables": AccountBookOutlined,
     "report-customers": TeamOutlined,
     "report-stock": BarChartOutlined,
 };

@@ -1,5 +1,5 @@
 import LayoutAccount from "../../../Layouts/Account";
-import { Head, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import useInertiaLoading from "../../../Hooks/useInertiaLoading";
 import { BRAND, NEUTRAL } from "../../../theme/colors";
 import {
@@ -25,6 +25,7 @@ import {
     PieChartOutlined,
     ShoppingOutlined,
     WalletOutlined,
+    AccountBookOutlined,
 } from "@ant-design/icons";
 import { formatRupiah, formatRupiahCompact } from "../../../Utils/format";
 
@@ -137,6 +138,7 @@ export default function Dashboard() {
         recentTransactions = [],
         lowStockProducts = [],
         ppobAccount = null,
+        dueSoonPayables = {},
     } = usePage().props;
     const loading = useInertiaLoading();
 
@@ -144,6 +146,9 @@ export default function Dashboard() {
         Number(summary.today_net_profit || 0) < 0 ? "danger" : "success";
     const lowStockColor =
         Number(summary.low_stock_count || 0) > 0 ? "danger" : "secondary";
+
+    const dueSoonCount = Number(dueSoonPayables.invoice_count || 0);
+    const dueSoonTotal = Number(dueSoonPayables.total_remaining || 0);
 
     const stats = [
         {
@@ -241,6 +246,66 @@ export default function Dashboard() {
                             </Col>
                         ))}
                     </Row>
+
+                    {dueSoonCount > 0 && (
+                        <Row gutter={[16, 16]}>
+                            <Col xs={24} sm={12} md={8} lg={6}>
+                                <Link href="/account/reports/purchase-payables">
+                                    <Card
+                                        hoverable
+                                        style={{
+                                            borderColor: "var(--semantic-warning)",
+                                        }}
+                                    >
+                                        <Statistic
+                                            title={
+                                                <Text
+                                                    type="secondary"
+                                                    style={{
+                                                        fontSize: 12,
+                                                        textTransform:
+                                                            "uppercase",
+                                                    }}
+                                                >
+                                                    Utang Jatuh Tempo ≤ 7 Hari
+                                                </Text>
+                                            }
+                                            value={dueSoonCount}
+                                            suffix="nota"
+                                            prefix={
+                                                <AccountBookOutlined
+                                                    style={{
+                                                        color: "var(--semantic-warning)",
+                                                        marginRight: 8,
+                                                    }}
+                                                />
+                                            }
+                                        />
+                                        <Text
+                                            strong
+                                            style={{
+                                                color: "var(--semantic-error)",
+                                                fontSize: 16,
+                                            }}
+                                        >
+                                            {formatRupiah(dueSoonTotal)}
+                                        </Text>
+                                        <Text
+                                            type="secondary"
+                                            style={{
+                                                fontSize: 12,
+                                                display: "block",
+                                                marginTop: 4,
+                                            }}
+                                        >
+                                            Klik untuk lihat laporan utang
+                                            supplier
+                                        </Text>
+                                    </Card>
+                                </Link>
+                            </Col>
+                        </Row>
+                    )}
 
                     {ppobAccount && (
                         <Row gutter={[16, 16]}>
