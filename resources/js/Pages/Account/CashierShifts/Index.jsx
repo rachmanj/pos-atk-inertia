@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import Pagination from "../../../Shared/Pagination";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
@@ -11,6 +11,9 @@ import {
     Button,
     Card,
     Col,
+    Form,
+    Input,
+    Modal,
     Row,
     Space,
     Spin,
@@ -18,6 +21,7 @@ import {
     Table,
     Tag,
     Typography,
+    notification,
 } from "antd";
 import {
     CheckCircleOutlined,
@@ -29,6 +33,7 @@ import {
     MoneyCollectOutlined,
     RiseOutlined,
     ShoppingOutlined,
+    UndoOutlined,
     UnorderedListOutlined,
 } from "@ant-design/icons";
 
@@ -89,9 +94,57 @@ function StatCard({ title, value, icon, color = "primary" }) {
 }
 
 export default function CashierShiftIndex() {
-    const { activeShift, shifts, flash, auth, summary = {} } = usePage().props;
+    const { activeShift, shifts, flash, auth, summary = {}, canReopen = false } =
+        usePage().props;
     const permissions = auth?.permissions || {};
     const loading = useInertiaLoading();
+
+    const [reopenShiftId, setReopenShiftId] = useState(null);
+    const [reopenReason, setReopenReason] = useState("");
+    const [reopenLoading, setReopenLoading] = useState(false);
+
+    const closeReopenModal = () => {
+        if (!reopenLoading) {
+            setReopenShiftId(null);
+            setReopenReason("");
+        }
+    };
+
+    const submitReopen = () => {
+        const reason = String(reopenReason || "").trim();
+        if (reason.length < 3) {
+            notification.error({
+                message: "Validasi gagal",
+                description: "Alasan pembukaan kembali wajib diisi (minimal 3 karakter).",
+            });
+            return;
+        }
+
+        setReopenLoading(true);
+        router.put(
+            `/account/cashier-shifts/${reopenShiftId}/reopen`,
+            { reason },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setReopenShiftId(null);
+                    setReopenReason("");
+                    notification.success({
+                        message: "Berhasil",
+                        description: "Shift berhasil dibuka kembali.",
+                    });
+                },
+                onError: () => {
+                    notification.error({
+                        message: "Gagal",
+                        description:
+                            "Shift tidak dapat dibuka kembali. Periksa hak akses dan data.",
+                    });
+                },
+                onFinish: () => setReopenLoading(false),
+            },
+        );
+    };
 
     const canOpenShift =
         !activeShift && hasAnyPermission(["cashier_shifts.open"], permissions);
@@ -194,13 +247,24 @@ export default function CashierShiftIndex() {
         },
         {
             title: "Aksi",
-            width: 70,
+            width: canReopen ? 100 : 70,
             align: "center",
             fixed: "right",
             render: (_, record) => (
-                <Link href={`/account/cashier-shifts/${record.id}`}>
-                    <Button size="small" type="text" icon={<EyeOutlined />} />
-                </Link>
+                <Space size={4}>
+                    <Link href={`/account/cashier-shifts/${record.id}`}>
+                        <Button size="small" type="text" icon={<EyeOutlined />} title="Detail" />
+                    </Link>
+                    {canReopen && record.status === "closed" && (
+                        <Button
+                            size="small"
+                            type="text"
+                            icon={<UndoOutlined />}
+                            title="Buka Kembali"
+                            onClick={() => setReopenShiftId(record.id)}
+                        />
+                    )}
+                </Space>
             ),
         },
     ];
@@ -391,6 +455,32 @@ export default function CashierShiftIndex() {
                     </Card>
                 </Space>
                 </Spin>
+
+                <Modal
+                    title="Buka Kembali Shift"
+                    open={reopenShiftId !== null}
+                    onCancel={closeReopenModal}
+                    onOk={submitReopen}
+                    okText="Buka Kembali"
+                    confirmLoading={reopenLoading}
+                    destroyOnClose
+                >
+                    <Form layout="vertical">
+                        <Form.Item
+                            label="Alasan"
+                            required
+                            help="Wajib diisi untuk jejak audit (minimal 3 karakter)."
+                        >
+                            <Input.TextArea
+                                rows={4}
+                                value={reopenReason}
+                                onChange={(e) => setReopenReason(e.target.value)}
+                                placeholder="Contoh: perlu koreksi pengeluaran dari laci sebelum tutup."
+                                maxLength={255}
+                            />
+                        </Form.Item>
+                    </Form>
+                </Modal>
             </LayoutAccount>
         </>
     );

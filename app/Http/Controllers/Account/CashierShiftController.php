@@ -118,6 +118,7 @@ class CashierShiftController extends Controller
                 'summary'            => $this->buildShiftSummary($activeShift),
             ] : null,
             'shifts' => $shifts,
+            'canReopen' => $user->isAdminUser(),
         ]);
     }
 

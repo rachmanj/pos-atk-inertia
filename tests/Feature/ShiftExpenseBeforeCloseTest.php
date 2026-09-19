@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\Concerns\PosTestHelpers;
@@ -288,6 +289,22 @@ class ShiftExpenseBeforeCloseTest extends TestCase
                 'reason' => 'Tidak valid',
             ])
             ->assertSessionHasErrors('reason');
+    }
+
+    public function test_shift_index_exposes_can_reopen_for_admin_only(): void
+    {
+        $admin = $this->createAdminUser();
+        $cashier = $this->createCashierUser($this->shiftPermissions());
+
+        $this->actingAs($admin)
+            ->get(route('account.cashier-shifts.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('canReopen', true));
+
+        $this->actingAs($cashier)
+            ->get(route('account.cashier-shifts.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('canReopen', false));
     }
 
     protected function createClosedShift(User $user): CashierShift
