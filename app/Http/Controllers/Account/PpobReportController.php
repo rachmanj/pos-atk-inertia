@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Exports\PpobReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\PpobReportRekapKasirBuilder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -132,22 +133,9 @@ class PpobReportController extends Controller
             ->selectRaw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total')
             ->value('total') ?? 0);
 
-        $rekapKasir = (clone $summaryQuery)
-            ->join('users', 'users.id', '=', 'transactions.cashier_id')
-            ->select([
-                'users.name as cashier_name',
-                DB::raw('SUM(transaction_details.ppob_cost * transaction_details.qty) as total_harga_dasar'),
-                DB::raw('SUM(transaction_details.subtotal) as total_penjualan'),
-            ])
-            ->groupBy('transactions.cashier_id', 'users.name')
-            ->orderByDesc('total_penjualan')
-            ->get()
-            ->map(fn ($r) => [
-                'cashier_name' => $r->cashier_name,
-                'total_harga_dasar' => (int) $r->total_harga_dasar,
-                'total_penjualan' => (int) $r->total_penjualan,
-            ])
-            ->values();
+        $cashierFilterId = filled($request->cashier_id) ? (int) $request->cashier_id : null;
+
+        $rekapKasir = PpobReportRekapKasirBuilder::build($startDate, $endDate, $cashierFilterId);
 
         return Inertia::render('Account/Reports/Ppob', [
             'ppobData' => $ppobData,

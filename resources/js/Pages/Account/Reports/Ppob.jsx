@@ -16,6 +16,7 @@ import {
     Space,
     Statistic,
     Table,
+    Tag,
     Typography,
 } from "antd";
 import {
@@ -112,7 +113,14 @@ export default function PpobReport() {
         {
             title: "Kasir",
             dataIndex: "cashier_name",
-            render: (name) => <Text strong>{name}</Text>,
+            render: (name, record) => (
+                <Space size={4} wrap>
+                    <Text strong>{name}</Text>
+                    {record.has_expense && (
+                        <Tag color="default">pengeluaran PPOB</Tag>
+                    )}
+                </Space>
+            ),
         },
         {
             title: "Total Harga Dasar PPOB",
@@ -365,7 +373,7 @@ export default function PpobReport() {
                             Rekap Penjualan PPOB per Kasir
                         </Title>
                         <Table
-                            rowKey="cashier_name"
+                            rowKey={(row) => String(row.user_id ?? row.cashier_name)}
                             columns={rekapKasirColumns}
                             dataSource={rekapKasir}
                             pagination={false}
