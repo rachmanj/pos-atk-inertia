@@ -45,6 +45,8 @@ class Setting extends Model
             'ppob_admin_fee' => (int) ($settings->get('ppob_admin_fee') ?: 2000),
             'ppob_min_balance_default' => (int) ($settings->get('ppob_min_balance_default') ?: 100000),
             'ppob_token_fee' => (int) ($settings->get('ppob_token_fee') ?: 4500),
+            'ppob_token_markup_below_1jt' => (int) ($settings->get('ppob_token_markup_below_1jt') ?: 5000),
+            'ppob_token_markup_1jt_up' => (int) ($settings->get('ppob_token_markup_1jt_up') ?: 10000),
             'ppob_token_product_ids' => $settings->get('ppob_token_product_ids') ?: '3207',
         ];
     }
@@ -77,6 +79,20 @@ class Setting extends Model
     public static function expectedPpobCostForToken(int $tokenNominal): int
     {
         return $tokenNominal + static::ppobSettings()['ppob_token_fee'];
+    }
+
+    public static function defaultTokenSellPrice(int $tokenNominal): int
+    {
+        if ($tokenNominal <= 0) {
+            return 0;
+        }
+
+        $settings = static::ppobSettings();
+        $markup = $tokenNominal < 1_000_000
+            ? $settings['ppob_token_markup_below_1jt']
+            : $settings['ppob_token_markup_1jt_up'];
+
+        return $tokenNominal + $markup;
     }
 
     public static function getValue(string $key, mixed $default = null): mixed

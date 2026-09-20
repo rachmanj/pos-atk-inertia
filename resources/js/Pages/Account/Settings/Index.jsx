@@ -57,6 +57,12 @@ export default function SettingIndex() {
     const [ppobTokenFee, setPpobTokenFee] = useState(
         Number(ppob.ppob_token_fee || 4500),
     );
+    const [ppobTokenMarkupBelow1jt, setPpobTokenMarkupBelow1jt] = useState(
+        Number(ppob.ppob_token_markup_below_1jt ?? 5000),
+    );
+    const [ppobTokenMarkup1jtUp, setPpobTokenMarkup1jtUp] = useState(
+        Number(ppob.ppob_token_markup_1jt_up ?? 10000),
+    );
     const [ppobTokenProductIds, setPpobTokenProductIds] = useState(
         ppob.ppob_token_product_ids || "3207",
     );
@@ -106,6 +112,8 @@ export default function SettingIndex() {
                 ppob_admin_fee: ppobAdminFee,
                 ppob_min_balance_default: ppobMinBalanceDefault,
                 ppob_token_fee: ppobTokenFee,
+                ppob_token_markup_below_1jt: ppobTokenMarkupBelow1jt,
+                ppob_token_markup_1jt_up: ppobTokenMarkup1jtUp,
                 ppob_token_product_ids: ppobTokenProductIds,
                 logo,
                 remove_logo: removeLogo,
@@ -142,6 +150,12 @@ export default function SettingIndex() {
             Number(ppob.ppob_min_balance_default || 100000),
         );
         setPpobTokenFee(Number(ppob.ppob_token_fee || 4500));
+        setPpobTokenMarkupBelow1jt(
+            Number(ppob.ppob_token_markup_below_1jt ?? 5000),
+        );
+        setPpobTokenMarkup1jtUp(
+            Number(ppob.ppob_token_markup_1jt_up ?? 10000),
+        );
         setPpobTokenProductIds(ppob.ppob_token_product_ids || "3207");
         setLogo(null);
         setRemoveLogo(false);
@@ -511,6 +525,40 @@ export default function SettingIndex() {
                                         value={ppobTokenFee}
                                         onChange={(value) =>
                                             setPpobTokenFee(value ?? 0)
+                                        }
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Markup harga jual token di bawah Rp 1 jt (Rp)"
+                                    extra="Ditambahkan ke nominal token untuk harga jual default."
+                                >
+                                    <InputNumber
+                                        min={0}
+                                        style={{ width: "100%" }}
+                                        value={ppobTokenMarkupBelow1jt}
+                                        onChange={(value) =>
+                                            setPpobTokenMarkupBelow1jt(
+                                                value ?? 0,
+                                            )
+                                        }
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Markup harga jual token Rp 1 jt ke atas (Rp)"
+                                    extra="Ditambahkan ke nominal token untuk harga jual default."
+                                >
+                                    <InputNumber
+                                        min={0}
+                                        style={{ width: "100%" }}
+                                        value={ppobTokenMarkup1jtUp}
+                                        onChange={(value) =>
+                                            setPpobTokenMarkup1jtUp(
+                                                value ?? 0,
+                                            )
                                         }
                                     />
                                 </Form.Item>

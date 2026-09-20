@@ -34,6 +34,22 @@ class SettingsSeeder extends Seeder
         );
 
         Setting::updateOrCreate(
+            ['key' => 'ppob_token_markup_below_1jt'],
+            [
+                'value' => '5000',
+                'group' => 'ppob',
+            ],
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'ppob_token_markup_1jt_up'],
+            [
+                'value' => '10000',
+                'group' => 'ppob',
+            ],
+        );
+
+        Setting::updateOrCreate(
             ['key' => 'ppob_token_product_ids'],
             [
                 'value' => '3207',

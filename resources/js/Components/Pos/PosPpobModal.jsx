@@ -32,16 +32,23 @@ export function isPpobTokenProduct(product, ppobSettings = {}) {
         .includes(product.id);
 }
 
+const TOKEN_MARKUP_THRESHOLD = 1_000_000;
+
 export function defaultTokenSellPrice(tokenNominal, ppobSettings = {}) {
     const nominal = Number(tokenNominal || 0);
-    const tokenFee = Number(ppobSettings.ppob_token_fee || 4500);
-    const adminFee = Number(ppobSettings.ppob_admin_fee || 2000);
+    const markupBelow = Number(
+        ppobSettings.ppob_token_markup_below_1jt ?? 5000,
+    );
+    const markupUp = Number(ppobSettings.ppob_token_markup_1jt_up ?? 10000);
 
     if (nominal <= 0) {
         return 0;
     }
 
-    return nominal + tokenFee + adminFee;
+    const markup =
+        nominal < TOKEN_MARKUP_THRESHOLD ? markupBelow : markupUp;
+
+    return nominal + markup;
 }
 
 export default function PosPpobModal({

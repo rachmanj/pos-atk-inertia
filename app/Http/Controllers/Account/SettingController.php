@@ -39,6 +39,8 @@ class SettingController extends Controller
             'ppob_admin_fee' => 'nullable|integer|min:0',
             'ppob_min_balance_default' => 'nullable|integer|min:0',
             'ppob_token_fee' => 'nullable|integer|min:0',
+            'ppob_token_markup_below_1jt' => 'nullable|integer|min:0',
+            'ppob_token_markup_1jt_up' => 'nullable|integer|min:0',
             'ppob_token_product_ids' => ['nullable', 'string', 'max:500', 'regex:/^[\d,\s]*$/'],
         ]);
 
@@ -72,6 +74,14 @@ class SettingController extends Controller
         $this->setPpobValue('ppob_admin_fee', (string) (int) $request->input('ppob_admin_fee', 2000));
         $this->setPpobValue('ppob_min_balance_default', (string) (int) $request->input('ppob_min_balance_default', 100000));
         $this->setPpobValue('ppob_token_fee', (string) (int) $request->input('ppob_token_fee', 4500));
+        $this->setPpobValue(
+            'ppob_token_markup_below_1jt',
+            (string) (int) $request->input('ppob_token_markup_below_1jt', 5000),
+        );
+        $this->setPpobValue(
+            'ppob_token_markup_1jt_up',
+            (string) (int) $request->input('ppob_token_markup_1jt_up', 10000),
+        );
         $this->setPpobValue(
             'ppob_token_product_ids',
             $this->normalizePpobTokenProductIds($request->input('ppob_token_product_ids', '3207')),
