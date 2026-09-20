@@ -102,8 +102,9 @@ class SplitPaymentShiftReconciliationTest extends TestCase
         $transaction = $this->checkoutSplitCashTransfer($user, $shift->opened_at->copy()->addHour());
 
         $this->actingAs($user)
+            ->from(route('account.transactions.index'))
             ->post(route('account.transactions.confirm-transfer', $transaction->invoice))
-            ->assertRedirect(route('account.transactions.show', $transaction->invoice));
+            ->assertRedirect(route('account.transactions.index'));
 
         $transaction->refresh();
 

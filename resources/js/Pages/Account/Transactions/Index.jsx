@@ -127,6 +127,37 @@ export default function Index() {
         return start || end ? [start, end] : null;
     });
     const voidReasonRef = useRef("");
+    const [optimisticallyConfirmedInvoices, setOptimisticallyConfirmedInvoices] =
+        useState(() => new Set());
+
+    const handleConfirmTransfer = (invoice) => {
+        setOptimisticallyConfirmedInvoices((prev) => {
+            const next = new Set(prev);
+            next.add(invoice);
+            return next;
+        });
+
+        router.post(
+            `/account/transactions/${invoice}/confirm-transfer`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    notification.success({
+                        message: "Pembayaran transfer berhasil dikonfirmasi.",
+                    });
+                    router.reload({ only: ["transactions", "flash"] });
+                },
+                onError: () => {
+                    setOptimisticallyConfirmedInvoices((prev) => {
+                        const next = new Set(prev);
+                        next.delete(invoice);
+                        return next;
+                    });
+                },
+            },
+        );
+    };
 
     const canVoidTransaction = (record) =>
         hasAnyPermission(["transactions.void"], permissions) &&
@@ -340,6 +371,7 @@ export default function Index() {
                         </Link>
                     )}
                     {isTransferPending(record) &&
+                        !optimisticallyConfirmedInvoices.has(record.invoice) &&
                         hasAnyPermission(
                             ["transactions.edit"],
                             permissions,
@@ -349,9 +381,7 @@ export default function Index() {
                                 type="primary"
                                 icon={<CheckCircleOutlined />}
                                 onClick={() =>
-                                    router.post(
-                                        `/account/transactions/${record.invoice}/confirm-transfer`,
-                                    )
+                                    handleConfirmTransfer(record.invoice)
                                 }
                             >
                                 Konfirmasi

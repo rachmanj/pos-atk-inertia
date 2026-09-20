@@ -22,8 +22,9 @@ class ConfirmTransferTest extends TestCase
         $this->createTransactionDetail($transaction, $catalog['product'], $catalog['unit']);
 
         $this->actingAs($user)
+            ->from(route('account.transactions.index'))
             ->post(route('account.transactions.confirm-transfer', $transaction->invoice))
-            ->assertRedirect(route('account.transactions.show', $transaction->invoice))
+            ->assertRedirect(route('account.transactions.index'))
             ->assertSessionHas('success', 'Pembayaran transfer berhasil dikonfirmasi.');
 
         $transaction->refresh();
@@ -40,7 +41,28 @@ class ConfirmTransferTest extends TestCase
         ]);
     }
 
-    public function test_second_confirm_on_already_paid_transfer_is_idempotent(): void
+    public function test_confirm_from_transaction_show_redirects_back_to_show(): void
+    {
+        $user = $this->createCashierUser(['transactions.edit']);
+        $transaction = $this->createPendingLegacyTransfer($user);
+        $catalog = $this->createPhysicalProduct();
+        $this->createTransactionDetail($transaction, $catalog['product'], $catalog['unit']);
+
+        $showUrl = route('account.transactions.show', $transaction->invoice);
+
+        $this->actingAs($user)
+            ->from($showUrl)
+            ->post(route('account.transactions.confirm-transfer', $transaction->invoice))
+            ->assertRedirect($showUrl)
+            ->assertSessionHas('success', 'Pembayaran transfer berhasil dikonfirmasi.');
+
+        $transaction->refresh();
+
+        $this->assertSame('paid', $transaction->payment_status);
+        $this->assertSame('completed', $transaction->status);
+    }
+
+    public function test_confirm_without_valid_referer_falls_back_to_index(): void
     {
         $user = $this->createCashierUser(['transactions.edit']);
         $transaction = $this->createPendingLegacyTransfer($user);
@@ -49,13 +71,30 @@ class ConfirmTransferTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('account.transactions.confirm-transfer', $transaction->invoice))
-            ->assertRedirect(route('account.transactions.show', $transaction->invoice));
+            ->assertRedirect(route('account.transactions.index'))
+            ->assertSessionHas('success', 'Pembayaran transfer berhasil dikonfirmasi.');
+    }
+
+    public function test_second_confirm_on_already_paid_transfer_is_idempotent(): void
+    {
+        $user = $this->createCashierUser(['transactions.edit']);
+        $transaction = $this->createPendingLegacyTransfer($user);
+        $catalog = $this->createPhysicalProduct();
+        $this->createTransactionDetail($transaction, $catalog['product'], $catalog['unit']);
+
+        $showUrl = route('account.transactions.show', $transaction->invoice);
+
+        $this->actingAs($user)
+            ->from($showUrl)
+            ->post(route('account.transactions.confirm-transfer', $transaction->invoice))
+            ->assertRedirect($showUrl);
 
         $paidAt = $transaction->fresh()->paid_at;
 
         $this->actingAs($user)
+            ->from($showUrl)
             ->post(route('account.transactions.confirm-transfer', $transaction->invoice))
-            ->assertRedirect(route('account.transactions.show', $transaction->invoice))
+            ->assertRedirect($showUrl)
             ->assertSessionHas('success', 'Transaksi ini sudah dikonfirmasi sebelumnya.');
 
         $transaction->refresh();
@@ -83,8 +122,9 @@ class ConfirmTransferTest extends TestCase
         ]);
 
         $this->actingAs($user)
+            ->from(route('account.transactions.index'))
             ->post(route('account.transactions.confirm-transfer', $transaction->invoice))
-            ->assertRedirect(route('account.transactions.show', $transaction->invoice))
+            ->assertRedirect(route('account.transactions.index'))
             ->assertSessionHas('error', 'Konfirmasi hanya untuk transaksi transfer manual.');
     }
 
@@ -127,8 +167,9 @@ class ConfirmTransferTest extends TestCase
         ]);
 
         $this->actingAs($user)
+            ->from(route('account.transactions.index'))
             ->post(route('account.transactions.confirm-transfer', $transaction->invoice))
-            ->assertRedirect(route('account.transactions.show', $transaction->invoice))
+            ->assertRedirect(route('account.transactions.index'))
             ->assertSessionHas('success', 'Pembayaran transfer berhasil dikonfirmasi.');
 
         $transaction->refresh();

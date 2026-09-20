@@ -52,6 +52,8 @@ export default function TransactionShow() {
         normalizeReceiptPaperSize(store?.receipt_paper_size),
     );
     const [confirming, setConfirming] = useState(false);
+    const [transferConfirmedLocally, setTransferConfirmedLocally] =
+        useState(false);
     const voidReasonRef = useRef("");
     const receiptPrintWidth = getReceiptPrintWidth(receiptPaperSize);
 
@@ -140,15 +142,24 @@ export default function TransactionShow() {
                 transaction.payment_status === "pending" &&
                 payments.length === 0));
 
+    const showAsTransferPending =
+        isTransferPending && !transferConfirmedLocally;
+
     const canConfirmTransfer =
-        isTransferPending &&
+        showAsTransferPending &&
         hasAnyPermission(["transactions.edit"], permissions);
 
-    const displayStatusLabel = isTransferPending
+    const displayStatusLabel = showAsTransferPending
         ? "Menunggu Konfirmasi Transfer"
-        : statusLabel[transaction.status] ||
-          transaction.status ||
-          "-";
+        : transferConfirmedLocally
+          ? statusLabel.completed
+          : statusLabel[transaction.status] ||
+            transaction.status ||
+            "-";
+
+    const effectivePaymentStatus = transferConfirmedLocally
+        ? "paid"
+        : transaction.payment_status;
 
     const canVoidTransaction =
         hasAnyPermission(["transactions.void"], permissions) &&
@@ -205,15 +216,29 @@ export default function TransactionShow() {
             cancelText: "Batal",
             onOk: () => {
                 setConfirming(true);
+                setTransferConfirmedLocally(true);
 
                 return new Promise((resolve, reject) => {
                     router.post(
                         `/account/transactions/${transaction.invoice}/confirm-transfer`,
                         {},
                         {
+                            preserveScroll: true,
                             onFinish: () => setConfirming(false),
-                            onSuccess: () => resolve(),
-                            onError: () => reject(),
+                            onSuccess: () => {
+                                notification.success({
+                                    message:
+                                        "Pembayaran transfer berhasil dikonfirmasi.",
+                                });
+                                router.reload({
+                                    only: ["transaction", "flash"],
+                                });
+                                resolve();
+                            },
+                            onError: () => {
+                                setTransferConfirmedLocally(false);
+                                reject();
+                            },
                         },
                     );
                 });
@@ -320,10 +345,12 @@ export default function TransactionShow() {
 
                         <Tag
                             className={`transaction-status-chip ${
-                                isTransferPending
+                                showAsTransferPending
                                     ? "is-warning"
-                                    : statusClass[transaction.status] ||
-                                      "is-warning"
+                                    : transferConfirmedLocally
+                                      ? statusClass.completed
+                                      : statusClass[transaction.status] ||
+                                        "is-warning"
                             }`}
                         >
                             {displayStatusLabel}
@@ -344,7 +371,7 @@ export default function TransactionShow() {
                                     size="middle"
                                     style={{ width: "100%" }}
                                 >
-                                    {isTransferPending && (
+                                    {showAsTransferPending && (
                                         <Alert
                                             type="warning"
                                             showIcon
@@ -551,21 +578,19 @@ export default function TransactionShow() {
 
                                             <span
                                                 className={`receipt-status-pill ${
-                                                    isTransferPending
+                                                    showAsTransferPending
                                                         ? "is-pending"
                                                         : paymentStatusClass[
-                                                              transaction
-                                                                  .payment_status
+                                                              effectivePaymentStatus
                                                           ] || "is-pending"
                                                 }`}
                                             >
-                                                {isTransferPending
+                                                {showAsTransferPending
                                                     ? "Menunggu Konfirmasi Transfer"
                                                     : paymentStatusLabel[
-                                                          transaction
-                                                              .payment_status
+                                                          effectivePaymentStatus
                                                       ] ||
-                                                      transaction.payment_status ||
+                                                      effectivePaymentStatus ||
                                                       "-"}
                                             </span>
                                         </div>

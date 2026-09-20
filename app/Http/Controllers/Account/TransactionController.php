@@ -231,20 +231,17 @@ class TransactionController extends Controller
             );
 
         if (! $hasTransferPart) {
-            return redirect()
-                ->route('account.transactions.show', $invoice)
+            return $this->redirectAfterConfirmTransfer($request, $invoice)
                 ->with('error', 'Konfirmasi hanya untuk transaksi transfer manual.');
         }
 
         if ($transaction->payment_status === 'paid') {
-            return redirect()
-                ->route('account.transactions.show', $invoice)
+            return $this->redirectAfterConfirmTransfer($request, $invoice)
                 ->with('success', 'Transaksi ini sudah dikonfirmasi sebelumnya.');
         }
 
         if (! TransactionPaymentAggregator::hasPendingTransferPart($transaction)) {
-            return redirect()
-                ->route('account.transactions.show', $invoice)
+            return $this->redirectAfterConfirmTransfer($request, $invoice)
                 ->with('error', 'Tidak ada bagian transfer yang menunggu konfirmasi pada transaksi ini.');
         }
 
@@ -300,9 +297,34 @@ class TransactionController extends Controller
             );
         });
 
-        return redirect()
-            ->route('account.transactions.show', $invoice)
+        return $this->redirectAfterConfirmTransfer($request, $invoice)
             ->with('success', 'Pembayaran transfer berhasil dikonfirmasi.');
+    }
+
+    private function redirectAfterConfirmTransfer(Request $request, string $invoice)
+    {
+        $fallback = route('account.transactions.index');
+        $previous = url()->previous($fallback);
+
+        if (! $this->isAllowedConfirmTransferReturnUrl($previous, $invoice)) {
+            return redirect()->to($fallback);
+        }
+
+        return redirect()->to($previous);
+    }
+
+    private function isAllowedConfirmTransferReturnUrl(string $url, string $invoice): bool
+    {
+        if (! str_starts_with($url, url('/'))) {
+            return false;
+        }
+
+        $path = rtrim(parse_url($url, PHP_URL_PATH) ?: '', '/') ?: '/';
+
+        $indexPath = rtrim(parse_url(route('account.transactions.index'), PHP_URL_PATH) ?: '', '/') ?: '/';
+        $showPath = rtrim(parse_url(route('account.transactions.show', $invoice), PHP_URL_PATH) ?: '', '/') ?: '/';
+
+        return $path === $indexPath || $path === $showPath;
     }
 
     public function void(Request $request, $invoice)
