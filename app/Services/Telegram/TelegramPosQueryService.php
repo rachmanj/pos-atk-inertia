@@ -187,6 +187,92 @@ class TelegramPosQueryService
         return implode("\n", $lines);
     }
 
+    public function handleKonfirmasiList(User $user): string
+    {
+        $transactions = $this->pendingTransferTransactions($user);
+
+        if ($transactions->isEmpty()) {
+            return 'Tidak ada transaksi transfer yang menunggu konfirmasi.';
+        }
+
+        $lines = [
+            'Menunggu konfirmasi transfer (' . $transactions->count() . '):',
+        ];
+
+        foreach ($transactions->values() as $index => $transaction) {
+            $lines[] = $this->formatKonfirmasiListLine($index + 1, $transaction);
+        }
+
+        $lines[] = 'Balas: <code>/konfirmasi 1</code>   (atau <code>/konfirmasi ' . e($transactions->first()->invoice) . '</code>)';
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @return array{ok: true, message: string, invoice: string}|array{ok: false, message: string}
+     */
+    public function prepareKonfirmasiPreview(User $user, string $argument): array
+    {
+        $argument = trim($argument);
+
+        if ($argument === '') {
+            return ['ok' => false, 'message' => 'Nomor tidak valid.'];
+        }
+
+        if (preg_match('/^\d+$/', $argument)) {
+            $transactions = $this->pendingTransferTransactions($user);
+            $choice = (int) $argument;
+
+            if ($choice < 1 || $choice > $transactions->count()) {
+                return ['ok' => false, 'message' => 'Nomor tidak valid.'];
+            }
+
+            $transaction = $transactions->values()->get($choice - 1);
+        } else {
+            $transaction = Transaction::query()
+                ->with(['cashier:id,name', 'payments'])
+                ->where('invoice', $argument)
+                ->first();
+
+            if (! $transaction) {
+                return ['ok' => false, 'message' => 'Invoice tidak ditemukan.'];
+            }
+
+            if (! $user->isAdminUser() && (int) $transaction->cashier_id !== (int) $user->id) {
+                return ['ok' => false, 'message' => 'Transaksi ini bukan milik Anda.'];
+            }
+        }
+
+        $transaction->loadMissing(['cashier:id,name', 'payments']);
+
+        $validation = $this->validateKonfirmasiTransaction($transaction);
+
+        if ($validation !== null) {
+            return ['ok' => false, 'message' => $validation];
+        }
+
+        if (! $this->pendingTransferTransactionsQuery($user)->whereKey($transaction->id)->exists()) {
+            return ['ok' => false, 'message' => 'Invoice tidak ditemukan.'];
+        }
+
+        return [
+            'ok' => true,
+            'invoice' => $transaction->invoice,
+            'message' => $this->formatKonfirmasiPreview($transaction),
+        ];
+    }
+
+    public function findKonfirmasiTransaction(User $user, string $invoice): ?Transaction
+    {
+        return Transaction::query()
+            ->with(['details', 'payments'])
+            ->where('invoice', $invoice)
+            ->when(! $user->isAdminUser(), function ($query) use ($user) {
+                $query->where('cashier_id', $user->id);
+            })
+            ->first();
+    }
+
     public function handlePending(User $user): string
     {
         $baseQuery = $this->pendingTransferTransactionsQuery($user);
@@ -366,6 +452,80 @@ class TelegramPosQueryService
         }
 
         return $this->paymentMethodLabel($transaction->payment_method);
+    }
+
+    public function pendingTransferTransactions(User $user): Collection
+    {
+        return $this->pendingTransferTransactionsQuery($user)
+            ->with(['cashier:id,name', 'payments'])
+            ->orderBy('created_at')
+            ->get([
+                'id',
+                'invoice',
+                'grand_total',
+                'payment_method',
+                'payment_status',
+                'cashier_id',
+                'created_at',
+            ]);
+    }
+
+    protected function validateKonfirmasiTransaction(Transaction $transaction): ?string
+    {
+        $hasTransferPart = $transaction->payments->isEmpty()
+            ? $transaction->payment_method === TransactionPayment::METHOD_TRANSFER
+            : $transaction->payments->contains(
+                fn (TransactionPayment $payment) => $payment->method === TransactionPayment::METHOD_TRANSFER
+            );
+
+        if (! $hasTransferPart) {
+            return 'Transaksi ini bukan transfer manual.';
+        }
+
+        if ($transaction->payment_status === 'paid') {
+            return 'Transaksi ini sudah lunas.';
+        }
+
+        if (! TransactionPaymentAggregator::hasPendingTransferPart($transaction)) {
+            return 'Transaksi ini sudah lunas.';
+        }
+
+        return null;
+    }
+
+    protected function formatKonfirmasiListLine(int $number, Transaction $transaction): string
+    {
+        $createdAt = $transaction->created_at instanceof Carbon
+            ? $transaction->created_at
+            : Carbon::parse($transaction->created_at);
+
+        $amount = TransactionPaymentAggregator::pendingTransferAmount($transaction);
+
+        return $number . '. ' . e($transaction->invoice)
+            . ' · ' . $createdAt->format('d M Y, H.i')
+            . ' · ' . e($transaction->cashier?->name ?? '—')
+            . ' · ' . TelegramFormatter::idr($amount)
+            . ' (' . $this->formatPendingAge($createdAt) . ')';
+    }
+
+    protected function formatKonfirmasiPreview(Transaction $transaction): string
+    {
+        $createdAt = $transaction->created_at instanceof Carbon
+            ? $transaction->created_at
+            : Carbon::parse($transaction->created_at);
+
+        $amount = TransactionPaymentAggregator::pendingTransferAmount($transaction);
+
+        return implode("\n", [
+            '<b>Konfirmasi transfer</b>',
+            'Invoice: <b>' . e($transaction->invoice) . '</b>',
+            'Tanggal: ' . $createdAt->format('d M Y, H.i'),
+            'Kasir: ' . e($transaction->cashier?->name ?? '—'),
+            'Metode: ' . e($this->transactionMethodLabel($transaction)),
+            'Total: <b>' . TelegramFormatter::idr($amount) . '</b>',
+            '',
+            'Balas <b>ya</b> untuk konfirmasi, atau <b>tidak</b> untuk membatalkan.',
+        ]);
     }
 
     protected function pendingTransferTransactionsQuery(User $user)
