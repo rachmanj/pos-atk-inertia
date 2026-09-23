@@ -67,6 +67,22 @@ class TelegramBotClient
         return $this->request('deleteWebhook');
     }
 
+    /**
+     * @param  list<array{command: string, description: string}>  $commands
+     */
+    public function setMyCommands(array $commands, ?array $scope = null): ?array
+    {
+        $payload = [
+            'commands' => $commands,
+        ];
+
+        if ($scope !== null) {
+            $payload['scope'] = $scope;
+        }
+
+        return $this->request('setMyCommands', $payload);
+    }
+
     protected function request(string $method, array $payload = []): ?array
     {
         if (! config('telegram.token')) {

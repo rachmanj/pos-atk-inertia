@@ -6,6 +6,7 @@ use App\Models\PpobAccount;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\PpobBalanceService;
+use App\Services\TransactionConfirmationService;
 use DomainException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,7 @@ class TelegramUpdateHandler
         protected TelegramPpobSaleService $saleService,
         protected TelegramPosQueryService $posQueryService,
         protected PpobBalanceService $ppobBalanceService,
+        protected TransactionConfirmationService $transactionConfirmationService,
     ) {}
 
     public function handle(array $update): void
@@ -116,7 +118,7 @@ class TelegramUpdateHandler
             return;
         }
 
-        if ($this->handlePosCommand($chatId, $user, $command, $text)) {
+        if ($this->handlePosCommand($chatId, $telegramId, $user, $command, $text)) {
             $this->markUpdateProcessed($updateId);
 
             return;
@@ -258,16 +260,81 @@ class TelegramUpdateHandler
 
     protected function handlePendingConfirmation(int|string $chatId, int $telegramId, User $user, string $text): bool
     {
+        $answer = mb_strtolower(trim($text));
+        $isConfirmationAnswer = in_array($answer, ['ya', 'tidak', 'y', 't'], true);
+
         $pending = Cache::get($this->pendingConfirmationKey($telegramId));
 
         if (! $pending) {
+            if ($isConfirmationAnswer) {
+                $this->botClient->sendMessage($chatId, 'Konfirmasi telah kedaluwarsa. Silakan ulangi perintah.');
+
+                return true;
+            }
+
             return false;
         }
 
-        $answer = mb_strtolower(trim($text));
-
-        if (! in_array($answer, ['ya', 'tidak', 'y', 't'], true)) {
+        if (! $isConfirmationAnswer) {
             return false;
+        }
+
+        if (($pending['kind'] ?? null) === 'confirm_transfer') {
+            Cache::forget($this->pendingConfirmationKey($telegramId));
+
+            if (in_array($answer, ['tidak', 't'], true)) {
+                $this->botClient->sendMessage($chatId, 'Dibatalkan.');
+
+                return true;
+            }
+
+            if (! $user->can('transactions.edit')) {
+                $this->botClient->sendMessage($chatId, 'Perintah ini tidak tersedia untuk akun Anda.');
+
+                return true;
+            }
+
+            try {
+                $invoice = (string) ($pending['invoice'] ?? '');
+                $transaction = $this->posQueryService->findKonfirmasiTransaction($user, $invoice);
+
+                if (! $transaction) {
+                    $this->botClient->sendMessage($chatId, 'Invoice tidak ditemukan.');
+
+                    return true;
+                }
+
+                $preview = $this->posQueryService->prepareKonfirmasiPreview($user, $invoice);
+
+                if (! ($preview['ok'] ?? false)) {
+                    $this->botClient->sendMessage($chatId, $preview['message']);
+
+                    return true;
+                }
+
+                $this->transactionConfirmationService->confirmTransfer($transaction);
+                $transaction->refresh();
+
+                $this->botClient->sendMessage(
+                    $chatId,
+                    '✅ ' . e($transaction->invoice) . ' dikonfirmasi. Total '
+                    . TelegramFormatter::idr((int) $transaction->grand_total) . ' · Status: Lunas/Selesai'
+                );
+
+                Log::info('Telegram transfer confirmation completed', [
+                    'telegram_id' => $telegramId,
+                    'user_id' => $user->id,
+                    'invoice' => $transaction->invoice,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Telegram transfer confirmation failed', [
+                    'telegram_id' => $telegramId,
+                    'error' => $e->getMessage(),
+                ]);
+                $this->botClient->sendMessage($chatId, 'Terjadi kesalahan sistem.');
+            }
+
+            return true;
         }
 
         Cache::forget($this->pendingConfirmationKey($telegramId));
@@ -417,6 +484,7 @@ beli &lt;produk&gt; &lt;qty&gt; [di &lt;ref&gt;] @&lt;biaya per unit&gt;
 /shift — status shift saat ini
 /laporan — ringkasan penjualan hari ini
 /pending — transfer belum dikonfirmasi
+/konfirmasi — konfirmasi transfer pending
 /batal — batalkan pending
 
 Gunakan <b>total</b> untuk biaya keseluruhan atau <b>@</b> untuk biaya per unit.
@@ -465,8 +533,14 @@ HTML;
         }
     }
 
-    protected function handlePosCommand(int|string $chatId, User $user, string $command, string $text): bool
+    protected function handlePosCommand(int|string $chatId, int $telegramId, User $user, string $command, string $text): bool
     {
+        if ($command === '/konfirmasi') {
+            $this->handleKonfirmasiCommand($chatId, $telegramId, $user, $text);
+
+            return true;
+        }
+
         $message = match ($command) {
             '/cari' => $this->posQueryService->handleCari($this->commandArgument($text)),
             '/stok' => $this->posQueryService->handleStok($this->commandArgument($text)),
@@ -486,6 +560,35 @@ HTML;
         $this->botClient->sendMessage($chatId, $message);
 
         return true;
+    }
+
+    protected function handleKonfirmasiCommand(int|string $chatId, int $telegramId, User $user, string $text): void
+    {
+        if (! $user->can('transactions.edit')) {
+            $this->botClient->sendMessage($chatId, 'Perintah ini tidak tersedia untuk akun Anda.');
+
+            return;
+        }
+
+        $argument = $this->commandArgument($text);
+
+        if ($argument === '') {
+            $this->botClient->sendMessage($chatId, $this->posQueryService->handleKonfirmasiList($user));
+
+            return;
+        }
+
+        $preview = $this->posQueryService->prepareKonfirmasiPreview($user, $argument);
+
+        if (! ($preview['ok'] ?? false)) {
+            $this->botClient->sendMessage($chatId, $preview['message']);
+
+            return;
+        }
+
+        $this->storePendingTransferConfirmation($telegramId, $preview['invoice']);
+
+        $this->botClient->sendMessage($chatId, $preview['message']);
     }
 
     protected function commandArgument(string $text): string
@@ -535,6 +638,16 @@ HTML;
             'amount' => $amount,
             'note' => $note,
             'account_id' => $accountId,
+        ], $ttl);
+    }
+
+    protected function storePendingTransferConfirmation(int $telegramId, string $invoice): void
+    {
+        $ttl = (int) config('telegram.pending_intent_ttl', 300);
+
+        Cache::put($this->pendingConfirmationKey($telegramId), [
+            'kind' => 'confirm_transfer',
+            'invoice' => $invoice,
         ], $ttl);
     }
 

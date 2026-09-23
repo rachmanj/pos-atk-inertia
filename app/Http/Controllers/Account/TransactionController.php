@@ -19,6 +19,7 @@ use App\Services\TransactionPaymentAggregator;
 use App\Models\WhatsappOutboundLog;
 use App\Services\CheckoutService;
 use App\Services\QuickProductService;
+use App\Services\TransactionConfirmationService;
 use App\Services\Telegram\TelegramFormatter;
 use App\Services\TelegramNotificationService;
 use DomainException;
@@ -245,57 +246,7 @@ class TransactionController extends Controller
                 ->with('error', 'Tidak ada bagian transfer yang menunggu konfirmasi pada transaksi ini.');
         }
 
-        DB::transaction(function () use ($transaction) {
-            $now = now();
-
-            if ($transaction->payments->isNotEmpty()) {
-                $transaction->payments()
-                    ->where('method', TransactionPayment::METHOD_TRANSFER)
-                    ->where('payment_status', TransactionPayment::STATUS_PENDING)
-                    ->update([
-                        'payment_status' => TransactionPayment::STATUS_PAID,
-                        'paid_at' => $now,
-                    ]);
-
-                $transaction->load('payments');
-
-                $hasPendingParts = $transaction->payments
-                    ->contains(fn (TransactionPayment $payment) => $payment->payment_status === TransactionPayment::STATUS_PENDING);
-
-                if (! $hasPendingParts) {
-                    $transaction->update([
-                        'payment_status' => 'paid',
-                        'status' => 'completed',
-                        'paid_at' => $now,
-                    ]);
-                }
-            } else {
-                $transaction->update([
-                    'payment_status' => 'paid',
-                    'status' => 'completed',
-                    'paid_at' => $now,
-                ]);
-            }
-
-            $totalCost = $transaction->details->sum(function ($detail) {
-                if ($detail->ppob_cost !== null) {
-                    return (int) $detail->ppob_cost * (int) $detail->qty;
-                }
-
-                return (int) $detail->buy_price * $detail->qtyInBaseUnits();
-            });
-
-            Profit::updateOrCreate(
-                [
-                    'transaction_id' => $transaction->id,
-                ],
-                [
-                    'total_revenue' => (int) $transaction->grand_total,
-                    'total_cost' => (int) $totalCost,
-                    'profit_amount' => (int) $transaction->grand_total - (int) $totalCost,
-                ]
-            );
-        });
+        app(TransactionConfirmationService::class)->confirmTransfer($transaction);
 
         return $this->redirectAfterConfirmTransfer($request, $invoice)
             ->with('success', 'Pembayaran transfer berhasil dikonfirmasi.');
