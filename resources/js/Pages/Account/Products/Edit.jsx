@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
 import {
@@ -32,6 +32,7 @@ import ProductUnitBuilder from "../../../Components/ProductUnitBuilder";
 import ProductComponentBuilder from "../../../Components/ProductComponentBuilder";
 import BarcodeScanner from "../../../Components/BarcodeScanner";
 import useMobile from "../../../Hooks/useMobile";
+import { getProductPriceWarning } from "../../../Utils/productPriceGuard";
 
 const { Title, Text } = Typography;
 
@@ -53,6 +54,9 @@ export default function ProductEdit() {
     const [description, setDescription] = useState(product.description || "");
     const [productType, setProductType] = useState(
         product.product_type || "physical",
+    );
+    const [catalogSellPrice, setCatalogSellPrice] = useState(
+        product.sell_price ?? null,
     );
     const [productUnits, setProductUnits] = useState(
         (product.product_units || []).map((row) => ({
@@ -85,6 +89,29 @@ export default function ProductEdit() {
 
     const isPhysical = productType === "physical";
     const isService = productType === "service";
+
+    const defaultUnitSellPrice = useMemo(() => {
+        const row = productUnits.find((unitRow) => unitRow.is_default_sell);
+        return Number(row?.sell_price ?? 0);
+    }, [productUnits]);
+
+    const priceWarning = useMemo(() => {
+        if (!isPhysical) {
+            return null;
+        }
+
+        const catalogPrice =
+            catalogSellPrice === null || catalogSellPrice === ""
+                ? Number(product.sell_price ?? 0)
+                : Number(catalogSellPrice);
+
+        return getProductPriceWarning(catalogPrice, defaultUnitSellPrice);
+    }, [
+        isPhysical,
+        catalogSellPrice,
+        product.sell_price,
+        defaultUnitSellPrice,
+    ]);
 
     const categoryOptions = categories.map((category) => ({
         value: category.id,
@@ -129,6 +156,12 @@ export default function ProductEdit() {
                 })),
             ),
         };
+
+        if (isPhysical) {
+            data.sell_price = Number(
+                catalogSellPrice ?? product.sell_price ?? 0,
+            );
+        }
 
         if (isService) {
             data.sell_price = serviceSellPrice;
@@ -308,6 +341,32 @@ export default function ProductEdit() {
                                     onChange={setProductUnits}
                                     errors={errors}
                                 />
+                                <Row gutter={16}>
+                                    <Col xs={24} md={12}>
+                                        <Form.Item
+                                            label={
+                                                <>
+                                                    Harga Jual Produk{" "}
+                                                    <Text type="secondary">
+                                                        (katalog & laporan)
+                                                    </Text>
+                                                </>
+                                            }
+                                            validateStatus={
+                                                errors.sell_price ? "error" : ""
+                                            }
+                                            help={errors.sell_price}
+                                        >
+                                            <InputNumber
+                                                min={0}
+                                                prefix="Rp"
+                                                style={{ width: "100%" }}
+                                                value={catalogSellPrice}
+                                                onChange={setCatalogSellPrice}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
                                 <Row gutter={16}>
                                     <Col xs={24} md={12}>
                                         <Card size="small" style={{ marginBottom: 16 }}>
@@ -503,6 +562,15 @@ export default function ProductEdit() {
                                 placeholder="Masukkan deskripsi produk"
                             />
                         </Form.Item>
+
+                        {isPhysical && priceWarning && (
+                            <Alert
+                                type="warning"
+                                showIcon
+                                message={priceWarning}
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
 
                         <Button
                             type="primary"

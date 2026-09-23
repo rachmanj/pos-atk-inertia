@@ -11,6 +11,7 @@ use App\Models\ProductUnit;
 use App\Models\StockMovement;
 use App\Models\Unit;
 use App\Models\User;
+use App\Support\ProductPriceGuard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -85,6 +86,7 @@ class ProductController extends Controller
 
         if ($productType === 'physical') {
             $openingBuyPrice = (int) $request->buy_price;
+            $this->assertPhysicalProductPriceGuard($request, $productUnits);
             $this->validateProductUnits($productUnits, $openingBuyPrice);
         } elseif ($productType === 'service') {
             $this->validateComponents($components);
@@ -102,7 +104,7 @@ class ProductController extends Controller
             $stock = $productType === 'physical' ? (int) $request->stock : 0;
             $buyPrice = $productType === 'physical' ? (int) $request->buy_price : 0;
             $sellPrice = match ($productType) {
-                'physical' => $this->resolveDefaultSellPrice($productUnits),
+                'physical' => $this->resolvePhysicalProductSellPrice($request, $productUnits),
                 'service' => (int) $request->sell_price,
                 default => 0,
             };
@@ -187,6 +189,7 @@ class ProductController extends Controller
         $request->validate($rules);
 
         if ($productType === 'physical') {
+            $this->assertPhysicalProductPriceGuard($request, $productUnits, $product);
             $this->validateProductUnits($productUnits);
         } elseif ($productType === 'service') {
             $rules['sell_price'] = 'required|integer|min:1';
@@ -207,7 +210,7 @@ class ProductController extends Controller
         ];
 
         if ($productType === 'physical') {
-            $data['sell_price'] = $this->resolveDefaultSellPrice($productUnits);
+            $data['sell_price'] = $this->resolvePhysicalProductSellPrice($request, $productUnits, $product);
             $data['unit'] = $this->resolveBaseUnitAbbreviation($productUnits);
         } elseif ($productType === 'service') {
             $data['sell_price'] = (int) $request->sell_price;
@@ -490,6 +493,31 @@ class ProductController extends Controller
         $defaultRow = collect($productUnits)->firstWhere('is_default_sell', true);
 
         return (int) ($defaultRow['sell_price'] ?? 0);
+    }
+
+    protected function resolvePhysicalProductSellPrice(Request $request, array $productUnits, ?Product $product = null): int
+    {
+        if ($request->has('sell_price') && $request->input('sell_price') !== '' && $request->input('sell_price') !== null) {
+            return (int) $request->input('sell_price');
+        }
+
+        if ($product !== null) {
+            return (int) $product->sell_price;
+        }
+
+        return $this->resolveDefaultSellPrice($productUnits);
+    }
+
+    protected function assertPhysicalProductPriceGuard(Request $request, array $productUnits, ?Product $product = null): void
+    {
+        if (! ProductPriceGuard::appliesTo($request->input('product_type', $product?->product_type ?? 'physical'))) {
+            return;
+        }
+
+        $productPrice = $this->resolvePhysicalProductSellPrice($request, $productUnits, $product);
+        $unitPrice = $this->resolveDefaultSellPrice($productUnits);
+
+        ProductPriceGuard::assertValid($productPrice, $unitPrice);
     }
 
     protected function parseComponents(Request $request): array

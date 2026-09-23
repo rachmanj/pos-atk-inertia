@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, router, Link } from "@inertiajs/react";
 import {
@@ -28,6 +28,7 @@ import ProductUnitBuilder from "../../../Components/ProductUnitBuilder";
 import ProductComponentBuilder from "../../../Components/ProductComponentBuilder";
 import BarcodeScanner from "../../../Components/BarcodeScanner";
 import useMobile from "../../../Hooks/useMobile";
+import { getProductPriceWarning } from "../../../Utils/productPriceGuard";
 
 const { Title, Text } = Typography;
 
@@ -46,6 +47,7 @@ export default function ProductCreate() {
     const [description, setDescription] = useState("");
     const [productType, setProductType] = useState("physical");
     const [openingBuyPrice, setOpeningBuyPrice] = useState(null);
+    const [catalogSellPrice, setCatalogSellPrice] = useState(null);
     const [stock, setStock] = useState(null);
     const [productUnits, setProductUnits] = useState([
         {
@@ -70,6 +72,22 @@ export default function ProductCreate() {
 
     const isPhysical = productType === "physical";
     const isService = productType === "service";
+
+    const defaultUnitSellPrice = useMemo(() => {
+        const row = productUnits.find((unitRow) => unitRow.is_default_sell);
+        return Number(row?.sell_price ?? 0);
+    }, [productUnits]);
+
+    const priceWarning = useMemo(() => {
+        if (catalogSellPrice === null || catalogSellPrice === "") {
+            return null;
+        }
+
+        return getProductPriceWarning(
+            Number(catalogSellPrice),
+            defaultUnitSellPrice,
+        );
+    }, [catalogSellPrice, defaultUnitSellPrice]);
 
     const categoryOptions = categories.map((category) => ({
         value: category.id,
@@ -102,6 +120,7 @@ export default function ProductCreate() {
         setDescription("");
         setProductType("physical");
         setOpeningBuyPrice(null);
+        setCatalogSellPrice(null);
         setStock(null);
         setProductUnits([
             {
@@ -140,6 +159,14 @@ export default function ProductCreate() {
                 })),
             ),
         };
+
+        if (
+            isPhysical &&
+            catalogSellPrice !== null &&
+            catalogSellPrice !== ""
+        ) {
+            payload.sell_price = Number(catalogSellPrice);
+        }
 
         if (isService) {
             payload.sell_price = serviceSellPrice;
@@ -315,6 +342,42 @@ export default function ProductCreate() {
                                         <Form.Item
                                             label={
                                                 <>
+                                                    Harga Jual Produk{" "}
+                                                    <Text type="secondary">
+                                                        (katalog & laporan)
+                                                    </Text>
+                                                </>
+                                            }
+                                            validateStatus={
+                                                errors.sell_price ? "error" : ""
+                                            }
+                                            help={
+                                                errors.sell_price ||
+                                                "Kosongkan untuk mengikuti harga satuan jual default."
+                                            }
+                                        >
+                                            <InputNumber
+                                                min={0}
+                                                prefix="Rp"
+                                                style={{ width: "100%" }}
+                                                value={catalogSellPrice}
+                                                onChange={setCatalogSellPrice}
+                                                placeholder={
+                                                    defaultUnitSellPrice > 0
+                                                        ? String(
+                                                              defaultUnitSellPrice,
+                                                          )
+                                                        : "0"
+                                                }
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <Row gutter={16}>
+                                    <Col xs={24} md={12}>
+                                        <Form.Item
+                                            label={
+                                                <>
                                                     Harga Beli Awal{" "}
                                                     <Text type="secondary">
                                                         (satuan dasar)
@@ -446,6 +509,15 @@ export default function ProductCreate() {
                                 placeholder="Masukkan deskripsi produk"
                             />
                         </Form.Item>
+
+                        {isPhysical && priceWarning && (
+                            <Alert
+                                type="warning"
+                                showIcon
+                                message={priceWarning}
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
 
                         <Space>
                             <Button

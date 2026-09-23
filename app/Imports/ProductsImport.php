@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\StockMovement;
 use App\Models\Unit;
+use App\Support\ProductPriceGuard;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -78,6 +79,8 @@ class ProductsImport implements ToCollection, WithHeadingRow
                 $buyPrice = (int) $data['buy_price'];
                 $sellPrice = (int) $data['sell_price'];
                 $stock = (int) $data['stock'];
+
+                ProductPriceGuard::assertValid($sellPrice, $sellPrice);
 
                 $product = Product::create([
                     'category_id' => $category->id,
