@@ -492,11 +492,12 @@ html {
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-products {
-        max-height: 128px;
+        max-height: 196px;
         min-height: 0;
         margin: 4px 0 8px;
         gap: 6px;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-products-heading {
@@ -512,20 +513,17 @@ html {
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-products-grid {
-        display: flex;
-        flex-wrap: nowrap;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 8px;
         flex: 1 1 auto;
         min-height: 0;
-        overflow-x: auto;
-        overflow-y: hidden;
+        align-content: start;
         padding-bottom: 2px;
-        scrollbar-width: thin;
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-product-card {
-        flex: 0 0 132px;
-        width: 132px;
+        width: auto;
         min-height: 0;
         height: 72px;
         max-height: 72px;
@@ -548,7 +546,7 @@ html {
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-catalog-region {
         flex: 1 1 0%;
-        min-height: 0;
+        min-height: 300px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -2297,20 +2295,35 @@ html {
     gap: 6px 10px;
     width: 100%;
     margin: 0;
-    padding: 6px 8px;
+    padding: 8px 10px;
     text-align: left;
     color: #1B1D29;
-    background: #FFFFFF;
-    border: 1px dashed #C9C4B4;
+    background: #EFEDE3;
+    border: 1px solid #C9C4B4;
     border-radius: 8px;
     cursor: pointer;
     font-size: 11.5px;
     line-height: 1.3;
+    min-height: 36px;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.pos-cash-pay-summary:hover {
+    background: #FFFFFF;
+    border-color: var(--brand-primary);
 }
 
 .pos-cash-pay-summary:focus-visible {
     outline: 2px solid var(--brand-primary);
     outline-offset: 2px;
+}
+
+.pos-cash-pay-summary-icon {
+    flex-shrink: 0;
+    color: var(--brand-primary);
+    font-size: 14px;
 }
 
 .pos-cash-pay-summary-method {
@@ -3061,8 +3074,17 @@ html {
 
 [data-theme="dark"] .pos-cash-pay-summary {
     color: #E2E8F0;
-    background: #090E1A;
+    background: #111827;
     border-color: #3D4F6A;
+}
+
+[data-theme="dark"] .pos-cash-pay-summary:hover {
+    background: #090E1A;
+    border-color: #5A7FD4;
+}
+
+[data-theme="dark"] .pos-cash-pay-summary-icon {
+    color: #93B4FF;
 }
 
 [data-theme="dark"] .pos-cash-modal-change {
