@@ -519,14 +519,14 @@ html {
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-cart-list {
         flex: 1 1 0%;
-        min-height: 0;
+        min-height: 320px;
         overflow-y: auto;
         overflow-x: hidden;
-        padding: 4px 12px 0;
+        padding: 2px 12px 0;
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-payment-form.pos-nota-foot {
-        padding: 4px 10px 6px;
+        padding: 3px 10px 5px;
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-foot {
@@ -575,9 +575,9 @@ html {
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-foot > .pos-pay-button {
         grid-row: 4;
-        margin-top: 2px;
-        min-height: 38px;
-        font-size: 14px;
+        margin-top: 1px;
+        min-height: 36px;
+        font-size: 13px;
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-foot > .pos-payment-alert {
@@ -668,11 +668,37 @@ html {
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-row {
-        padding: 6px 0;
+        padding: 3px 0;
+        row-gap: 0;
     }
 
-    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-row-acts {
-        margin-top: 2px;
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-row-name {
+        font-size: 12px;
+        line-height: 1.2;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-row-amount strong {
+        font-size: 12px;
+        line-height: 1.2;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-row-sub {
+        font-size: 10.5px;
+        line-height: 1.2;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-act-btn {
+        padding: 0 5px;
+        font-size: 10px;
+        line-height: 18px;
+        border-radius: 4px;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-cart-discount-toggle--inline {
+        padding: 0 5px;
+        font-size: 10px;
+        line-height: 18px;
+        border-radius: 4px;
     }
 }
 
@@ -1655,9 +1681,9 @@ html {
 
 .pos-nota-row {
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 2px 10px;
-    padding: 9px 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1px 8px;
+    padding: 4px 0;
     border-bottom: 1px dashed #e3e0d4;
 }
 
@@ -1666,17 +1692,29 @@ html {
 }
 
 .pos-nota-row-name {
-    font-size: 12.8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-size: 12px;
     font-weight: 600;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     color: #1b1d29;
-    line-height: 1.35;
+    line-height: 1.2;
+}
+
+.pos-nota-row-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .pos-nota-row-amount {
     text-align: right;
-    align-self: end;
+    align-self: center;
+    line-height: 1.2;
 }
 
 .pos-nota-row-amount strong {
@@ -1685,34 +1723,50 @@ html {
     font-size: 13px;
 }
 
-.pos-nota-row-sub {
+.pos-nota-row-line2 {
     grid-column: 1 / -1;
-    font-size: 11.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+}
+
+.pos-nota-row-sub {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 11px;
     color: #5a5e70;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
+    line-height: 1.2;
 }
 
-.pos-nota-row-tools {
-    grid-column: 1 / -1;
+.pos-nota-row-line2-end {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
 }
 
 .pos-nota-row-acts {
-    grid-column: 1 / -1;
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 4px;
+    flex-wrap: nowrap;
+    gap: 3px;
+    margin-top: 0;
 }
 
 .pos-nota-act-btn {
-    font-size: 11px;
-    padding: 2px 8px;
+    font-size: 10.5px;
+    padding: 0 6px;
+    line-height: 20px;
     border: 1px solid #c9c4b4;
-    border-radius: 6px;
+    border-radius: 5px;
     background: #fff;
     cursor: pointer;
     color: #1b1d29;
+    white-space: nowrap;
 }
 
 .pos-nota-act-btn:hover {
@@ -1841,8 +1895,23 @@ html {
     border-color: #2A3B8F;
 }
 
+.pos-cart-discount-toggle--inline {
+    padding: 0 6px;
+    line-height: 20px;
+    border-radius: 5px;
+    font-size: 10.5px;
+    white-space: nowrap;
+}
+
+.pos-cart-discount-toggle--active {
+    border-style: solid;
+    background: rgba(42, 59, 143, 0.08);
+}
+
 .pos-cart-row-discount {
+    grid-column: 1 / -1;
     display: flex;
+    padding-top: 2px;
 }
 
 .pos-cart-discount-input {
@@ -1940,7 +2009,7 @@ html {
         grid-template-columns: 72px minmax(0, 1fr);
         gap: 8px;
         align-items: center;
-        padding-block: 5px;
+        padding-block: 4px;
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-cart-customer .pos-field-label {
