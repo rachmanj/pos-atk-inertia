@@ -82,10 +82,63 @@ function CartRow({
     const unitAbbrev =
         cart.unit?.abbreviation || cart.product?.unit || "pcs";
 
+    const qtyPriceMeta = (
+        <span className="pos-cart-meta-text">
+            {isPpob ? (
+                <>
+                    Modal {formatRupiah(cart.ppob_cost)} + Fee{" "}
+                    {formatRupiah(cart.admin_fee)}
+                </>
+            ) : (
+                <>
+                    {cart.qty} ×{" "}
+                    {canEditPrice && editingPrice ? (
+                        <InputNumber
+                            autoFocus
+                            className="pos-cart-unit-price-input"
+                            min={0}
+                            size="small"
+                            controls={false}
+                            value={draftPrice}
+                            onChange={(value) => setDraftPrice(value ?? 0)}
+                            onBlur={handlePriceBlur}
+                            onKeyDown={handlePriceKeyDown}
+                            {...numericMobileInputProps(isMobile)}
+                        />
+                    ) : canEditPrice ? (
+                        <button
+                            type="button"
+                            className="pos-cart-unit-price-btn"
+                            onClick={() => {
+                                setDraftPrice(cart.price ?? 0);
+                                setEditingPrice(true);
+                            }}
+                            title="Klik untuk ubah harga"
+                            aria-label="Ubah harga"
+                        >
+                            {formatRupiah(cart.price)}
+                        </button>
+                    ) : (
+                        formatRupiah(cart.price)
+                    )}
+                    {!isPpob && ` /${unitAbbrev}`}
+                </>
+            )}
+            {cart.customer_ref && (
+                <span className="pos-cart-ref">
+                    {" "}
+                    · Ref: {cart.customer_ref}
+                </span>
+            )}
+        </span>
+    );
+
     return (
         <div className={`pos-nota-row${held ? " pos-nota-row--held" : ""}`}>
             <div className="pos-nota-row-name">
-                {cart.product?.title || "Produk"}
+                <span className="pos-nota-row-name-text">
+                    {cart.product?.title || "Produk"}
+                </span>
                 {held && (
                     <Tag className="pos-cart-held-badge">Ditahan</Tag>
                 )}
@@ -98,69 +151,52 @@ function CartRow({
                     </span>
                 )}
             </div>
-            <div className="pos-nota-row-sub">
-                <span className="pos-cart-meta-text">
-                    {isPpob ? (
-                        <>
-                            Modal {formatRupiah(cart.ppob_cost)} + Fee{" "}
-                            {formatRupiah(cart.admin_fee)}
-                        </>
-                    ) : (
-                        <>
-                            {cart.qty} ×{" "}
-                            {canEditPrice && editingPrice ? (
-                                <InputNumber
-                                    autoFocus
-                                    className="pos-cart-unit-price-input"
-                                    min={0}
-                                    size="small"
-                                    controls={false}
-                                    value={draftPrice}
-                                    onChange={(value) =>
-                                        setDraftPrice(value ?? 0)
-                                    }
-                                    onBlur={handlePriceBlur}
-                                    onKeyDown={handlePriceKeyDown}
-                                    {...numericMobileInputProps(isMobile)}
-                                />
-                            ) : canEditPrice ? (
-                                <button
-                                    type="button"
-                                    className="pos-cart-unit-price-btn"
-                                    onClick={() => {
-                                        setDraftPrice(cart.price ?? 0);
-                                        setEditingPrice(true);
-                                    }}
-                                    title="Klik untuk ubah harga"
-                                    aria-label="Ubah harga"
-                                >
-                                    {formatRupiah(cart.price)}
-                                </button>
-                            ) : (
-                                formatRupiah(cart.price)
-                            )}
-                            {!isPpob && ` /${unitAbbrev}`}
-                        </>
-                    )}
-                    {cart.customer_ref && (
-                        <span className="pos-cart-ref">
-                            {" "}
-                            · Ref: {cart.customer_ref}
-                        </span>
-                    )}
-                </span>
+            <div className="pos-nota-row-line2">
+                <div className="pos-nota-row-sub">{qtyPriceMeta}</div>
+                {!held && (
+                    <div className="pos-nota-row-line2-end">
+                        <button
+                            type="button"
+                            className={`pos-cart-discount-toggle pos-cart-discount-toggle--inline${
+                                showDiscount || itemDiscount > 0
+                                    ? " pos-cart-discount-toggle--active"
+                                    : ""
+                            }`}
+                            onClick={() => setShowDiscount((v) => !v)}
+                            aria-expanded={showDiscount}
+                        >
+                            Diskon
+                        </button>
+                        <div className="pos-nota-row-acts">
+                            <button
+                                type="button"
+                                className="pos-nota-act-btn"
+                                onClick={() =>
+                                    onUpdateQty(cart.id, cart.qty - 1)
+                                }
+                            >
+                                − 1
+                            </button>
+                            <button
+                                type="button"
+                                className="pos-nota-act-btn"
+                                onClick={() =>
+                                    onUpdateQty(cart.id, cart.qty + 1)
+                                }
+                            >
+                                + 1
+                            </button>
+                            <button
+                                type="button"
+                                className="pos-nota-act-btn pos-nota-act-btn--danger"
+                                onClick={() => onDelete(cart.id)}
+                            >
+                                Hapus
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
-            {!held && (
-                <div className="pos-nota-row-tools">
-                    <button
-                        type="button"
-                        className="pos-cart-discount-toggle"
-                        onClick={() => setShowDiscount((v) => !v)}
-                    >
-                        Diskon item
-                    </button>
-                </div>
-            )}
 
             {!held && showDiscount && (
                 <div className="pos-cart-row-discount">
@@ -196,32 +232,6 @@ function CartRow({
                             {...numericMobileInputProps(isMobile)}
                         />
                     </Space.Compact>
-                </div>
-            )}
-
-            {!held && (
-                <div className="pos-nota-row-acts">
-                    <button
-                        type="button"
-                        className="pos-nota-act-btn"
-                        onClick={() => onUpdateQty(cart.id, cart.qty - 1)}
-                    >
-                        − 1
-                    </button>
-                    <button
-                        type="button"
-                        className="pos-nota-act-btn"
-                        onClick={() => onUpdateQty(cart.id, cart.qty + 1)}
-                    >
-                        + 1
-                    </button>
-                    <button
-                        type="button"
-                        className="pos-nota-act-btn pos-nota-act-btn--danger"
-                        onClick={() => onDelete(cart.id)}
-                    >
-                        Hapus
-                    </button>
                 </div>
             )}
         </div>
