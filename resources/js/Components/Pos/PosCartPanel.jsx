@@ -255,8 +255,8 @@ export default function PosCartPanel({
 }) {
     const isMobile = useMobile();
 
-    return (
-        <>
+    const cartBody = (
+        <div className="pos-nota-body">
             <div className="pos-nota-head">
                 <div className="pos-nota-head-title">NOTA PENJUALAN</div>
                 <div className="pos-nota-head-meta">
@@ -346,12 +346,15 @@ export default function PosCartPanel({
                     </div>
                 )}
             </div>
+        </div>
+    );
 
+    const customerBlock = (
             <div className="pos-cart-customer">
                 <label className="pos-field-label">Pelanggan</label>
                 {selectedCustomer ? (
                     <Space.Compact style={{ width: "100%" }}>
-                        <Input value={selectedCustomer.name} readOnly />
+                        <Input size="small" value={selectedCustomer.name} readOnly />
                         <Button
                             icon={<CloseOutlined />}
                             onClick={onClearCustomer}
@@ -361,6 +364,7 @@ export default function PosCartPanel({
                 ) : (
                     <Space.Compact style={{ width: "100%" }}>
                         <AutoComplete
+                            size="small"
                             style={{ flex: 1 }}
                             value={customerSearch}
                             options={customerResults.map((c) => ({
@@ -407,6 +411,7 @@ export default function PosCartPanel({
                             }
                         />
                         <Button
+                            size="small"
                             icon={<PlusOutlined />}
                             onClick={onShowQuickCreate}
                             title="Tambah Pelanggan Cepat"
@@ -426,6 +431,12 @@ export default function PosCartPanel({
                         </Button>
                     )}
             </div>
+    );
+
+    return (
+        <>
+            {cartBody}
+            {customerBlock}
         </>
     );
 }
