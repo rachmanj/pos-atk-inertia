@@ -2330,11 +2330,27 @@ html {
 }
 
 [data-theme="dark"] .pos-nota-act-btn {
-    color: #CBD5E1;
+    color: #E2E8F0;
+    background: #090E1A;
+    border-color: #3D4F6A;
+}
+
+[data-theme="dark"] .pos-nota-act-btn:hover {
+    background: #1D283A;
+    border-color: #5A6578;
+    color: #F8FAFC;
 }
 
 [data-theme="dark"] .pos-nota-act-btn--danger {
-    color: #F8A8B0;
+    color: #FDA4AF;
+    background: rgba(255, 107, 107, 0.14);
+    border-color: rgba(255, 155, 155, 0.45);
+}
+
+[data-theme="dark"] .pos-nota-act-btn--danger:hover {
+    color: #FECDD3;
+    background: rgba(255, 107, 107, 0.22);
+    border-color: rgba(255, 155, 155, 0.58);
 }
 
 [data-theme="dark"] .pos-cart-row {
@@ -2508,9 +2524,60 @@ html {
 }
 
 [data-theme="dark"] .pos-cash-shortcuts button {
-    color: #94A3B8;
-    background: #0E1525;
-    border-color: #1D283A;
+    color: #E2E8F0;
+    background: #090E1A;
+    border-color: #3D4F6A;
+}
+
+[data-theme="dark"] .pos-cash-shortcuts button:hover {
+    color: #F8FAFC;
+    background: #1D283A;
+    border-color: #5A6578;
+}
+
+[data-theme="dark"] .pos-nota-panel .ant-input,
+[data-theme="dark"] .pos-nota-panel .ant-input-affix-wrapper,
+[data-theme="dark"] .pos-nota-panel .ant-input-number,
+[data-theme="dark"] .pos-nota-panel .ant-input-number-affix-wrapper,
+[data-theme="dark"] .pos-nota-panel .ant-select-selector {
+    background: #090E1A !important;
+    border-color: #3D4F6A !important;
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .pos-nota-panel .ant-input-number-input,
+[data-theme="dark"] .pos-nota-panel .ant-input-affix-wrapper input {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .pos-nota-panel .ant-btn-default:not(:disabled) {
+    background: #090E1A;
+    border-color: #3D4F6A;
+    color: #E2E8F0;
+}
+
+[data-theme="dark"] .pos-nota-panel .ant-btn-default:not(:disabled):hover {
+    background: #1D283A;
+    border-color: #5A6578;
+    color: #F8FAFC;
+}
+
+[data-theme="dark"] .pos-method-toggle .ant-radio-button-wrapper {
+    background: #090E1A !important;
+    border-color: #3D4F6A !important;
+    color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] .pos-method-toggle .ant-radio-button-wrapper:hover {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"]
+    .pos-method-toggle
+    .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+    background: #2a3b8f !important;
+    border-color: #2a3b8f !important;
+    color: #f8fafc !important;
 }
 
 [data-theme="dark"] .pos-summary-box {
