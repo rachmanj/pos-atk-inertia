@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { Button, Drawer, Modal, notification, Spin, Typography } from "antd";
+import { Button, Drawer, Modal, notification, Spin, Tag, Typography } from "antd";
 import {
     FileTextOutlined,
     ReloadOutlined,
@@ -1396,7 +1396,6 @@ export default function TransactionCreate() {
         localCartsCount: localCarts.length,
         errors,
         flash,
-        ppobAccount,
         customerSearch,
         customerResults,
         customerLoading,
@@ -1575,6 +1574,23 @@ export default function TransactionCreate() {
                                     aria-label="Muat ulang ringkasan shift"
                                     style={{ color: "var(--brand-primary)" }}
                                 />
+                                {ppobAccount && (
+                                    <Tag
+                                        className="pos-ppob-balance-chip"
+                                        color={
+                                            ppobAccount.is_low_balance
+                                                ? "error"
+                                                : "default"
+                                        }
+                                    >
+                                        Saldo PPOB ({ppobAccount.name}):{" "}
+                                        <strong className="pos-num">
+                                            {formatRupiah(
+                                                ppobAccount.current_balance,
+                                            )}
+                                        </strong>
+                                    </Tag>
+                                )}
                             </div>
 
                             <Link href="/account/transactions">
