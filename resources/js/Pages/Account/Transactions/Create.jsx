@@ -1,11 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 import { Button, Drawer, Modal, notification, Spin, Tag, Typography } from "antd";
-import {
-    FileTextOutlined,
-    ReloadOutlined,
-    ShoppingCartOutlined,
-} from "@ant-design/icons";
+import { ReloadOutlined, ShoppingCartOutlined } from "@ant-design/icons";
 import axios from "axios";
 import LayoutAccount from "../../../Layouts/Account";
 import useMobile from "../../../Hooks/useMobile";
@@ -1475,7 +1471,6 @@ export default function TransactionCreate() {
                     <div className="pos-cashier-heading">
                         <div>
                             <h4>POS Kasir</h4>
-                            <span>{cartQty} item dalam keranjang</span>
                         </div>
 
                         <div
@@ -1592,12 +1587,6 @@ export default function TransactionCreate() {
                                     </Tag>
                                 )}
                             </div>
-
-                            <Link href="/account/transactions">
-                                <Button icon={<FileTextOutlined />}>
-                                    Riwayat
-                                </Button>
-                            </Link>
                         </div>
                     </div>
 

@@ -633,7 +633,7 @@ html {
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-cart-list {
         flex: 1 1 0%;
-        min-height: 320px;
+        min-height: 120px;
         overflow-y: auto;
         overflow-x: hidden;
         padding: 2px 12px 0;
@@ -841,7 +841,7 @@ html {
 }
 
 .pos-nota-panel--mobile .pos-nota-body {
-    flex: 1 1 auto;
+    flex: 1 1 0%;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -849,8 +849,10 @@ html {
 }
 
 .pos-nota-panel--mobile .pos-cart-list {
-    flex: 1 1 auto;
+    flex: 1 1 0%;
     min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .pos-left-panel-body {
@@ -1696,6 +1698,13 @@ html {
     height: 100%;
 }
 
+.pos-nota-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .pos-nota-head {
     flex-shrink: 0;
     padding: 10px 12px 8px;
@@ -1781,16 +1790,12 @@ html {
 /* Cart list scrolls independently; header/customer/payment stay fixed
    so nothing clips or overlaps when the list grows (see MEMORY.md). */
 .pos-cart-list {
-    flex: 1 1 auto;
-    min-height: 140px;
+    flex: 1 1 0%;
+    min-height: 120px;
     padding: 6px 16px 0;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-}
-
-.pos-nota-panel--mobile .pos-cart-list {
-    min-height: 120px;
 }
 
 .pos-nota-row {
