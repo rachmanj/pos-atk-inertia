@@ -67,6 +67,7 @@ export default function TransactionCreate() {
         ppobAccount = null,
         errors = {},
         flash = {},
+        auth = {},
     } = usePage().props;
 
     const params = new URLSearchParams(window.location.search);
@@ -900,6 +901,44 @@ export default function TransactionCreate() {
         );
     };
 
+    const clearActiveCart = () => {
+        if (activeCarts.length === 0) {
+            return;
+        }
+
+        Modal.confirm({
+            title: "Kosongkan keranjang?",
+            content: "Semua item aktif akan dihapus dari nota ini.",
+            okText: "Ya, kosongkan",
+            cancelText: "Batal",
+            width: getModalWidth(isMobile),
+            onOk: () => {
+                const ids = activeCarts.map((cart) => cart.id);
+                ids.forEach((id) => deleteCart(id));
+                setDiscount(0);
+                setCash("");
+            },
+        });
+    };
+
+    const isPosTypingTarget = () => {
+        const el = document.activeElement;
+        if (!el) {
+            return false;
+        }
+        const tag = el.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+            return true;
+        }
+        if (el.isContentEditable) {
+            return true;
+        }
+        if (el.closest(".ant-modal-wrap, .ant-drawer")) {
+            return true;
+        }
+        return false;
+    };
+
     const toggleCartHold = (cartId, isHeld) => {
         if (String(cartId).startsWith("temp-")) {
             return;
@@ -1300,7 +1339,19 @@ export default function TransactionCreate() {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.key === "F2" || e.key === "f2") {
+            if (e.key === "F9" || e.key === "f9") {
+                if (isPosTypingTarget()) {
+                    return;
+                }
+                e.preventDefault();
+                const payButton = document.querySelector(".pos-pay-button");
+                if (payButton && !payButton.disabled) {
+                    payButton.click();
+                }
+            } else if (e.key === "F2" || e.key === "f2") {
+                if (isPosTypingTarget()) {
+                    return;
+                }
                 e.preventDefault();
                 storeTransaction(e);
             } else if (e.key === "F3" || e.key === "f3") {
@@ -1365,6 +1416,8 @@ export default function TransactionCreate() {
         onToggleHold: toggleCartHold,
         onDiscountChange: handleDiscountChange,
         onUpdatePrice: updatePrice,
+        cashierName: auth?.user?.name,
+        onClearCart: clearActiveCart,
     };
 
     const paymentSummaryProps = {
@@ -1402,7 +1455,7 @@ export default function TransactionCreate() {
 
     const checkoutPanel = (mobile = false) => (
         <section
-            className={`pos-checkout-panel${mobile ? " pos-checkout-panel--mobile" : ""}`}
+            className={`pos-nota-panel${mobile ? " pos-nota-panel--mobile" : ""}`}
         >
             <PosCartPanel {...cartPanelProps} />
             <PosPaymentSummary {...paymentSummaryProps} />
@@ -1532,7 +1585,7 @@ export default function TransactionCreate() {
                         </div>
                     </div>
 
-                    <div className="pos-cashier-main">
+                    <div className="pos-cashier-grid">
                         <PosProductGrid
                             searchInputRef={searchInputRef}
                             products={products}

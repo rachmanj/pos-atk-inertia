@@ -8,7 +8,6 @@ import {
     Typography,
 } from "antd";
 import {
-    CheckCircleOutlined,
     DeleteOutlined,
     PlusOutlined,
 } from "@ant-design/icons";
@@ -20,7 +19,6 @@ const { Text } = Typography;
 
 const fieldLabelClassName = "pos-field-label";
 
-// Digital (Midtrans) disembunyikan atas permintaan Iwan 16 Sep 2026 — backend masih mendukung
 const AVAILABLE_METHODS = ["cash", "qris", "transfer"];
 
 const methodLabels = {
@@ -70,8 +68,33 @@ export default function PosPaymentSummary({
         AVAILABLE_METHODS.filter(
             (method) =>
                 method === paymentParts[rowIndex]?.method ||
-                !paymentParts.some((part, index) => index !== rowIndex && part.method === method),
+                !paymentParts.some(
+                    (part, index) => index !== rowIndex && part.method === method,
+                ),
         );
+
+    const renderCashShortcuts = (options) => {
+        if (options.length === 0) {
+            return null;
+        }
+
+        return (
+            <div className="pos-cash-shortcuts">
+                {options.map((option, index) => (
+                    <button
+                        type="button"
+                        key={option}
+                        onClick={() => onCashChange(String(option))}
+                    >
+                        {index === 0 ? "Pas" : formatRupiah(option)}
+                    </button>
+                ))}
+                <button type="button" onClick={() => onCashChange("0")}>
+                    Reset
+                </button>
+            </div>
+        );
+    };
 
     const renderSingleMethodCashField = () => {
         if (paymentMethod !== "cash") {
@@ -80,7 +103,7 @@ export default function PosPaymentSummary({
 
         return (
             <div className="pos-payment-field">
-                <label className={fieldLabelClassName}>Uang Tunai</label>
+                <label className={fieldLabelClassName}>Uang diterima</label>
                 <InputNumber
                     className="pos-cash-input"
                     min={0}
@@ -92,20 +115,7 @@ export default function PosPaymentSummary({
                     style={{ width: "100%" }}
                     {...numericMobileInputProps(isMobile)}
                 />
-
-                {cashOptions.length > 0 && (
-                    <div className="pos-cash-shortcuts">
-                        {cashOptions.map((option, index) => (
-                            <button
-                                type="button"
-                                key={option}
-                                onClick={() => onCashChange(String(option))}
-                            >
-                                {index === 0 ? "Pas" : formatRupiah(option)}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                {renderCashShortcuts(cashOptions)}
             </div>
         );
     };
@@ -125,7 +135,7 @@ export default function PosPaymentSummary({
 
         return (
             <div className="pos-payment-field">
-                <label className={fieldLabelClassName}>Uang Tunai</label>
+                <label className={fieldLabelClassName}>Uang diterima</label>
                 <InputNumber
                     className="pos-cash-input"
                     min={0}
@@ -137,20 +147,7 @@ export default function PosPaymentSummary({
                     style={{ width: "100%" }}
                     {...numericMobileInputProps(isMobile)}
                 />
-
-                {splitCashOptions.length > 0 && (
-                    <div className="pos-cash-shortcuts">
-                        {splitCashOptions.map((option, index) => (
-                            <button
-                                type="button"
-                                key={option}
-                                onClick={() => onCashChange(String(option))}
-                            >
-                                {index === 0 ? "Pas" : formatRupiah(option)}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                {renderCashShortcuts(splitCashOptions)}
             </div>
         );
     };
@@ -159,7 +156,7 @@ export default function PosPaymentSummary({
         if (splitMode) {
             if (hasCashPart) {
                 return (
-                    <Text type="success" strong>
+                    <Text type="success" strong className="pos-num">
                         {formatRupiah(change)}
                     </Text>
                 );
@@ -182,7 +179,7 @@ export default function PosPaymentSummary({
 
         if (paymentMethod === "cash") {
             return (
-                <Text type="success" strong>
+                <Text type="success" strong className="pos-num">
                     {formatRupiah(change)}
                 </Text>
             );
@@ -216,46 +213,28 @@ export default function PosPaymentSummary({
     };
 
     return (
-        <form className="pos-payment-form" onSubmit={onSubmit}>
-            <div className="pos-payment-block">
-                <label className={fieldLabelClassName}>Metode Pembayaran</label>
-                <Radio.Group
-                    className="pos-method-toggle"
-                    style={{ width: "100%" }}
-                    value={paymentMethod}
-                    onChange={(e) => onPaymentMethodChange(e.target.value)}
-                    optionType="button"
-                    buttonStyle="solid"
-                >
-                    {AVAILABLE_METHODS.map((method) => (
-                        <Radio.Button
-                            key={method}
-                            value={method}
-                            className="pos-method-option"
-                        >
-                            {methodLabels[method]}
-                        </Radio.Button>
-                    ))}
-                </Radio.Group>
-            </div>
-
-            <div className="pos-payment-fields">
-                <div className="pos-payment-field">
-                    <label className={fieldLabelClassName}>Diskon</label>
-                    <Space.Compact style={{ width: "100%" }}>
+        <form className="pos-payment-form pos-nota-foot" onSubmit={onSubmit}>
+            <div className="pos-nota-summary-lines">
+                <div className="pos-nota-line">
+                    <span>Subtotal</span>
+                    <strong className="pos-num">{formatRupiah(subtotal)}</strong>
+                </div>
+                <div className="pos-nota-line">
+                    <span>Diskon</span>
+                    <Space.Compact className="pos-nota-discount-compact">
                         <InputNumber
                             min={0}
                             value={discount}
                             onChange={(value) => onDiscountChange(value ?? 0)}
-                            style={{ flex: 1, width: "100%" }}
+                            size="small"
                             {...numericMobileInputProps(isMobile)}
                         />
                         <Button
                             type={
                                 discountType === "percent" ? "primary" : "default"
                             }
+                            size="small"
                             onClick={onDiscountTypeToggle}
-                            style={{ width: "4rem" }}
                             title={
                                 discountType === "nominal"
                                     ? "Ubah ke persen"
@@ -266,132 +245,149 @@ export default function PosPaymentSummary({
                         </Button>
                     </Space.Compact>
                 </div>
+                {discountAmount > 0 && (
+                    <div className="pos-nota-line pos-nota-line--muted">
+                        <span>Potongan</span>
+                        <Text type="danger" strong className="pos-num">
+                            -{formatRupiah(discountAmount)}
+                        </Text>
+                    </div>
+                )}
+                <div className="pos-nota-line pos-nota-line--total">
+                    <span>TOTAL</span>
+                    <strong className="pos-num">{formatRupiah(grandTotal)}</strong>
+                </div>
+            </div>
 
-                {splitMode ? (
-                    <>
-                        {paymentParts.map((part, index) => (
-                            <div
-                                className="pos-payment-field"
-                                key={`${part.method}-${index}`}
-                            >
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        gap: 8,
-                                        marginBottom: 6,
-                                    }}
-                                >
-                                    <label className={fieldLabelClassName}>
-                                        {index === 0
-                                            ? "Metode Utama"
-                                            : "Metode Tambahan"}
-                                    </label>
-                                    {index > 0 && (
-                                        <Button
-                                            type="text"
-                                            danger
-                                            size="small"
-                                            icon={<DeleteOutlined />}
-                                            onClick={() =>
-                                                onRemovePaymentPart(index)
-                                            }
-                                        >
-                                            Hapus
-                                        </Button>
-                                    )}
-                                </div>
-
-                                <Space
-                                    direction="vertical"
-                                    style={{ width: "100%" }}
-                                    size={8}
-                                >
-                                    {index === 0 ? (
-                                        <Text strong>
-                                            {methodLabels[part.method]}
-                                        </Text>
-                                    ) : (
-                                        <Select
-                                            value={part.method}
-                                            onChange={(value) =>
-                                                onPaymentPartMethodChange(
-                                                    index,
-                                                    value,
-                                                )
-                                            }
-                                            options={availableMethodsForRow(
-                                                index,
-                                            ).map((method) => ({
-                                                value: method,
-                                                label: methodLabels[method],
-                                            }))}
-                                            style={{ width: "100%" }}
-                                        />
-                                    )}
-
-                                    <InputNumber
-                                        min={0}
-                                        placeholder="Nominal"
-                                        value={
-                                            part.amount == null
-                                                ? null
-                                                : Number(part.amount)
+            {splitMode ? (
+                <div className="pos-payment-fields">
+                    {paymentParts.map((part, index) => (
+                        <div
+                            className="pos-payment-field"
+                            key={`${part.method}-${index}`}
+                        >
+                            <div className="pos-split-part-header">
+                                <label className={fieldLabelClassName}>
+                                    {index === 0
+                                        ? "Metode Utama"
+                                        : "Metode Tambahan"}
+                                </label>
+                                {index > 0 && (
+                                    <Button
+                                        type="text"
+                                        danger
+                                        size="small"
+                                        icon={<DeleteOutlined />}
+                                        onClick={() =>
+                                            onRemovePaymentPart(index)
                                         }
+                                    >
+                                        Hapus
+                                    </Button>
+                                )}
+                            </div>
+
+                            <Space
+                                direction="vertical"
+                                style={{ width: "100%" }}
+                                size={8}
+                            >
+                                {index === 0 ? (
+                                    <Text strong>
+                                        {methodLabels[part.method]}
+                                    </Text>
+                                ) : (
+                                    <Select
+                                        value={part.method}
                                         onChange={(value) =>
-                                            onPaymentPartAmountChange(
+                                            onPaymentPartMethodChange(
                                                 index,
                                                 value,
                                             )
                                         }
+                                        options={availableMethodsForRow(
+                                            index,
+                                        ).map((method) => ({
+                                            value: method,
+                                            label: methodLabels[method],
+                                        }))}
                                         style={{ width: "100%" }}
-                                        {...numericMobileInputProps(isMobile)}
                                     />
-                                </Space>
-                            </div>
-                        ))}
+                                )}
 
-                        {paymentParts.length < 3 && (
-                            <Button
-                                type="dashed"
-                                icon={<PlusOutlined />}
-                                onClick={onAddPaymentPart}
-                                block
-                            >
-                                Tambah metode
-                            </Button>
-                        )}
+                                <InputNumber
+                                    min={0}
+                                    placeholder="Nominal"
+                                    value={
+                                        part.amount == null
+                                            ? null
+                                            : Number(part.amount)
+                                    }
+                                    onChange={(value) =>
+                                        onPaymentPartAmountChange(
+                                            index,
+                                            value,
+                                        )
+                                    }
+                                    style={{ width: "100%" }}
+                                    {...numericMobileInputProps(isMobile)}
+                                />
+                            </Space>
+                        </div>
+                    ))}
 
-                        {renderSplitCashField()}
-
-                        {remaining !== 0 && (
-                            <Alert
-                                type={overAmount > 0 ? "error" : "warning"}
-                                showIcon
-                                className="pos-payment-alert"
-                                message={
-                                    overAmount > 0
-                                        ? `Kelebihan ${formatRupiah(overAmount)} — kurangi nominal salah satu metode`
-                                        : `Sisa: ${formatRupiah(remaining)}`
-                                }
-                            />
-                        )}
-                    </>
-                ) : (
-                    <>
-                        {renderSingleMethodCashField()}
-
+                    {paymentParts.length < 3 && (
                         <Button
                             type="dashed"
                             icon={<PlusOutlined />}
-                            onClick={onEnterSplitMode}
+                            onClick={onAddPaymentPart}
                             block
                         >
                             Tambah metode
                         </Button>
-                    </>
-                )}
+                    )}
+
+                    {renderSplitCashField()}
+
+                    {remaining !== 0 && (
+                        <Alert
+                            type={overAmount > 0 ? "error" : "warning"}
+                            showIcon
+                            className="pos-payment-alert"
+                            message={
+                                overAmount > 0
+                                    ? `Kelebihan ${formatRupiah(overAmount)}. Kurangi nominal salah satu metode.`
+                                    : `Sisa: ${formatRupiah(remaining)}`
+                            }
+                        />
+                    )}
+
+                    {splitMode && (
+                        <div className="pos-nota-line">
+                            <span>Terbayar</span>
+                            <strong className="pos-num">
+                                {formatRupiah(partsTotal)}
+                            </strong>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <>
+                    {renderSingleMethodCashField()}
+                    <Button
+                        type="dashed"
+                        icon={<PlusOutlined />}
+                        onClick={onEnterSplitMode}
+                        block
+                    >
+                        Tambah metode pembayaran
+                    </Button>
+                </>
+            )}
+
+            <div className="pos-nota-line pos-nota-line--change">
+                <span>{summaryStatusLabel()}</span>
+                {renderSummaryStatus()}
             </div>
 
             {isManualTransfer && !splitMode && (
@@ -408,47 +404,48 @@ export default function PosPaymentSummary({
                     type="info"
                     showIcon
                     className="pos-payment-alert"
-                    message="QRIS dicatat manual — pastikan pembayaran sudah masuk sebelum menyelesaikan struk."
+                    message="QRIS dicatat manual. Pastikan pembayaran sudah masuk sebelum menyelesaikan struk."
                 />
             )}
 
-            <div className="pos-summary-box">
-                <div>
-                    <span>Subtotal</span>
-                    <strong>{formatRupiah(subtotal)}</strong>
+            {!splitMode && (
+                <div className="pos-payment-block">
+                    <label className={fieldLabelClassName}>
+                        Metode pembayaran
+                    </label>
+                    <Radio.Group
+                        className="pos-method-toggle"
+                        style={{ width: "100%" }}
+                        value={paymentMethod}
+                        onChange={(e) => onPaymentMethodChange(e.target.value)}
+                        optionType="button"
+                        buttonStyle="solid"
+                    >
+                        {AVAILABLE_METHODS.map((method) => (
+                            <Radio.Button
+                                key={method}
+                                value={method}
+                                className="pos-method-option"
+                            >
+                                {methodLabels[method]}
+                            </Radio.Button>
+                        ))}
+                    </Radio.Group>
                 </div>
-                <div>
-                    <span>Diskon</span>
-                    <Text type="danger" strong>
-                        -{formatRupiah(discountAmount)}
-                    </Text>
-                </div>
-                <div className="pos-summary-total">
-                    <span>Total</span>
-                    <strong>{formatRupiah(grandTotal)}</strong>
-                </div>
-                {splitMode && (
-                    <div>
-                        <span>Terbayar</span>
-                        <strong>{formatRupiah(partsTotal)}</strong>
-                    </div>
-                )}
-                <div>
-                    <span>{summaryStatusLabel()}</span>
-                    {renderSummaryStatus()}
-                </div>
-            </div>
+            )}
 
             <Button
                 type="primary"
                 size="large"
                 htmlType="submit"
                 className="pos-pay-button"
-                icon={<CheckCircleOutlined />}
-                disabled={!canSubmit}
+                disabled={!canSubmit || activeCartsCount === 0}
                 block
             >
-                Proses Pembayaran
+                <span className="pos-pay-button-label">
+                    Bayar &amp; cetak nota
+                </span>
+                <kbd className="pos-pay-kbd">F9</kbd>
             </Button>
         </form>
     );

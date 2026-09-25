@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VASIA POS · Mockup B · Nota Kerja</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--primary:#2A3B8F;--accent:#FF6A2E;--paper:#EFEDE3;--kanvas:#FFFFFF;--tinta:#1B1D29;--garis:#C9C4B4;--muted:#5A5E70;--ok:#2F6F4E;--err:#8B2E3B;--r:8px;--r-lg:12px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--paper);color:var(--tinta);-webkit-font-smoothing:antialiased}
+  .num{font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+  .display{font-family:"Space Grotesk",sans-serif}
+  button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+  :focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+  .app{max-width:1400px;margin:0 auto;padding:14px 16px 16px}
+  header.top{display:flex;align-items:center;gap:14px;padding:6px 2px 12px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-family:"Space Grotesk"}
+  .brand span{font-size:11.5px;color:var(--muted);display:block}
+  .shift{margin-left:auto;display:flex;align-items:center;gap:10px;background:var(--kanvas);border:1px solid var(--garis);border-radius:var(--r);padding:7px 12px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  .shift small{color:var(--muted);font-size:11.5px}.kasir{font-weight:600;font-size:13px}
+  .grid{display:grid;grid-template-columns:minmax(0,2.15fr) minmax(320px,1fr);gap:14px;align-items:start}
+  .panel{background:var(--kanvas);border:1px solid var(--garis);border-radius:var(--r-lg)}
+  .left{padding:14px}
+  .scanrow{display:flex;gap:10px;align-items:center}
+  .scan{position:relative;flex:1}
+  .scan svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:.6}
+  input[type=search]{width:100%;padding:14px 14px 14px 42px;border:1.5px solid var(--garis);border-radius:var(--r);font-size:15px;background:#fff}
+  input[type=search]:focus{border-color:var(--primary)}
+  .viewtoggle{display:flex;border:1px solid var(--garis);border-radius:var(--r);overflow:hidden}
+  .viewtoggle button{padding:11px 13px;font-size:12.5px;font-weight:600;background:#fff}
+  .viewtoggle button[aria-pressed=true]{background:var(--primary);color:#fff}
+
+  .cepat{margin:13px 0 3px}
+  .cepat h3{font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-weight:600}
+  .cepitgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .cepit{text-align:left;border:1px dashed var(--garis);border-radius:var(--r);background:#FBF9F3;padding:9px 10px}
+  .cepit:hover{border-style:solid;border-color:var(--primary);background:#fff}
+  .cepit .n{font-size:12.5px;font-weight:600;line-height:1.3;min-height:32px}
+  .cepit .h{font-size:12.5px;margin-top:4px;color:var(--primary)}
+
+  .prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:11px;margin-top:14px}
+  .card{text-align:left;position:relative;border:1px solid var(--garis);border-radius:var(--r);background:#fff;padding:12px 12px 11px;display:flex;flex-direction:column;gap:8px;min-height:118px;overflow:hidden}
+  .card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--primary)}
+  .card.kertas:before{background:#8B6A3B}.card.pulpen:before{background:#2F6F4E}.card.seni:before{background:#8B2E3B}
+  .card:hover{border-color:var(--primary);transform:translateY(-1px)}
+  .cat{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .nama{font-size:14px;font-weight:600;line-height:1.35;min-height:38px}
+  .bottom{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between}
+  .harga{font-size:16px;font-weight:600}
+  .harga small{font-weight:400;color:var(--muted);font-size:11px}
+  .stok{font-size:11px;padding:3px 7px;border-radius:6px;background:#F1EFE6;border:1px solid #E3E0D4;color:#4A4E63}
+  .stok.low{background:#FFF1EA;color:#9A3412;border-color:#F7C6AE;font-weight:600}
+  .empty{grid-column:1/-1;text-align:center;padding:44px 10px;color:var(--muted);font-size:13.5px}
+
+  /* NOTA */
+  .right{position:sticky;top:14px;display:flex;flex-direction:column;max-height:calc(100vh - 28px);background:#fff;border:1px solid var(--garis);border-radius:var(--r-lg)}
+  .notahead{padding:14px 16px 10px;border-bottom:1px dashed #C9C4B4;text-align:center}
+  .notahead .t{font-family:"Space Grotesk";font-size:14px;letter-spacing:.6px}
+  .notahead small{color:var(--muted);font-size:11.5px;display:block;margin-top:3px}
+  .items{overflow:auto;flex:1;min-height:140px;padding:6px 16px 0;background:#fff}
+  .nrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 0;border-bottom:1px dashed #E3E0D4}
+  .nrow .nm{font-size:12.8px;font-weight:600;font-family:"JetBrains Mono",monospace;letter-spacing:-.2px}
+  .nrow .sub{font-size:11.5px;color:var(--muted);font-family:"JetBrains Mono",monospace}
+  .nrow .amt{font-size:13px;font-weight:600;align-self:end;text-align:right}
+  .nrow .acts{grid-column:1/-1;display:flex;gap:6px;margin-top:5px}
+  .acts button{font-size:11px;border:1px solid var(--garis);border-radius:6px;padding:2px 8px;background:#fff}
+  .acts button:hover{background:#F7F5EE}
+  .emptycart{padding:30px 12px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.7;font-family:"JetBrains Mono",monospace}
+  .notafoot{padding:12px 16px 15px;border-top:1px dashed #C9C4B4}
+  .fr{display:flex;justify-content:space-between;font-family:"JetBrains Mono",monospace;font-size:12.5px;padding:3px 0;color:#3C4053}
+  .fr.big{border-top:2px solid var(--tinta);margin-top:8px;padding-top:8px;font-size:15px;font-weight:600;color:var(--tinta)}
+  .fr input{width:70px;text-align:right;border:1px solid var(--garis);border-radius:6px;padding:2px 6px;font-family:"JetBrains Mono",monospace;font-size:12.5px}
+  .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 2px}
+  .quick button{border:1px solid var(--garis);border-radius:6px;padding:7px 4px;font-size:11.5px;font-weight:600;background:#fff;font-family:"JetBrains Mono",monospace}
+  .quick button:hover{background:#F7F5EE}
+  .methods{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+  .method{padding:8px 4px;border:1px solid var(--garis);border-radius:var(--r);font-size:12px;font-weight:600;background:#fff}
+  .method[aria-pressed=true]{border-color:var(--primary);background:#EEF0FB;color:var(--primary)}
+  .bayar{width:100%;margin-top:11px;padding:15px;border-radius:var(--r);background:var(--accent);color:#3A1403;font-weight:700;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+  .bayar kbd{font:600 11px "JetBrains Mono",monospace;background:rgba(255,255,255,.45);padding:2px 6px;border-radius:5px}
+  .bayar:disabled{background:#DCD8CA;color:#6E7285;cursor:not-allowed}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;background:#13315C;color:#fff;padding:12px 18px;border-radius:var(--r);font-size:13.5px;transition:.22s ease}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media (max-width:1020px){.grid{grid-template-columns:1fr}.right{position:static;max-height:none}.items{max-height:300px}.cepitgrid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><div class="mark">V</div><div><b>VASIA STATIONERY</b><span>Kasir · POS-ATK</span></div></div>
+    <div class="shift"><span class="dot"></span><div><div class="kasir">Ririn</div><small>Shift terbuka · 19:41</small></div></div>
+  </header>
+
+  <div class="grid">
+    <section class="panel left">
+      <div class="scanrow">
+        <div class="scan">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14M7 5v14M11 5v9M15 5v14M19 5v14"/></svg>
+          <input id="q" type="search" placeholder="Scan barcode di sini, atau ketik nama produk" autofocus>
+        </div>
+        <div class="viewtoggle" id="viewtoggle">
+          <button aria-pressed="true" data-view="kartu">Kartu</button>
+          <button aria-pressed="false" data-view="daftar">Daftar</button>
+        </div>
+      </div>
+
+      <div class="cepat">
+        <h3>Produk cepat (yang paling laku hari ini)</h3>
+        <div class="cepitgrid" id="cepat"></div>
+      </div>
+
+      <div class="prods" id="prods"></div>
+    </section>
+
+    <aside class="right">
+      <div class="notahead">
+        <div class="t">NOTA PENJUALAN</div>
+        <small>No. TRX-20260922-XXXX · Kasir Ririn · <b id="cnt">0</b> item</small>
+      </div>
+      <div class="items" id="items"></div>
+      <div class="notafoot">
+        <div class="fr"><span>Subtotal</span><span id="sub">0</span></div>
+        <div class="fr"><span>Diskon</span><span><input id="disc" class="num" value="0" inputmode="numeric"></span></div>
+        <div class="fr big"><span>TOTAL</span><span id="tot" class="num">0</span></div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:12px">Uang diterima</div>
+        <div class="quick" id="quick">
+          <button data-uang="50000">50.000</button><button data-uang="100000">100.000</button>
+          <button data-uang="pas">Pas</button><button data-uang="0">Reset</button>
+        </div>
+        <div class="fr" style="margin-top:6px"><span>Kembalian</span><span id="kembali" class="num">0</span></div>
+        <div class="methods" id="methods">
+          <button class="method" aria-pressed="true">Tunai</button>
+          <button class="method" aria-pressed="false">Transfer</button>
+          <button class="method" aria-pressed="false">Digital</button>
+        </div>
+        <button class="bayar" id="bayar"><span>Bayar &amp; cetak nota</span><kbd>F9</kbd></button>
+      </div>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const PRODUK = [
+  {id:1, nama:"METERAI 10000", kat:"ATK Umum", harga:12000, stok:14},
+  {id:2, nama:"COVER BC FOLIO WARNA TUA", kat:"ATK Umum", harga:2000, stok:39},
+  {id:3, nama:"KERTAS DF GARIS SD 100V", kat:"Kertas", harga:600, stok:260},
+  {id:4, nama:"COVER BC FOLIO WARNA MUDA", kat:"ATK Umum", harga:1000, stok:270},
+  {id:5, nama:"GLUE STICK MONTANA 15GR", kat:"ATK Umum", harga:6000, stok:8},
+  {id:6, nama:"KARTON BC SUPER WARNA MUDA", kat:"ATK Umum", harga:5000, stok:15},
+  {id:7, nama:"COVER MIKA BENING", kat:"ATK Umum", harga:1000, stok:188},
+  {id:8, nama:"KERTAS KILAP", kat:"Kertas", harga:3000, stok:34},
+  {id:9, nama:"ULTRAMILK PLAIN 200 ML", kat:"ATK Umum", harga:7000, stok:43},
+  {id:10, nama:"ULTRA MILK STRAWBERY 200ML", kat:"ATK Umum", harga:7000, stok:19},
+  {id:11, nama:"ULTRA MILK COKLAT 200ML", kat:"ATK Umum", harga:7000, stok:43},
+  {id:12, nama:"TAPE PLAKBAND NACHI 1 1/2 X 12", kat:"Alat Tulis Kantor", harga:18000, stok:3},
+  {id:13, nama:"PULPEN KENKO K1", kat:"Pulpen", harga:4000, stok:72},
+  {id:14, nama:"GUNTING KUKU 777 MEDIUM", kat:"ATK Umum", harga:5000, stok:12},
+  {id:15, nama:"PALETTE CAT AIR V-TEC RD1725", kat:"Kuas & Cat", harga:13800, stok:3},
+  {id:16, nama:"PENSIL WARNA KENKO 24W", kat:"Pensil", harga:42000, stok:3}
+];
+const CEPAT = [1,3,5,9,13,2,4,12];
+const rp = n => n.toLocaleString("id-ID");
+let cart = [], cari = "", metode = "Tunai", tampilan = "kartu", uangDiterima = 0;
+const kelas = k => k==="Kertas" ? "kertas" : (k==="Pulpen"||k==="Pensil" ? "pulpen" : (k==="Kuas & Cat" ? "seni" : ""));
+
+function renderCepat(){
+  document.getElementById("cepat").innerHTML = CEPAT.map(id => {
+    const p = PRODUK.find(x=>x.id===id);
+    return `<button class="cepit" data-id="${p.id}"><div class="n">${p.nama}</div><div class="h num">${rp(p.harga)}</div></button>`;
+  }).join("");
+  document.querySelectorAll(".cepit").forEach(b => b.onclick = () => tambah(+b.dataset.id));
+}
+function renderProds(){
+  const list = PRODUK.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()));
+  const box = document.getElementById("prods");
+  if(!list.length){ box.innerHTML = `<div class="empty">Tidak ada produk dengan kata kunci "${cari}".<br>Periksa ejaan, atau scan barcodenya langsung.</div>`; return; }
+  box.innerHTML = list.map(p => `
+    <button class="card ${kelas(p.kat)}" data-id="${p.id}">
+      <div class="cat">${p.kat}</div>
+      <div class="nama">${p.nama}</div>
+      <div class="bottom"><div class="harga num">Rp ${rp(p.harga)}<small> /pcs</small></div><div class="stok ${p.stok<=8?"low":""}">${p.stok} pcs</div></div>
+    </button>`).join("");
+  document.querySelectorAll(".card").forEach(c => c.onclick = () => tambah(+c.dataset.id));
+}
+function tambah(id){ const it = cart.find(x=>x.id===id); it ? it.qty++ : cart.push({...PRODUK.find(x=>x.id===id), qty:1}); renderCart(); }
+function renderCart(){
+  const box = document.getElementById("items");
+  box.innerHTML = cart.length ? cart.map(i => `
+    <div class="nrow">
+      <div class="nm">${i.nama}</div>
+      <div class="amt num">${rp(i.harga*i.qty)}</div>
+      <div class="sub">${i.qty} x ${rp(i.harga)}</div>
+      <div class="acts"><button data-minus="${i.id}">− 1</button><button data-plus="${i.id}">+ 1</button><button data-del="${i.id}" style="color:var(--err)">Hapus</button></div>
+    </div>`).join("") : `<div class="emptycart">--- keranjang kosong ---<br>Pilih produk atau scan barcode</div>`;
+  box.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{cart.find(x=>x.id==b.dataset.plus).qty++;renderCart();});
+  box.querySelectorAll("[data-minus]").forEach(b=>b.onclick=()=>{const it=cart.find(x=>x.id==b.dataset.minus);it.qty--;if(it.qty<1)cart=cart.filter(x=>x.id!=it.id);renderCart();});
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{cart=cart.filter(x=>x.id!=b.dataset.del);renderCart();});
+  const sub = cart.reduce((s,i)=>s+i.harga*i.qty,0);
+  const disc = Math.max(0, +document.getElementById("disc").value.replace(/\D/g,"")||0);
+  const tot = Math.max(0, sub-disc);
+  document.getElementById("cnt").textContent = cart.reduce((s,i)=>s+i.qty,0);
+  document.getElementById("sub").textContent = rp(sub);
+  document.getElementById("tot").textContent = rp(tot);
+  document.getElementById("kembali").textContent = uangDiterima > tot ? rp(uangDiterima-tot) : "0";
+  document.getElementById("bayar").disabled = cart.length===0;
+}
+function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); }
+document.getElementById("q").oninput = e => { cari = e.target.value; renderProds(); };
+document.getElementById("disc").oninput = renderCart;
+document.querySelectorAll("#viewtoggle button").forEach(b => b.onclick = () => {
+  tampilan = b.dataset.view;
+  document.querySelectorAll("#viewtoggle button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  document.getElementById("prods").style.gridTemplateColumns = tampilan==="daftar" ? "1fr 1fr" : "";
+  toast(tampilan==="daftar" ? "Tampilan daftar: nama lebih panjang, kartu lebih ringkas" : "Tampilan kartu");
+});
+document.querySelectorAll("#quick button").forEach(b => b.onclick = () => {
+  const v = b.dataset.uang;
+  const tot = cart.reduce((s,i)=>s+i.harga*i.qty,0);
+  uangDiterima = v==="pas" ? tot : (v==="0" ? 0 : +v);
+  renderCart();
+});
+document.querySelectorAll("#methods .method").forEach(m => m.onclick = () => {
+  metode = m.textContent; document.querySelectorAll("#methods .method").forEach(x=>x.setAttribute("aria-pressed", x===m));
+});
+document.getElementById("bayar").onclick = () => { toast("Nota " + metode + " · Rp " + rp(cart.reduce((s,i)=>s+i.harga*i.qty,0)) + " siap dicetak (mockup)"); };
+document.addEventListener("keydown", e => { if(e.key==="F9"){e.preventDefault();document.getElementById("bayar").click();} });
+tambah(1); tambah(3); tambah(3); tambah(5);
+renderCepat(); renderProds();
+</script>
+</body>
+</html>

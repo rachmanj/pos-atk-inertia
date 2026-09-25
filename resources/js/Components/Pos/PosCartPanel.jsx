@@ -10,19 +10,14 @@ import {
 } from "antd";
 import {
     CloseOutlined,
-    DeleteOutlined,
     PauseOutlined,
-    PlayCircleOutlined,
     PlusOutlined,
-    ShoppingOutlined,
 } from "@ant-design/icons";
 import { formatRupiah } from "../../Utils/format";
 import { lineDiscountAmount, lineNet } from "./posUtils";
 import useMobile from "../../Hooks/useMobile";
 import { numericMobileInputProps } from "../../Utils/responsive";
 const { Text } = Typography;
-
-const SHOW_HOLD_BUTTON = false; // sembunyikan sementara tombol Tahan (2026-09-10)
 
 function CartRow({
     cart,
@@ -84,26 +79,26 @@ function CartRow({
         }
     };
 
-    return (
-        <div className={`pos-cart-row${held ? " pos-cart-row--held" : ""}`}>
-            <div className="pos-cart-row-top">
-                <div className="pos-cart-name">
-                    <strong>{cart.product?.title || "Produk"}</strong>
-                    {held && (
-                        <Tag className="pos-cart-held-badge">Ditahan</Tag>
-                    )}
-                </div>
-                <div className="pos-cart-price">
-                    <strong>{formatRupiah(net)}</strong>
-                    {itemDiscount > 0 && (
-                        <span className="pos-cart-discount-tag">
-                            -{formatRupiah(itemDiscount)}
-                        </span>
-                    )}
-                </div>
-            </div>
+    const unitAbbrev =
+        cart.unit?.abbreviation || cart.product?.unit || "pcs";
 
-            <div className="pos-cart-row-meta">
+    return (
+        <div className={`pos-nota-row${held ? " pos-nota-row--held" : ""}`}>
+            <div className="pos-nota-row-name">
+                {cart.product?.title || "Produk"}
+                {held && (
+                    <Tag className="pos-cart-held-badge">Ditahan</Tag>
+                )}
+            </div>
+            <div className="pos-nota-row-amount">
+                <strong>{formatRupiah(net)}</strong>
+                {itemDiscount > 0 && (
+                    <span className="pos-cart-discount-tag">
+                        -{formatRupiah(itemDiscount)}
+                    </span>
+                )}
+            </div>
+            <div className="pos-nota-row-sub">
                 <span className="pos-cart-meta-text">
                     {isPpob ? (
                         <>
@@ -112,7 +107,7 @@ function CartRow({
                         </>
                     ) : (
                         <>
-                            {cart.unit?.abbreviation || cart.product?.unit} ·{" "}
+                            {cart.qty} ×{" "}
                             {canEditPrice && editingPrice ? (
                                 <InputNumber
                                     autoFocus
@@ -144,6 +139,7 @@ function CartRow({
                             ) : (
                                 formatRupiah(cart.price)
                             )}
+                            {!isPpob && ` /${unitAbbrev}`}
                         </>
                     )}
                     {cart.customer_ref && (
@@ -153,16 +149,18 @@ function CartRow({
                         </span>
                     )}
                 </span>
-                {!held && (
+            </div>
+            {!held && (
+                <div className="pos-nota-row-tools">
                     <button
                         type="button"
                         className="pos-cart-discount-toggle"
                         onClick={() => setShowDiscount((v) => !v)}
                     >
-                        Diskon
+                        Diskon item
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             {!held && showDiscount && (
                 <div className="pos-cart-row-discount">
@@ -201,65 +199,31 @@ function CartRow({
                 </div>
             )}
 
-            <div className="pos-cart-row-bottom">
-                {!held ? (
-                    <Space.Compact className="pos-qty-stepper">
-                        <Button
-                            onClick={() => onUpdateQty(cart.id, cart.qty - 1)}
-                        >
-                            −
-                        </Button>
-                        <InputNumber
-                            className="pos-qty-input"
-                            min={1}
-                            value={cart.qty}
-                            controls={false}
-                            onChange={(value) => {
-                                if (value != null && value >= 1) {
-                                    onUpdateQty(cart.id, value, true);
-                                }
-                            }}
-                            {...numericMobileInputProps(isMobile)}
-                        />
-                        <Button
-                            onClick={() => onUpdateQty(cart.id, cart.qty + 1)}
-                        >
-                            +
-                        </Button>
-                    </Space.Compact>
-                ) : (
-                    <span />
-                )}
-
-                <Space size={6}>
-                    {SHOW_HOLD_BUTTON &&
-                        (held ? (
-                            <Button
-                                type="default"
-                                className="pos-cart-tool-btn"
-                                icon={<PlayCircleOutlined />}
-                                onClick={() => onToggleHold(cart.id, false)}
-                                title="Lanjutkan"
-                            />
-                        ) : (
-                            <Button
-                                type="default"
-                                className="pos-cart-tool-btn"
-                                icon={<PauseOutlined />}
-                                onClick={() => onToggleHold(cart.id, true)}
-                                title="Tahan"
-                            />
-                        ))}
-                    <Button
-                        type="text"
-                        danger
-                        className="pos-cart-tool-btn pos-cart-tool-btn--danger"
-                        icon={<DeleteOutlined />}
+            {!held && (
+                <div className="pos-nota-row-acts">
+                    <button
+                        type="button"
+                        className="pos-nota-act-btn"
+                        onClick={() => onUpdateQty(cart.id, cart.qty - 1)}
+                    >
+                        − 1
+                    </button>
+                    <button
+                        type="button"
+                        className="pos-nota-act-btn"
+                        onClick={() => onUpdateQty(cart.id, cart.qty + 1)}
+                    >
+                        + 1
+                    </button>
+                    <button
+                        type="button"
+                        className="pos-nota-act-btn pos-nota-act-btn--danger"
                         onClick={() => onDelete(cart.id)}
-                        title="Hapus"
-                    />
-                </Space>
-            </div>
+                    >
+                        Hapus
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
@@ -268,10 +232,11 @@ export default function PosCartPanel({
     activeCarts,
     heldCarts,
     cartQty,
-    localCartsCount,
+    cashierName,
     errors,
     flash,
     ppobAccount,
+    onClearCart,
     customerSearch,
     customerResults,
     customerLoading,
@@ -292,9 +257,23 @@ export default function PosCartPanel({
 
     return (
         <>
-            <div className="pos-checkout-header">
-                <h5>Keranjang</h5>
-                <span className="pos-cart-count">{cartQty} item</span>
+            <div className="pos-nota-head">
+                <div className="pos-nota-head-title">NOTA PENJUALAN</div>
+                <div className="pos-nota-head-meta">
+                    <span>
+                        Nota baru · {cashierName || "Kasir"} ·{" "}
+                        <strong>{cartQty}</strong> item
+                    </span>
+                    {activeCarts.length > 0 && onClearCart && (
+                        <button
+                            type="button"
+                            className="pos-nota-clear-btn"
+                            onClick={onClearCart}
+                        >
+                            Kosongkan
+                        </button>
+                    )}
+                </div>
             </div>
 
             {(errors?.error || flash?.error) && (
@@ -359,12 +338,10 @@ export default function PosCartPanel({
                         )}
                     </>
                 ) : (
-                    <div className="pos-empty-cart">
-                        <ShoppingOutlined style={{ fontSize: 32 }} />
-                        <strong>Keranjang kosong</strong>
+                    <div className="pos-empty-cart pos-nota-empty">
                         <span>
-                            Ketik nama produk atau scan barcode untuk mulai
-                            transaksi.
+                            Keranjang masih kosong. Pilih produk di kiri atau
+                            scan barcode.
                         </span>
                     </div>
                 )}
