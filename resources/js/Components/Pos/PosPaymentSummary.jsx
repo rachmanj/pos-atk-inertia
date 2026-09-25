@@ -12,6 +12,7 @@ import {
 import {
     DeleteOutlined,
     PlusOutlined,
+    WalletOutlined,
 } from "@ant-design/icons";
 import { formatRupiah } from "../../Utils/format";
 import useMobile from "../../Hooks/useMobile";
@@ -101,10 +102,18 @@ export default function PosPaymentSummary({
 
     const modalCanSave = draftCashValue >= modalMinCash && modalMinCash > 0;
 
-    const openCashModal = () => {
+    const openCashModal = useCallback(() => {
         setDraftCash(cash);
         setCashModalOpen(true);
-    };
+    }, [cash]);
+
+    const handleCashMethodActivate = useCallback(
+        (e) => {
+            e.stopPropagation();
+            openCashModal();
+        },
+        [openCashModal],
+    );
 
     const closeCashModal = () => {
         setCashModalOpen(false);
@@ -431,6 +440,10 @@ export default function PosPaymentSummary({
                         onClick={openCashModal}
                         aria-label="Ubah uang diterima tunai"
                     >
+                        <WalletOutlined
+                            className="pos-cash-pay-summary-icon"
+                            aria-hidden="true"
+                        />
                         <span className="pos-cash-pay-summary-method">Tunai</span>
                         <span className="pos-cash-pay-summary-detail">
                             {cashSummaryLabel()}
@@ -481,6 +494,11 @@ export default function PosPaymentSummary({
                                     key={method}
                                     value={method}
                                     className="pos-method-option"
+                                    onClick={
+                                        method === "cash"
+                                            ? handleCashMethodActivate
+                                            : undefined
+                                    }
                                 >
                                     {methodLabels[method]}
                                 </Radio.Button>
@@ -510,7 +528,9 @@ export default function PosPaymentSummary({
                 open={cashModalOpen}
                 onCancel={closeCashModal}
                 width={getModalWidth(isMobile)}
+                zIndex={1200}
                 destroyOnClose={false}
+                maskClosable
                 footer={[
                     <Button key="cancel" onClick={closeCashModal}>
                         Batal

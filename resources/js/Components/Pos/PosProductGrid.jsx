@@ -11,7 +11,7 @@ import {
 
 const SEARCH_DEBOUNCE_MS = 200;
 const QTY_PRESETS = [1, 5, 10, 20, 50];
-const VIEW_MODE_STORAGE_KEY = "pos-view-mode-b";
+const VIEW_MODE_STORAGE_KEY = "pos-product-view-v2";
 
 function BarcodeScanIcon() {
     return (
@@ -31,10 +31,13 @@ function BarcodeScanIcon() {
 
 function getInitialViewMode() {
     if (typeof window === "undefined") {
-        return "kartu";
+        return "daftar";
     }
     const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-    return stored === "daftar" ? "daftar" : "kartu";
+    if (stored === "kartu" || stored === "daftar") {
+        return stored;
+    }
+    return "daftar";
 }
 
 function categoryCardClass(categoryName) {
