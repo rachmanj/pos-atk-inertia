@@ -494,8 +494,8 @@ export default function PosProductGrid({
             </form>
 
             <div className="pos-left-panel-body">
-                {renderQuickPanel()}
-                {renderCatalog()}
+                {!hasQuery ? renderQuickPanel() : null}
+                <div className="pos-catalog-region">{renderCatalog()}</div>
 
                 {products.links?.length > 0 && (
                     <div className="pos-pagination">

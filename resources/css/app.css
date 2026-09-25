@@ -479,17 +479,133 @@ html {
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-left-panel-body {
-        flex: 1 1 auto;
+        flex: 1 1 0%;
         min-height: 0;
         display: flex;
         flex-direction: column;
         overflow: hidden;
     }
 
-    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-product-grid,
-    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-product-list {
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-products,
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-qty-panel {
+        flex: 0 0 auto;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-products {
+        max-height: 128px;
+        min-height: 0;
+        margin: 4px 0 8px;
+        gap: 6px;
+        overflow: hidden;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-products-heading {
+        margin: 0;
+        flex-shrink: 0;
+        line-height: 1.25;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-products-empty {
+        padding: 8px 10px;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-products-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
         flex: 1 1 auto;
         min-height: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 2px;
+        scrollbar-width: thin;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-product-card {
+        flex: 0 0 132px;
+        width: 132px;
+        min-height: 0;
+        height: 72px;
+        max-height: 72px;
+        padding: 7px 8px;
+        gap: 4px;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-product-name {
+        font-size: 0.78rem;
+        line-height: 1.25;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-quick-product-price {
+        font-size: 0.82rem;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-catalog-region {
+        flex: 1 1 0%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-catalog-region .pos-product-grid,
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-catalog-region .pos-product-list {
+        flex: 1 1 0%;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-catalog-region .pos-product-grid--cards {
+        grid-auto-rows: auto;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-catalog-region .pos-catalog-empty {
+        flex: 1 1 0%;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-pagination {
+        flex-shrink: 0;
+        margin-top: 0;
+        padding: 6px 12px;
+        max-height: 48px;
+        box-sizing: border-box;
+        align-items: center;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-pagination > div {
+        margin-top: 0 !important;
+        width: 100%;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-pagination .ant-pagination {
+        margin: 0;
+        font-size: 12px;
+        line-height: 1;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-pagination .ant-pagination-item,
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-pagination .ant-pagination-prev,
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-pagination .ant-pagination-next,
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-pagination .ant-pagination-jump-prev,
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-pagination .ant-pagination-jump-next {
+        min-width: 28px;
+        height: 28px;
+        line-height: 26px;
+    }
+
+    .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-pagination .ant-pagination-total-text {
+        height: 28px;
+        line-height: 28px;
+        margin-inline-end: 8px;
     }
 
     .pos-cashier-page:not(.pos-cashier-page--mobile) .pos-nota-panel:not(.pos-nota-panel--mobile) {
@@ -741,6 +857,10 @@ html {
 
 .pos-left-panel-body {
     padding: 0 14px 14px;
+    min-width: 0;
+}
+
+.pos-catalog-region {
     min-width: 0;
 }
 
@@ -1372,7 +1492,7 @@ html {
     grid-auto-rows: var(--pos-product-row-height);
     align-content: start;
     gap: var(--pos-product-row-gap);
-    overflow-y: auto;
+    overflow-x: hidden;
     background: #ffffff;
 }
 
@@ -1470,7 +1590,7 @@ html {
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    overflow-x: hidden;
     background: #ffffff;
     margin-top: 4px;
     border: 1px solid #c9c4b4;
