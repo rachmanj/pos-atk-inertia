@@ -245,7 +245,6 @@ export default function PosCartPanel({
     cashierName,
     errors,
     flash,
-    ppobAccount,
     onClearCart,
     customerSearch,
     customerResults,
@@ -290,22 +289,6 @@ export default function PosCartPanel({
                 <div className="pos-cart-alert">
                     <Tag color="error" className="pos-cart-alert-tag">
                         {errors?.error || flash?.error}
-                    </Tag>
-                </div>
-            )}
-
-            {ppobAccount && (
-                <div className="pos-cart-alert">
-                    <Tag
-                        color={
-                            ppobAccount.is_low_balance ? "error" : "default"
-                        }
-                        className="pos-cart-alert-tag"
-                    >
-                        Saldo PPOB ({ppobAccount.name}):{" "}
-                        <strong>
-                            {formatRupiah(ppobAccount.current_balance)}
-                        </strong>
                     </Tag>
                 </div>
             )}
