@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VASIA POS · Mockup A · Dua Kolom Rapi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#2A3B8F; --accent:#FF6A2E; --paper:#EFEDE3; --kanvas:#FFFFFF;
+    --tinta:#1B1D29; --garis:#C9C4B4; --muted:#5A5E70;
+    --ok:#2F6F4E; --err:#8B2E3B;
+    --r:8px; --r-lg:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--paper);color:var(--tinta);-webkit-font-smoothing:antialiased}
+  .num{font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+  .display{font-family:"Space Grotesk",sans-serif}
+  button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+  :focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+  .app{max-width:1400px;margin:0 auto;padding:14px 16px 16px}
+  header.top{display:flex;align-items:center;gap:14px;padding:6px 2px 12px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-family:"Space Grotesk" }
+  .brand b{font-size:15px;letter-spacing:.2px}
+  .brand span{font-size:11.5px;color:var(--muted);display:block}
+  .shift{margin-left:auto;display:flex;align-items:center;gap:10px;background:var(--kanvas);border:1px solid var(--garis);border-radius:var(--r);padding:7px 12px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  .shift small{color:var(--muted);font-size:11.5px}
+  .kasir{font-weight:600;font-size:13px}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,1fr);gap:14px;align-items:start}
+  .panel{background:var(--kanvas);border:1px solid var(--garis);border-radius:var(--r-lg)}
+
+  /* KIRI */
+  .left{padding:14px}
+  .searchbar{display:flex;gap:10px;align-items:center}
+  .searchwrap{position:relative;flex:1}
+  .searchwrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.55}
+  input[type=search]{width:100%;padding:12px 12px 12px 38px;border:1px solid var(--garis);border-radius:var(--r);background:#fff;font-size:14.5px}
+  input[type=search]::placeholder{color:#8b8f9e}
+  .btn{padding:11px 16px;border-radius:var(--r);border:1px solid var(--garis);background:#fff;font-weight:600;font-size:13.5px}
+  .btn:hover{background:#f7f5ee}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px;padding-bottom:10px;border-bottom:1px solid #E3E0D4}
+  .chip{padding:7px 11px;border:1px solid var(--garis);border-radius:var(--r);background:#fff;font-size:12.5px;color:#3C4053}
+  .chip b{font-weight:600}
+  .chip small{color:var(--muted);margin-left:5px}
+  .chip[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:#fff}
+  .chip[aria-pressed=true] small{color:#C9D0F0}
+
+  .prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;margin-top:12px}
+  .card{text-align:left;border:1px solid var(--garis);border-radius:var(--r);background:#fff;padding:11px 11px 10px;display:flex;flex-direction:column;gap:7px;min-height:104px}
+  .card:hover{border-color:var(--primary);box-shadow:0 2px 0 var(--primary)}
+  .cat{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .nama{font-size:13.5px;font-weight:600;line-height:1.35;min-height:36px}
+  .bottom{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:6px}
+  .harga{font-size:15px;font-weight:600}
+  .harga small{font-weight:400;color:var(--muted);font-size:11px}
+  .stok{font-size:11px;padding:3px 7px;border-radius:6px;background:#F1EFE6;color:#4A4E63;border:1px solid #E3E0D4}
+  .stok.low{background:#FFF1EA;color:#9A3412;border-color:#F7C6AE;font-weight:600}
+  .empty{grid-column:1/-1;text-align:center;padding:44px 10px;color:var(--muted);font-size:13.5px}
+
+  /* KANAN */
+  .right{position:sticky;top:14px;display:flex;flex-direction:column;max-height:calc(100vh - 28px)}
+  .carthead{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--garis)}
+  .carthead h2{font-size:15px;font-family:"Space Grotesk"}
+  .badge{background:var(--primary);color:#fff;border-radius:6px;font-size:12px;font-weight:600;padding:2px 7px}
+  .link{margin-left:auto;font-size:12.5px;color:var(--err);font-weight:600}
+  .items{overflow:auto;flex:1;min-height:150px}
+  .row{display:flex;gap:10px;padding:11px 14px;border-bottom:1px dashed #E3E0D4}
+  .row .info{flex:1;min-width:0}
+  .row .nm{font-size:13px;font-weight:600;line-height:1.35}
+  .row .unit{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .qty{display:flex;align-items:center;gap:0;border:1px solid var(--garis);border-radius:var(--r);overflow:hidden;height:32px}
+  .qty button{width:29px;height:31px;font-size:15px;font-weight:600;background:#fff}
+  .qty button:hover{background:#F7F5EE}
+  .qty span{width:32px;text-align:center;font-size:13px;font-weight:600}
+  .line{width:78px;text-align:right;font-size:13.5px;font-weight:600;align-self:center}
+  .emptycart{padding:34px 16px;text-align:center;color:var(--muted);font-size:13px;line-height:1.7}
+  .pay{padding:12px 14px;border-top:1px solid var(--garis);display:flex;flex-direction:column;gap:10px}
+  .field{display:flex;align-items:center;gap:8px}
+  .field label{font-size:12.5px;color:var(--muted);width:78px}
+  .field input,.field select{flex:1;padding:9px 10px;border:1px solid var(--garis);border-radius:var(--r);font-size:13px;background:#fff;font-family:inherit}
+  .sums{display:flex;flex-direction:column;gap:6px;padding-top:2px}
+  .sumline{display:flex;justify-content:space-between;font-size:13px;color:#3C4053}
+  .total{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--tinta);margin-top:4px;padding-top:9px}
+  .total b{font-size:13px;letter-spacing:.4px}
+  .total .big{font-size:21px;font-weight:600}
+  .methods{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .method{padding:9px 6px;border:1px solid var(--garis);border-radius:var(--r);background:#fff;font-size:12.5px;font-weight:600}
+  .method[aria-pressed=true]{border-color:var(--primary);background:#EEF0FB;color:var(--primary)}
+  .bayar{width:100%;padding:15px;border-radius:var(--r);background:var(--accent);color:#3A1403;font-weight:700;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+  .bayar kbd{font:600 11px "JetBrains Mono",monospace;background:rgba(255,255,255,.45);padding:2px 6px;border-radius:5px}
+  .bayar:disabled{background:#DCD8CA;color:#6E7285;cursor:not-allowed}
+  .secs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .secs .btn{font-size:12px;padding:9px 6px}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;background:#13315C;color:#fff;padding:12px 18px;border-radius:var(--r);font-size:13.5px;transition:.22s ease}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media (max-width:1020px){
+    .grid{grid-template-columns:1fr}
+    .right{position:static;max-height:none}
+    .items{max-height:320px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">V</div>
+      <div><b>VASIA STATIONERY</b><span>Kasir · POS-ATK</span></div>
+    </div>
+    <div class="shift"><span class="dot"></span><div><div class="kasir">Ririn</div><small>Shift terbuka · 19:41</small></div></div>
+  </header>
+
+  <div class="grid">
+    <!-- KIRI -->
+    <section class="panel left">
+      <div class="searchbar">
+        <div class="searchwrap">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="Scan barcode atau ketik nama produk" autofocus>
+        </div>
+        <button class="btn" id="btnClear">Bersihkan</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="prods" id="prods"></div>
+    </section>
+
+    <!-- KANAN -->
+    <aside class="panel right">
+      <div class="carthead">
+        <h2>Keranjang</h2><span class="badge" id="cartCount">0</span>
+        <button class="link" id="clearCart">Kosongkan</button>
+      </div>
+      <div class="items" id="items"></div>
+      <div class="pay">
+        <div class="sums">
+          <div class="sumline"><span>Subtotal</span><span class="num" id="sub">Rp 0</span></div>
+          <div class="sumline"><span>Diskon</span>
+            <span class="num"><input id="disc" value="0" inputmode="numeric" style="width:82px;text-align:right;padding:3px 6px;border:1px solid var(--garis);border-radius:6px"></span>
+          </div>
+          <div class="total"><b>TOTAL</b><span class="big num" id="tot">Rp 0</span></div>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Metode pembayaran</div>
+          <div class="methods" id="methods">
+            <button class="method" aria-pressed="true">Tunai</button>
+            <button class="method" aria-pressed="false">Transfer</button>
+            <button class="method" aria-pressed="false">Digital</button>
+          </div>
+        </div>
+        <div class="field"><label>Pelanggan</label>
+          <select><option>Umum</option><option>SDN 001 Balikpapan</option><option>CV Karya Abadi</option><option>+ Pelanggan baru…</option></select>
+        </div>
+        <button class="bayar" id="bayar"><span>Bayar</span><kbd>F9</kbd></button>
+        <div class="secs">
+          <button class="btn" data-act="Tahan transaksi">Tahan</button>
+          <button class="btn" data-act="Penjualan PPOB">PPOB</button>
+          <button class="btn" data-act="Pengeluaran">Keluar</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const PRODUK = [
+  {id:1,  nama:"METERAI 10000",                 kat:"ATK Umum", harga:12000, stok:14},
+  {id:2,  nama:"COVER BC FOLIO WARNA TUA",      kat:"ATK Umum", harga:2000,  stok:39},
+  {id:3,  nama:"KERTAS DF GARIS SD 100V",       kat:"Kertas",   harga:600,   stok:260},
+  {id:4,  nama:"COVER BC FOLIO WARNA MUDA",     kat:"ATK Umum", harga:1000,  stok:270},
+  {id:5,  nama:"GLUE STICK MONTANA 15GR",       kat:"ATK Umum", harga:6000,  stok:8},
+  {id:6,  nama:"KARTON BC SUPER WARNA MUDA",    kat:"ATK Umum", harga:5000,  stok:15},
+  {id:7,  nama:"COVER MIKA BENING",             kat:"ATK Umum", harga:1000,  stok:188},
+  {id:8,  nama:"KERTAS KILAP",                  kat:"Kertas",   harga:3000,  stok:34},
+  {id:9,  nama:"ULTRAMILK PLAIN 200 ML",        kat:"ATK Umum", harga:7000,  stok:43},
+  {id:10, nama:"ULTRA MILK STRAWBERY 200ML",    kat:"ATK Umum", harga:7000,  stok:19},
+  {id:11, nama:"ULTRA MILK COKLAT 200ML",       kat:"ATK Umum", harga:7000,  stok:43},
+  {id:12, nama:"TAPE PLAKBAND NACHI 1 1/2 X 12",kat:"Alat Tulis Kantor", harga:18000, stok:3},
+  {id:13, nama:"PULPEN KENKO K1",               kat:"Pulpen",   harga:4000,  stok:72},
+  {id:14, nama:"GUNTING KUKU 777 MEDIUM",       kat:"ATK Umum", harga:5000,  stok:12},
+  {id:15, nama:"PALETTE CAT AIR V-TEC RD1725",  kat:"Kuas & Cat", harga:13800, stok:3},
+  {id:16, nama:"PENSIL WARNA KENKO 24W",        kat:"Pensil",   harga:42000, stok:3}
+];
+const KAT = [["Semua",0],["ATK Umum",1580],["Alat Tulis Kantor",364],["Pensil",197],["Pulpen",175],["Buku",156],["Kertas",156],["Lem & Perekat",72],["Spidol",71],["Map & Amplop",56]];
+const rp = n => "Rp " + n.toLocaleString("id-ID");
+let cart = [], katAktif = "Semua", cari = "", metode = "Tunai";
+
+function renderChips(){
+  document.getElementById("chips").innerHTML = KAT.map(([n,j]) =>
+    `<button class="chip" aria-pressed="${n===katAktif}" data-kat="${n}">${n}${j?`<small>${j.toLocaleString("id-ID")}</small>`:""}</button>`).join("");
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => { katAktif = c.dataset.kat; renderChips(); renderProds(); });
+}
+function renderProds(){
+  const list = PRODUK.filter(p => (katAktif==="Semua" || p.kat===katAktif) && p.nama.toLowerCase().includes(cari.toLowerCase()));
+  document.getElementById("prods").innerHTML = list.length ? list.map(p => `
+    <button class="card" data-id="${p.id}">
+      <div class="cat">${p.kat}</div>
+      <div class="nama">${p.nama}</div>
+      <div class="bottom">
+        <div class="harga num">${rp(p.harga)}<small> /pcs</small></div>
+        <div class="stok ${p.stok<=8?"low":""}">${p.stok} pcs</div>
+      </div>
+    </button>`).join("") : `<div class="empty">Tidak ada produk yang cocok dengan "${cari}".<br>Coba kata kunci lain atau bersihkan pencarian.</div>`;
+  document.querySelectorAll(".card").forEach(c => c.onclick = () => tambah(+c.dataset.id));
+}
+function tambah(id){
+  const p = PRODUK.find(x => x.id===id), ada = cart.find(x => x.id===id);
+  if(ada){ ada.qty++; } else { cart.push({...p, qty:1}); }
+  renderCart();
+}
+function renderCart(){
+  const box = document.getElementById("items");
+  const totalQty = cart.reduce((s,i)=>s+i.qty,0);
+  document.getElementById("cartCount").textContent = totalQty;
+  box.innerHTML = cart.length ? cart.map(i => `
+    <div class="row">
+      <div class="info"><div class="nm">${i.nama}</div><div class="unit">${rp(i.harga)} /pcs</div></div>
+      <div class="qty"><button data-minus="${i.id}" aria-label="Kurangi">−</button><span class="num">${i.qty}</span><button data-plus="${i.id}" aria-label="Tambah">+</button></div>
+      <div class="line num">${rp(i.harga*i.qty)}</div>
+      <button class="link" style="align-self:center;margin-left:6px" data-del="${i.id}" aria-label="Hapus">Hapus</button>
+    </div>`).join("") : `<div class="emptycart">Keranjang masih kosong.<br>Pilih produk di sebelah kiri atau scan barcode.</div>`;
+  box.querySelectorAll("[data-plus]").forEach(b => b.onclick = () => { cart.find(x=>x.id==b.dataset.plus).qty++; renderCart(); });
+  box.querySelectorAll("[data-minus]").forEach(b => b.onclick = () => { const it = cart.find(x=>x.id==b.dataset.minus); it.qty--; if(it.qty<1) cart = cart.filter(x=>x.id!=it.id); renderCart(); });
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { cart = cart.filter(x=>x.id!=b.dataset.del); renderCart(); });
+  const sub = cart.reduce((s,i)=>s+i.harga*i.qty,0);
+  const disc = Math.max(0, +document.getElementById("disc").value.replace(/\D/g,"") || 0);
+  document.getElementById("sub").textContent = rp(sub);
+  document.getElementById("tot").textContent = rp(Math.max(0, sub-disc));
+  document.getElementById("bayar").disabled = cart.length===0;
+}
+function toast(msg){ const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2200); }
+document.getElementById("q").oninput = e => { cari = e.target.value; renderProds(); };
+document.getElementById("btnClear").onclick = () => { document.getElementById("q").value=""; cari=""; renderProds(); };
+document.getElementById("clearCart").onclick = () => { cart = []; renderCart(); };
+document.getElementById("disc").oninput = renderCart;
+document.querySelectorAll("#methods .method").forEach(m => m.onclick = () => {
+  metode = m.textContent;
+  document.querySelectorAll("#methods .method").forEach(x => x.setAttribute("aria-pressed", x===m));
+});
+document.querySelectorAll(".secs .btn").forEach(b => b.onclick = () => toast(b.textContent + ": belum ada di mockup ini"));
+document.getElementById("bayar").onclick = () => { toast("Pembayaran " + metode + " · " + rp(cart.reduce((s,i)=>s+i.harga*i.qty,0)) + " tersimpan (mockup)"); };
+document.addEventListener("keydown", e => { if(e.key==="F9"){ e.preventDefault(); document.getElementById("bayar").click(); } });
+
+// keranjang awal (contoh nyata)
+tambah(1); tambah(3); tambah(3); tambah(5);
+renderChips(); renderProds();
+</script>
+</body>
+</html>
