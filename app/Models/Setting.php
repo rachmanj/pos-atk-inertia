@@ -117,9 +117,26 @@ class Setting extends Model
             ? filter_var($settings->get('telegram.nontunai_enabled'), FILTER_VALIDATE_BOOLEAN)
             : true;
 
+        $stockAlertSettings = static::query()
+            ->whereIn('key', [
+                'stock_alert.enabled',
+                'stock_alert.threshold',
+                'stock_alert.product_ids',
+                'stock_alert.keyword',
+            ])
+            ->pluck('value', 'key');
+
+        $stockAlertEnabled = $stockAlertSettings->has('stock_alert.enabled')
+            ? filter_var($stockAlertSettings->get('stock_alert.enabled'), FILTER_VALIDATE_BOOLEAN)
+            : true;
+
         return [
             'admin_chat_ids' => $adminChatIds,
             'nontunai_enabled' => $nontunaiEnabled,
+            'stock_alert_enabled' => $stockAlertEnabled,
+            'stock_alert_threshold' => (int) ($stockAlertSettings->get('stock_alert.threshold') ?: 10),
+            'stock_alert_product_ids' => $stockAlertSettings->get('stock_alert.product_ids') ?: '',
+            'stock_alert_keyword' => $stockAlertSettings->get('stock_alert.keyword') ?: 'METERAI',
         ];
     }
 }

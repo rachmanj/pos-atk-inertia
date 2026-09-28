@@ -12,7 +12,9 @@ use App\Models\SupplierReturn;
 use App\Models\SupplierReturnDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use App\Services\StockAlertService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -190,7 +192,9 @@ class SupplierReturnController extends Controller
             ]);
         }
 
-        $supplierReturn = DB::transaction(function () use ($request, $purchase, $selectedItems, $user) {
+        $stockChangedProductIds = [];
+
+        $supplierReturn = DB::transaction(function () use ($request, $purchase, $selectedItems, $user, &$stockChangedProductIds) {
             $purchaseDetails = PurchaseDetail::query()
                 ->with('product:id,title,stock')
                 ->where('purchase_id', $purchase->id)
@@ -268,6 +272,8 @@ class SupplierReturnController extends Controller
                         'stock' => $item['stock_after'],
                     ]);
 
+                $stockChangedProductIds[] = (int) $item['product_id'];
+
                 StockMovement::create([
                     'product_id' => $item['product_id'],
                     'user_id' => $user->id,
@@ -283,6 +289,20 @@ class SupplierReturnController extends Controller
 
             return $supplierReturn;
         });
+
+        if ($stockChangedProductIds !== []) {
+            try {
+                app(StockAlertService::class)->check(
+                    array_values(array_unique($stockChangedProductIds)),
+                    'retur supplier ' . $supplierReturn->invoice,
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Stock alert check failed after supplier return.', [
+                    'invoice' => $supplierReturn->invoice,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return redirect()
             ->route('account.supplier-returns.show', $supplierReturn->invoice)

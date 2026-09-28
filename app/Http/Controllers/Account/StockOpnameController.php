@@ -9,7 +9,9 @@ use App\Models\StockOpname;
 use App\Models\StockOpnameDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use App\Services\StockAlertService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -120,7 +122,9 @@ class StockOpnameController extends Controller
             ]);
         }
 
-        $stockOpname = DB::transaction(function () use ($request, $items) {
+        $stockChangedProductIds = [];
+
+        $stockOpname = DB::transaction(function () use ($request, $items, &$stockChangedProductIds) {
             $lockedProducts = Product::query()
                 ->whereIn('id', $items->pluck('product_id')->all())
                 ->orderBy('id')
@@ -175,6 +179,8 @@ class StockOpnameController extends Controller
                         'stock' => $item['physical_stock'],
                     ]);
 
+                    $stockChangedProductIds[] = (int) $item['product']->id;
+
                     StockMovement::create([
                         'product_id'     => $item['product']->id,
                         'user_id'        => $request->user()->id,
@@ -191,6 +197,20 @@ class StockOpnameController extends Controller
 
             return $stockOpname;
         });
+
+        if ($stockChangedProductIds !== []) {
+            try {
+                app(StockAlertService::class)->check(
+                    array_values(array_unique($stockChangedProductIds)),
+                    'stock opname ' . $stockOpname->code,
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Stock alert check failed after stock opname.', [
+                    'code' => $stockOpname->code,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return redirect()
             ->route('account.stock-opnames.show', $stockOpname->code)

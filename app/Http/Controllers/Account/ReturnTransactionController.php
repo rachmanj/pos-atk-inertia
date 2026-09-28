@@ -10,7 +10,9 @@ use App\Models\StockMovement;
 use App\Models\Transaction;
 use DomainException;
 use Illuminate\Http\Request;
+use App\Services\StockAlertService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -334,9 +336,10 @@ class ReturnTransactionController extends Controller
         ]);
 
         $returnInvoice = null;
+        $restockedProductIds = [];
 
         try {
-            DB::transaction(function () use ($request, $id, &$returnInvoice) {
+            DB::transaction(function () use ($request, $id, &$returnInvoice, &$restockedProductIds) {
                 $return = ReturnTransaction::query()
                     ->whereKey($id)
                     ->lockForUpdate()
@@ -397,6 +400,8 @@ class ReturnTransactionController extends Controller
                             'stock' => $stockAfter,
                         ]);
 
+                        $restockedProductIds[] = (int) $detail->product_id;
+
                         StockMovement::create([
                             'product_id' => $detail->product_id,
                             'user_id' => $request->user()->id,
@@ -437,6 +442,20 @@ class ReturnTransactionController extends Controller
             return redirect()
                 ->route('account.returns.show', $returnInvoice)
                 ->with('error', $exception->getMessage());
+        }
+
+        if ($request->status === 'approved' && $restockedProductIds !== []) {
+            try {
+                app(StockAlertService::class)->check(
+                    array_values(array_unique($restockedProductIds)),
+                    'retur penjualan ' . $returnInvoice,
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Stock alert check failed after sales return.', [
+                    'return_invoice' => $returnInvoice,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return redirect()
