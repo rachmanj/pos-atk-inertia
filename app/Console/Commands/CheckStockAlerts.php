@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\PpobBalanceAlertService;
 use App\Services\StockAlertService;
 use Illuminate\Console\Command;
 
@@ -9,27 +10,39 @@ class CheckStockAlerts extends Command
 {
     protected $signature = 'stock:check-alerts';
 
-    protected $description = 'Periksa stok produk terpantau dan kirim alert Telegram jika di bawah batas';
+    protected $description = 'Periksa stok produk terpantau dan saldo PPOB; kirim alert Telegram jika di bawah batas';
 
-    public function handle(StockAlertService $stockAlertService): int
-    {
-        $results = $stockAlertService->checkAll('pemeriksaan manual stock:check-alerts');
+    public function handle(
+        StockAlertService $stockAlertService,
+        PpobBalanceAlertService $ppobBalanceAlertService,
+    ): int {
+        $stockResults = $stockAlertService->checkAll('pemeriksaan manual stock:check-alerts');
+        $ppobResults = $ppobBalanceAlertService->check();
 
-        if ($results === []) {
-            $this->info('Tidak ada alert stok yang dikirim.');
+        if ($stockResults === [] && $ppobResults === []) {
+            $this->info('Tidak ada alert yang dikirim.');
 
             return self::SUCCESS;
         }
 
-        foreach ($results as $row) {
+        foreach ($stockResults as $row) {
             $this->line(sprintf(
-                'Alert dikirim: produk #%d, stok %d',
+                'Alert stok dikirim: produk #%d, stok %d',
                 $row['product_id'],
                 $row['stock'],
             ));
         }
 
-        $this->info(count($results) . ' alert stok diproses.');
+        foreach ($ppobResults as $row) {
+            $this->line(sprintf(
+                'Alert saldo PPOB dikirim: akun #%d, saldo %d',
+                $row['account_id'],
+                $row['balance'],
+            ));
+        }
+
+        $total = count($stockResults) + count($ppobResults);
+        $this->info($total . ' alert diproses.');
 
         return self::SUCCESS;
     }

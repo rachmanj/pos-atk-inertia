@@ -46,6 +46,12 @@ class PpobBalanceService
             'current_balance' => $balanceAfter,
         ]);
 
+        try {
+            app(PpobBalanceAlertService::class)->check($account->fresh());
+        } catch (\Throwable) {
+            // notifikasi tidak boleh menggagalkan pencatatan saldo
+        }
+
         return $log;
     }
 }

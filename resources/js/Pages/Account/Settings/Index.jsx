@@ -54,6 +54,9 @@ export default function SettingIndex() {
     const [ppobMinBalanceDefault, setPpobMinBalanceDefault] = useState(
         Number(ppob.ppob_min_balance_default || 100000),
     );
+    const [ppobBalanceAlertEnabled, setPpobBalanceAlertEnabled] = useState(
+        ppob.ppob_balance_alert_enabled ?? true,
+    );
     const [ppobTokenFee, setPpobTokenFee] = useState(
         Number(ppob.ppob_token_fee || 4500),
     );
@@ -123,6 +126,7 @@ export default function SettingIndex() {
                 receipt_paper_size: receiptPaperSize,
                 ppob_admin_fee: ppobAdminFee,
                 ppob_min_balance_default: ppobMinBalanceDefault,
+                ppob_balance_alert_enabled: ppobBalanceAlertEnabled,
                 ppob_token_fee: ppobTokenFee,
                 ppob_token_markup_below_1jt: ppobTokenMarkupBelow1jt,
                 ppob_token_markup_1jt_up: ppobTokenMarkup1jtUp,
@@ -161,6 +165,7 @@ export default function SettingIndex() {
         setPpobMinBalanceDefault(
             Number(ppob.ppob_min_balance_default || 100000),
         );
+        setPpobBalanceAlertEnabled(ppob.ppob_balance_alert_enabled ?? true);
         setPpobTokenFee(Number(ppob.ppob_token_fee || 4500));
         setPpobTokenMarkupBelow1jt(
             Number(ppob.ppob_token_markup_below_1jt ?? 5000),
@@ -534,6 +539,17 @@ export default function SettingIndex() {
                                         onChange={(value) =>
                                             setPpobMinBalanceDefault(value ?? 0)
                                         }
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24}>
+                                <Form.Item
+                                    label="Aktifkan alert saldo PPOB menipis"
+                                    extra="Kirim notifikasi Telegram saat saldo akun PPOB di bawah batas (per akun atau default di atas)."
+                                >
+                                    <Switch
+                                        checked={ppobBalanceAlertEnabled}
+                                        onChange={setPpobBalanceAlertEnabled}
                                     />
                                 </Form.Item>
                             </Col>
