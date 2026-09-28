@@ -49,6 +49,7 @@ class SettingController extends Controller
             'ppob_token_markup_below_1jt' => 'nullable|integer|min:0',
             'ppob_token_markup_1jt_up' => 'nullable|integer|min:0',
             'ppob_token_product_ids' => ['nullable', 'string', 'max:500', 'regex:/^[\d,\s]*$/'],
+            'ppob_balance_alert_enabled' => 'nullable|boolean',
         ]);
 
         $currentLogo = Setting::query()
@@ -92,6 +93,10 @@ class SettingController extends Controller
         $this->setPpobValue(
             'ppob_token_product_ids',
             $this->normalizePpobTokenProductIds($request->input('ppob_token_product_ids', '3207')),
+        );
+        $this->setPpobBalanceAlertValue(
+            'ppob_balance_alert.enabled',
+            $request->boolean('ppob_balance_alert_enabled', true) ? '1' : '0',
         );
 
         return redirect()
@@ -266,6 +271,17 @@ class SettingController extends Controller
             [
                 'value' => filled($value) ? trim($value) : null,
                 'group' => 'ppob',
+            ],
+        );
+    }
+
+    protected function setPpobBalanceAlertValue(string $key, ?string $value): void
+    {
+        Setting::updateOrCreate(
+            ['key' => $key],
+            [
+                'value' => filled($value) ? trim($value) : null,
+                'group' => 'ppob_balance_alert',
             ],
         );
     }
