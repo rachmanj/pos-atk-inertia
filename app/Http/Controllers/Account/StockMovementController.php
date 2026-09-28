@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
+use App\Services\StockAlertService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -91,10 +93,14 @@ class StockMovementController extends Controller
             'note'         => 'nullable|string|max:1000',
         ]);
 
-        DB::transaction(function () use ($request) {
+        $productId = null;
+
+        DB::transaction(function () use ($request, &$productId) {
             $product = Product::query()
                 ->lockForUpdate()
                 ->findOrFail($request->product_id);
+
+            $productId = (int) $product->id;
 
             $stockBefore = (int) $product->stock;
             $targetStock = (int) $request->target_stock;
@@ -128,6 +134,20 @@ class StockMovementController extends Controller
                 'note'           => $note,
             ]);
         });
+
+        if ($productId !== null) {
+            try {
+                app(StockAlertService::class)->check(
+                    [$productId],
+                    'penyesuaian stok manual',
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Stock alert check failed after stock movement.', [
+                    'product_id' => $productId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return redirect()
             ->route('account.stock-movements.index')

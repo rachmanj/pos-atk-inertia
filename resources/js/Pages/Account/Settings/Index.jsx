@@ -72,6 +72,18 @@ export default function SettingIndex() {
     const [telegramNontunaiEnabled, setTelegramNontunaiEnabled] = useState(
         telegram.nontunai_enabled ?? true,
     );
+    const [stockAlertEnabled, setStockAlertEnabled] = useState(
+        telegram.stock_alert_enabled ?? true,
+    );
+    const [stockAlertThreshold, setStockAlertThreshold] = useState(
+        Number(telegram.stock_alert_threshold ?? 10),
+    );
+    const [stockAlertProductIds, setStockAlertProductIds] = useState(
+        telegram.stock_alert_product_ids || "",
+    );
+    const [stockAlertKeyword, setStockAlertKeyword] = useState(
+        telegram.stock_alert_keyword || "METERAI",
+    );
     const [logo, setLogo] = useState(null);
     const [removeLogo, setRemoveLogo] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -168,6 +180,10 @@ export default function SettingIndex() {
     const resetTelegramForm = () => {
         setTelegramAdminChatIds(telegram.admin_chat_ids || "");
         setTelegramNontunaiEnabled(telegram.nontunai_enabled ?? true);
+        setStockAlertEnabled(telegram.stock_alert_enabled ?? true);
+        setStockAlertThreshold(Number(telegram.stock_alert_threshold ?? 10));
+        setStockAlertProductIds(telegram.stock_alert_product_ids || "");
+        setStockAlertKeyword(telegram.stock_alert_keyword || "METERAI");
     };
 
     const saveTelegramSettings = (e) => {
@@ -180,6 +196,10 @@ export default function SettingIndex() {
                 _method: "PUT",
                 telegram_admin_chat_ids: telegramAdminChatIds,
                 telegram_nontunai_enabled: telegramNontunaiEnabled,
+                stock_alert_enabled: stockAlertEnabled,
+                stock_alert_threshold: stockAlertThreshold,
+                stock_alert_product_ids: stockAlertProductIds,
+                stock_alert_keyword: stockAlertKeyword,
             },
             {
                 onFinish: () => setSavingTelegram(false),
@@ -649,6 +669,86 @@ export default function SettingIndex() {
                                 onChange={setTelegramNontunaiEnabled}
                             />
                         </Form.Item>
+
+                        <Title level={5} style={{ marginTop: 24 }}>
+                            Alert stok menipis
+                        </Title>
+
+                        <Form.Item
+                            label="Aktifkan alert stok menipis"
+                            help="Kirim notifikasi Telegram saat stok produk terpantau mencapai batas."
+                        >
+                            <Switch
+                                checked={stockAlertEnabled}
+                                onChange={setStockAlertEnabled}
+                            />
+                        </Form.Item>
+
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Batas stok"
+                                    validateStatus={
+                                        errors.stock_alert_threshold
+                                            ? "error"
+                                            : ""
+                                    }
+                                    help={
+                                        errors.stock_alert_threshold ||
+                                        "Alert dikirim jika sisa stok sama dengan atau di bawah nilai ini."
+                                    }
+                                >
+                                    <InputNumber
+                                        min={0}
+                                        style={{ width: "100%" }}
+                                        value={stockAlertThreshold}
+                                        onChange={(value) =>
+                                            setStockAlertThreshold(value ?? 0)
+                                        }
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Produk / kata kunci"
+                                    validateStatus={
+                                        errors.stock_alert_product_ids ||
+                                        errors.stock_alert_keyword
+                                            ? "error"
+                                            : ""
+                                    }
+                                    help={
+                                        errors.stock_alert_product_ids ||
+                                        errors.stock_alert_keyword ||
+                                        "Isi ID produk (pisahkan koma) atau kosongkan lalu pakai kata kunci di bawah."
+                                    }
+                                >
+                                    <Input
+                                        value={stockAlertProductIds}
+                                        onChange={(e) =>
+                                            setStockAlertProductIds(
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="1152 atau 1152, 1153"
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Kata kunci judul produk"
+                                    help="Dipakai jika daftar ID produk kosong (contoh: METERAI)."
+                                >
+                                    <Input
+                                        value={stockAlertKeyword}
+                                        onChange={(e) =>
+                                            setStockAlertKeyword(e.target.value)
+                                        }
+                                        placeholder="METERAI"
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
                         <Space style={{ marginTop: 16 }}>
                             <Button

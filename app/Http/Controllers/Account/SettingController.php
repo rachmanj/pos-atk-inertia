@@ -24,7 +24,14 @@ class SettingController extends Controller
 
     public function update(Request $request)
     {
-        if ($request->hasAny(['telegram_admin_chat_ids', 'telegram_nontunai_enabled'])) {
+        if ($request->hasAny([
+            'telegram_admin_chat_ids',
+            'telegram_nontunai_enabled',
+            'stock_alert_enabled',
+            'stock_alert_threshold',
+            'stock_alert_product_ids',
+            'stock_alert_keyword',
+        ])) {
             return $this->updateTelegram($request);
         }
 
@@ -150,6 +157,10 @@ class SettingController extends Controller
         $validated = $request->validate([
             'telegram_admin_chat_ids' => 'required|string|max:500',
             'telegram_nontunai_enabled' => 'nullable|boolean',
+            'stock_alert_enabled' => 'nullable|boolean',
+            'stock_alert_threshold' => 'nullable|integer|min:0',
+            'stock_alert_product_ids' => ['nullable', 'string', 'max:500', 'regex:/^[\d,\s]*$/'],
+            'stock_alert_keyword' => 'nullable|string|max:100',
         ]);
 
         $chatIds = $this->parseTelegramChatIds($validated['telegram_admin_chat_ids']);
@@ -166,6 +177,22 @@ class SettingController extends Controller
         $this->setTelegramValue(
             'telegram.nontunai_enabled',
             $request->boolean('telegram_nontunai_enabled') ? '1' : '0',
+        );
+        $this->setStockAlertValue(
+            'stock_alert.enabled',
+            $request->boolean('stock_alert_enabled') ? '1' : '0',
+        );
+        $this->setStockAlertValue(
+            'stock_alert.threshold',
+            (string) (int) $request->input('stock_alert_threshold', 10),
+        );
+        $this->setStockAlertValue(
+            'stock_alert.product_ids',
+            $this->normalizeStockAlertProductIds($request->input('stock_alert_product_ids', '')),
+        );
+        $this->setStockAlertValue(
+            'stock_alert.keyword',
+            trim((string) $request->input('stock_alert_keyword', 'METERAI')) ?: 'METERAI',
         );
 
         return redirect()
@@ -252,5 +279,37 @@ class SettingController extends Controller
                 'group' => 'telegram',
             ],
         );
+    }
+
+    protected function setStockAlertValue(string $key, ?string $value): void
+    {
+        Setting::updateOrCreate(
+            ['key' => $key],
+            [
+                'value' => filled($value) ? trim($value) : null,
+                'group' => 'stock_alert',
+            ],
+        );
+    }
+
+    protected function normalizeStockAlertProductIds(?string $raw): string
+    {
+        $raw = trim((string) $raw);
+
+        if ($raw === '') {
+            return '';
+        }
+
+        $ids = [];
+
+        foreach (explode(',', $raw) as $part) {
+            $part = trim($part);
+
+            if ($part !== '' && ctype_digit($part)) {
+                $ids[] = $part;
+            }
+        }
+
+        return $ids !== [] ? implode(',', array_values(array_unique($ids))) : '';
     }
 }

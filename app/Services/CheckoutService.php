@@ -14,6 +14,7 @@ use App\Models\TransactionPayment;
 use App\Models\User;
 use DomainException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class CheckoutService
@@ -81,7 +82,9 @@ class CheckoutService
             throw new DomainException('Keranjang masih kosong!');
         }
 
-        return DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $discountType, $activeShift, $lines) {
+        $stockChangedProductIds = [];
+
+        $transaction = DB::transaction(function () use ($user, $data, $paymentMethod, $discount, $discountType, $activeShift, $lines, &$stockChangedProductIds) {
             $isImmediatePayment = in_array($paymentMethod, ['cash', 'qris'], true);
             $isCashLikePayment = $paymentMethod === 'cash';
 
@@ -322,6 +325,8 @@ class CheckoutService
                             'stock' => $stockAfter,
                         ]);
 
+                        $stockChangedProductIds[] = (int) $componentProduct->id;
+
                         $products->put($componentProduct->id, $componentProduct->fresh());
                     }
 
@@ -393,6 +398,8 @@ class CheckoutService
                 $lockedProduct->update([
                     'stock' => $stockAfter,
                 ]);
+
+                $stockChangedProductIds[] = (int) $lockedProduct->id;
             }
 
             if ($isImmediatePayment) {
@@ -406,6 +413,20 @@ class CheckoutService
 
             return $transaction;
         });
+
+        try {
+            app(StockAlertService::class)->check(
+                array_values(array_unique($stockChangedProductIds)),
+                'penjualan ' . $transaction->invoice,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Stock alert check failed after checkout.', [
+                'invoice' => $transaction->invoice,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $transaction;
     }
 
     public function void(User $user, string $invoice, ?string $voidReason = null): Transaction
