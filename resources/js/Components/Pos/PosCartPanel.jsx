@@ -10,14 +10,19 @@ import {
 } from "antd";
 import {
     CloseOutlined,
+    DeleteOutlined,
     PauseOutlined,
+    PlayCircleOutlined,
     PlusOutlined,
+    ShoppingOutlined,
 } from "@ant-design/icons";
 import { formatRupiah } from "../../Utils/format";
 import { lineDiscountAmount, lineNet } from "./posUtils";
 import useMobile from "../../Hooks/useMobile";
 import { numericMobileInputProps } from "../../Utils/responsive";
 const { Text } = Typography;
+
+const SHOW_HOLD_BUTTON = false; // sembunyikan sementara tombol Tahan (2026-09-10)
 
 function CartRow({
     cart,
@@ -79,122 +84,83 @@ function CartRow({
         }
     };
 
-    const unitAbbrev =
-        cart.unit?.abbreviation || cart.product?.unit || "pcs";
-
-    const qtyPriceMeta = (
-        <span className="pos-cart-meta-text">
-            {isPpob ? (
-                <>
-                    Modal {formatRupiah(cart.ppob_cost)} + Fee{" "}
-                    {formatRupiah(cart.admin_fee)}
-                </>
-            ) : (
-                <>
-                    {cart.qty} ×{" "}
-                    {canEditPrice && editingPrice ? (
-                        <InputNumber
-                            autoFocus
-                            className="pos-cart-unit-price-input"
-                            min={0}
-                            size="small"
-                            controls={false}
-                            value={draftPrice}
-                            onChange={(value) => setDraftPrice(value ?? 0)}
-                            onBlur={handlePriceBlur}
-                            onKeyDown={handlePriceKeyDown}
-                            {...numericMobileInputProps(isMobile)}
-                        />
-                    ) : canEditPrice ? (
-                        <button
-                            type="button"
-                            className="pos-cart-unit-price-btn"
-                            onClick={() => {
-                                setDraftPrice(cart.price ?? 0);
-                                setEditingPrice(true);
-                            }}
-                            title="Klik untuk ubah harga"
-                            aria-label="Ubah harga"
-                        >
-                            {formatRupiah(cart.price)}
-                        </button>
-                    ) : (
-                        formatRupiah(cart.price)
-                    )}
-                    {!isPpob && ` /${unitAbbrev}`}
-                </>
-            )}
-            {cart.customer_ref && (
-                <span className="pos-cart-ref">
-                    {" "}
-                    · Ref: {cart.customer_ref}
-                </span>
-            )}
-        </span>
-    );
-
     return (
-        <div className={`pos-nota-row${held ? " pos-nota-row--held" : ""}`}>
-            <div className="pos-nota-row-name">
-                <span className="pos-nota-row-name-text">
-                    {cart.product?.title || "Produk"}
+        <div className={`pos-cart-row${held ? " pos-cart-row--held" : ""}`}>
+            <div className="pos-cart-row-top">
+                <div className="pos-cart-name">
+                    <strong>{cart.product?.title || "Produk"}</strong>
+                    {held && (
+                        <Tag className="pos-cart-held-badge">Ditahan</Tag>
+                    )}
+                </div>
+                <div className="pos-cart-price">
+                    <strong>{formatRupiah(net)}</strong>
+                    {itemDiscount > 0 && (
+                        <span className="pos-cart-discount-tag">
+                            -{formatRupiah(itemDiscount)}
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            <div className="pos-cart-row-meta">
+                <span className="pos-cart-meta-text">
+                    {isPpob ? (
+                        <>
+                            Modal {formatRupiah(cart.ppob_cost)} + Fee{" "}
+                            {formatRupiah(cart.admin_fee)}
+                        </>
+                    ) : (
+                        <>
+                            {cart.unit?.abbreviation || cart.product?.unit} ·{" "}
+                            {canEditPrice && editingPrice ? (
+                                <InputNumber
+                                    autoFocus
+                                    className="pos-cart-unit-price-input"
+                                    min={0}
+                                    size="small"
+                                    controls={false}
+                                    value={draftPrice}
+                                    onChange={(value) =>
+                                        setDraftPrice(value ?? 0)
+                                    }
+                                    onBlur={handlePriceBlur}
+                                    onKeyDown={handlePriceKeyDown}
+                                    {...numericMobileInputProps(isMobile)}
+                                />
+                            ) : canEditPrice ? (
+                                <button
+                                    type="button"
+                                    className="pos-cart-unit-price-btn"
+                                    onClick={() => {
+                                        setDraftPrice(cart.price ?? 0);
+                                        setEditingPrice(true);
+                                    }}
+                                    title="Klik untuk ubah harga"
+                                    aria-label="Ubah harga"
+                                >
+                                    {formatRupiah(cart.price)}
+                                </button>
+                            ) : (
+                                formatRupiah(cart.price)
+                            )}
+                        </>
+                    )}
+                    {cart.customer_ref && (
+                        <span className="pos-cart-ref">
+                            {" "}
+                            · Ref: {cart.customer_ref}
+                        </span>
+                    )}
                 </span>
-                {held && (
-                    <Tag className="pos-cart-held-badge">Ditahan</Tag>
-                )}
-            </div>
-            <div className="pos-nota-row-amount">
-                <strong>{formatRupiah(net)}</strong>
-                {itemDiscount > 0 && (
-                    <span className="pos-cart-discount-tag">
-                        -{formatRupiah(itemDiscount)}
-                    </span>
-                )}
-            </div>
-            <div className="pos-nota-row-line2">
-                <div className="pos-nota-row-sub">{qtyPriceMeta}</div>
                 {!held && (
-                    <div className="pos-nota-row-line2-end">
-                        <button
-                            type="button"
-                            className={`pos-cart-discount-toggle pos-cart-discount-toggle--inline${
-                                showDiscount || itemDiscount > 0
-                                    ? " pos-cart-discount-toggle--active"
-                                    : ""
-                            }`}
-                            onClick={() => setShowDiscount((v) => !v)}
-                            aria-expanded={showDiscount}
-                        >
-                            Diskon
-                        </button>
-                        <div className="pos-nota-row-acts">
-                            <button
-                                type="button"
-                                className="pos-nota-act-btn"
-                                onClick={() =>
-                                    onUpdateQty(cart.id, cart.qty - 1)
-                                }
-                            >
-                                − 1
-                            </button>
-                            <button
-                                type="button"
-                                className="pos-nota-act-btn"
-                                onClick={() =>
-                                    onUpdateQty(cart.id, cart.qty + 1)
-                                }
-                            >
-                                + 1
-                            </button>
-                            <button
-                                type="button"
-                                className="pos-nota-act-btn pos-nota-act-btn--danger"
-                                onClick={() => onDelete(cart.id)}
-                            >
-                                Hapus
-                            </button>
-                        </div>
-                    </div>
+                    <button
+                        type="button"
+                        className="pos-cart-discount-toggle"
+                        onClick={() => setShowDiscount((v) => !v)}
+                    >
+                        Diskon
+                    </button>
                 )}
             </div>
 
@@ -234,6 +200,66 @@ function CartRow({
                     </Space.Compact>
                 </div>
             )}
+
+            <div className="pos-cart-row-bottom">
+                {!held ? (
+                    <Space.Compact className="pos-qty-stepper">
+                        <Button
+                            onClick={() => onUpdateQty(cart.id, cart.qty - 1)}
+                        >
+                            −
+                        </Button>
+                        <InputNumber
+                            className="pos-qty-input"
+                            min={1}
+                            value={cart.qty}
+                            controls={false}
+                            onChange={(value) => {
+                                if (value != null && value >= 1) {
+                                    onUpdateQty(cart.id, value, true);
+                                }
+                            }}
+                            {...numericMobileInputProps(isMobile)}
+                        />
+                        <Button
+                            onClick={() => onUpdateQty(cart.id, cart.qty + 1)}
+                        >
+                            +
+                        </Button>
+                    </Space.Compact>
+                ) : (
+                    <span />
+                )}
+
+                <Space size={6}>
+                    {SHOW_HOLD_BUTTON &&
+                        (held ? (
+                            <Button
+                                type="default"
+                                className="pos-cart-tool-btn"
+                                icon={<PlayCircleOutlined />}
+                                onClick={() => onToggleHold(cart.id, false)}
+                                title="Lanjutkan"
+                            />
+                        ) : (
+                            <Button
+                                type="default"
+                                className="pos-cart-tool-btn"
+                                icon={<PauseOutlined />}
+                                onClick={() => onToggleHold(cart.id, true)}
+                                title="Tahan"
+                            />
+                        ))}
+                    <Button
+                        type="text"
+                        danger
+                        className="pos-cart-tool-btn pos-cart-tool-btn--danger"
+                        icon={<DeleteOutlined />}
+                        onClick={() => onDelete(cart.id)}
+                        title="Hapus"
+                    />
+                </Space>
+            </div>
         </div>
     );
 }
@@ -242,10 +268,10 @@ export default function PosCartPanel({
     activeCarts,
     heldCarts,
     cartQty,
-    cashierName,
+    localCartsCount,
     errors,
     flash,
-    onClearCart,
+    ppobAccount,
     customerSearch,
     customerResults,
     customerLoading,
@@ -264,31 +290,33 @@ export default function PosCartPanel({
 }) {
     const isMobile = useMobile();
 
-    const cartBody = (
-        <div className="pos-nota-body">
-            <div className="pos-nota-head">
-                <div className="pos-nota-head-title">NOTA PENJUALAN</div>
-                <div className="pos-nota-head-meta">
-                    <span>
-                        Nota baru · {cashierName || "Kasir"} ·{" "}
-                        <strong>{cartQty}</strong> item
-                    </span>
-                    {activeCarts.length > 0 && onClearCart && (
-                        <button
-                            type="button"
-                            className="pos-nota-clear-btn"
-                            onClick={onClearCart}
-                        >
-                            Kosongkan
-                        </button>
-                    )}
-                </div>
+    return (
+        <>
+            <div className="pos-checkout-header">
+                <h5>Keranjang</h5>
+                <span className="pos-cart-count">{cartQty} item</span>
             </div>
 
             {(errors?.error || flash?.error) && (
                 <div className="pos-cart-alert">
                     <Tag color="error" className="pos-cart-alert-tag">
                         {errors?.error || flash?.error}
+                    </Tag>
+                </div>
+            )}
+
+            {ppobAccount && (
+                <div className="pos-cart-alert">
+                    <Tag
+                        color={
+                            ppobAccount.is_low_balance ? "error" : "default"
+                        }
+                        className="pos-cart-alert-tag"
+                    >
+                        Saldo PPOB ({ppobAccount.name}):{" "}
+                        <strong>
+                            {formatRupiah(ppobAccount.current_balance)}
+                        </strong>
                     </Tag>
                 </div>
             )}
@@ -331,23 +359,22 @@ export default function PosCartPanel({
                         )}
                     </>
                 ) : (
-                    <div className="pos-empty-cart pos-nota-empty">
+                    <div className="pos-empty-cart">
+                        <ShoppingOutlined style={{ fontSize: 32 }} />
+                        <strong>Keranjang kosong</strong>
                         <span>
-                            Keranjang masih kosong. Pilih produk di kiri atau
-                            scan barcode.
+                            Ketik nama produk atau scan barcode untuk mulai
+                            transaksi.
                         </span>
                     </div>
                 )}
             </div>
-        </div>
-    );
 
-    const customerBlock = (
             <div className="pos-cart-customer">
                 <label className="pos-field-label">Pelanggan</label>
                 {selectedCustomer ? (
                     <Space.Compact style={{ width: "100%" }}>
-                        <Input size="small" value={selectedCustomer.name} readOnly />
+                        <Input value={selectedCustomer.name} readOnly />
                         <Button
                             icon={<CloseOutlined />}
                             onClick={onClearCustomer}
@@ -357,7 +384,6 @@ export default function PosCartPanel({
                 ) : (
                     <Space.Compact style={{ width: "100%" }}>
                         <AutoComplete
-                            size="small"
                             style={{ flex: 1 }}
                             value={customerSearch}
                             options={customerResults.map((c) => ({
@@ -404,7 +430,6 @@ export default function PosCartPanel({
                             }
                         />
                         <Button
-                            size="small"
                             icon={<PlusOutlined />}
                             onClick={onShowQuickCreate}
                             title="Tambah Pelanggan Cepat"
@@ -424,12 +449,6 @@ export default function PosCartPanel({
                         </Button>
                     )}
             </div>
-    );
-
-    return (
-        <>
-            {cartBody}
-            {customerBlock}
         </>
     );
 }

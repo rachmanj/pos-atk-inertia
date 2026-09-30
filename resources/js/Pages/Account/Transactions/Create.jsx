@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Head, router, usePage } from "@inertiajs/react";
-import { Button, Drawer, Modal, notification, Spin, Tag, Typography } from "antd";
-import { ReloadOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Button, Drawer, Modal, notification, Spin, Typography } from "antd";
+import {
+    FileTextOutlined,
+    ReloadOutlined,
+    ShoppingCartOutlined,
+} from "@ant-design/icons";
 import axios from "axios";
 import LayoutAccount from "../../../Layouts/Account";
 import useMobile from "../../../Hooks/useMobile";
@@ -63,7 +67,6 @@ export default function TransactionCreate() {
         ppobAccount = null,
         errors = {},
         flash = {},
-        auth = {},
     } = usePage().props;
 
     const params = new URLSearchParams(window.location.search);
@@ -897,44 +900,6 @@ export default function TransactionCreate() {
         );
     };
 
-    const clearActiveCart = () => {
-        if (activeCarts.length === 0) {
-            return;
-        }
-
-        Modal.confirm({
-            title: "Kosongkan keranjang?",
-            content: "Semua item aktif akan dihapus dari nota ini.",
-            okText: "Ya, kosongkan",
-            cancelText: "Batal",
-            width: getModalWidth(isMobile),
-            onOk: () => {
-                const ids = activeCarts.map((cart) => cart.id);
-                ids.forEach((id) => deleteCart(id));
-                setDiscount(0);
-                setCash("");
-            },
-        });
-    };
-
-    const isPosTypingTarget = () => {
-        const el = document.activeElement;
-        if (!el) {
-            return false;
-        }
-        const tag = el.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
-            return true;
-        }
-        if (el.isContentEditable) {
-            return true;
-        }
-        if (el.closest(".ant-modal-wrap, .ant-drawer")) {
-            return true;
-        }
-        return false;
-    };
-
     const toggleCartHold = (cartId, isHeld) => {
         if (String(cartId).startsWith("temp-")) {
             return;
@@ -1335,19 +1300,7 @@ export default function TransactionCreate() {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.key === "F9" || e.key === "f9") {
-                if (isPosTypingTarget()) {
-                    return;
-                }
-                e.preventDefault();
-                const payButton = document.querySelector(".pos-pay-button");
-                if (payButton && !payButton.disabled) {
-                    payButton.click();
-                }
-            } else if (e.key === "F2" || e.key === "f2") {
-                if (isPosTypingTarget()) {
-                    return;
-                }
+            if (e.key === "F2" || e.key === "f2") {
                 e.preventDefault();
                 storeTransaction(e);
             } else if (e.key === "F3" || e.key === "f3") {
@@ -1392,6 +1345,7 @@ export default function TransactionCreate() {
         localCartsCount: localCarts.length,
         errors,
         flash,
+        ppobAccount,
         customerSearch,
         customerResults,
         customerLoading,
@@ -1411,8 +1365,6 @@ export default function TransactionCreate() {
         onToggleHold: toggleCartHold,
         onDiscountChange: handleDiscountChange,
         onUpdatePrice: updatePrice,
-        cashierName: auth?.user?.name,
-        onClearCart: clearActiveCart,
     };
 
     const paymentSummaryProps = {
@@ -1450,7 +1402,7 @@ export default function TransactionCreate() {
 
     const checkoutPanel = (mobile = false) => (
         <section
-            className={`pos-nota-panel${mobile ? " pos-nota-panel--mobile" : ""}`}
+            className={`pos-checkout-panel${mobile ? " pos-checkout-panel--mobile" : ""}`}
         >
             <PosCartPanel {...cartPanelProps} />
             <PosPaymentSummary {...paymentSummaryProps} />
@@ -1471,6 +1423,7 @@ export default function TransactionCreate() {
                     <div className="pos-cashier-heading">
                         <div>
                             <h4>POS Kasir</h4>
+                            <span>{cartQty} item dalam keranjang</span>
                         </div>
 
                         <div
@@ -1569,28 +1522,17 @@ export default function TransactionCreate() {
                                     aria-label="Muat ulang ringkasan shift"
                                     style={{ color: "var(--brand-primary)" }}
                                 />
-                                {ppobAccount && (
-                                    <Tag
-                                        className="pos-ppob-balance-chip"
-                                        color={
-                                            ppobAccount.is_low_balance
-                                                ? "error"
-                                                : "default"
-                                        }
-                                    >
-                                        Saldo PPOB ({ppobAccount.name}):{" "}
-                                        <strong className="pos-num">
-                                            {formatRupiah(
-                                                ppobAccount.current_balance,
-                                            )}
-                                        </strong>
-                                    </Tag>
-                                )}
                             </div>
+
+                            <Link href="/account/transactions">
+                                <Button icon={<FileTextOutlined />}>
+                                    Riwayat
+                                </Button>
+                            </Link>
                         </div>
                     </div>
 
-                    <div className="pos-cashier-grid">
+                    <div className="pos-cashier-main">
                         <PosProductGrid
                             searchInputRef={searchInputRef}
                             products={products}
