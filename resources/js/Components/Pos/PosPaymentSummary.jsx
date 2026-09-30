@@ -29,6 +29,23 @@ const methodLabels = {
     transfer: "Transfer",
 };
 
+export function PosPayButton({ canSubmit, form }) {
+    return (
+        <Button
+            type="primary"
+            size="large"
+            htmlType="submit"
+            className="pos-pay-button"
+            icon={<CheckCircleOutlined />}
+            disabled={!canSubmit}
+            block
+            form={form}
+        >
+            Proses Pembayaran
+        </Button>
+    );
+}
+
 export default function PosPaymentSummary({
     paymentMethod,
     onPaymentMethodChange,
@@ -57,6 +74,8 @@ export default function PosPaymentSummary({
     overAmount,
     canSubmit,
     hasCashPart,
+    formId,
+    hidePayButton = false,
 }) {
     const isMobile = useMobile();
     const isManualTransfer = paymentMethod === "transfer";
@@ -216,7 +235,11 @@ export default function PosPaymentSummary({
     };
 
     return (
-        <form className="pos-payment-form" onSubmit={onSubmit}>
+        <form
+            className="pos-payment-form"
+            id={formId}
+            onSubmit={onSubmit}
+        >
             <div className="pos-payment-block">
                 <label className={fieldLabelClassName}>Metode Pembayaran</label>
                 <Radio.Group
@@ -439,17 +462,7 @@ export default function PosPaymentSummary({
                 </div>
             </div>
 
-            <Button
-                type="primary"
-                size="large"
-                htmlType="submit"
-                className="pos-pay-button"
-                icon={<CheckCircleOutlined />}
-                disabled={!canSubmit}
-                block
-            >
-                Proses Pembayaran
-            </Button>
+            {!hidePayButton && <PosPayButton canSubmit={canSubmit} />}
         </form>
     );
 }

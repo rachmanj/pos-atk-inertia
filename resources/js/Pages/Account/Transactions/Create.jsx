@@ -14,7 +14,9 @@ import { formatRupiah } from "../../../Utils/format";
 import { getModalWidth } from "../../../Utils/responsive";
 import PosProductGrid from "../../../Components/Pos/PosProductGrid";
 import PosCartPanel from "../../../Components/Pos/PosCartPanel";
-import PosPaymentSummary from "../../../Components/Pos/PosPaymentSummary";
+import PosPaymentSummary, {
+    PosPayButton,
+} from "../../../Components/Pos/PosPaymentSummary";
 import PosPpobModal, {
     defaultTokenSellPrice,
     isPpobTokenProduct,
@@ -1404,8 +1406,29 @@ export default function TransactionCreate() {
         <section
             className={`pos-checkout-panel${mobile ? " pos-checkout-panel--mobile" : ""}`}
         >
-            <PosCartPanel {...cartPanelProps} />
-            <PosPaymentSummary {...paymentSummaryProps} />
+            {mobile ? (
+                <>
+                    <div className="pos-mobile-checkout-scroll">
+                        <PosCartPanel {...cartPanelProps} />
+                        <PosPaymentSummary
+                            {...paymentSummaryProps}
+                            formId="pos-mobile-payment-form"
+                            hidePayButton
+                        />
+                    </div>
+                    <div className="pos-mobile-checkout-footer">
+                        <PosPayButton
+                            canSubmit={canSubmitPayment}
+                            form="pos-mobile-payment-form"
+                        />
+                    </div>
+                </>
+            ) : (
+                <>
+                    <PosCartPanel {...cartPanelProps} />
+                    <PosPaymentSummary {...paymentSummaryProps} />
+                </>
+            )}
         </section>
     );
 
