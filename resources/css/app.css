@@ -1076,9 +1076,28 @@ html {
 .pos-checkout-panel--mobile {
     position: static;
     max-height: none;
-    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
     border: 0;
     border-radius: 0;
+}
+
+.pos-mobile-checkout-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.pos-mobile-checkout-footer {
+    flex-shrink: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: #EFEDE3;
+    border-top: 1px solid #C9C4B4;
+    box-shadow: 0 -6px 16px rgba(27, 29, 41, 0.08);
 }
 
 .pos-checkout-header {
@@ -1136,8 +1155,13 @@ html {
 
 .pos-checkout-panel--mobile .pos-cart-list {
     max-height: none;
-    min-height: 120px;
-    flex: 1 1 auto;
+    min-height: 0;
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+.pos-checkout-panel--mobile .pos-payment-form {
+    padding-bottom: 12px;
 }
 
 .pos-cart-row {
@@ -1539,10 +1563,24 @@ html {
     right: 0;
 }
 
+.pos-mobile-cart-drawer .ant-drawer-content-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.pos-mobile-cart-drawer .ant-drawer-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 .pos-mobile-cart-drawer .ant-drawer-body {
     padding: 0;
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -1988,6 +2026,12 @@ html {
 [data-theme="dark"] .pos-mobile-cart-bar {
     background: #0E1525;
     border-top-color: #1D283A;
+}
+
+[data-theme="dark"] .pos-mobile-checkout-footer {
+    background: #090E1A;
+    border-top-color: #1D283A;
+    box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.35);
 }
 
 [data-theme="dark"] .pos-field-label {
