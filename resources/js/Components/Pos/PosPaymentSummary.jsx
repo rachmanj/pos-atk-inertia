@@ -1,27 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     Alert,
     Button,
     InputNumber,
-    Modal,
     Radio,
     Select,
     Space,
     Typography,
 } from "antd";
 import {
+    CheckCircleOutlined,
     DeleteOutlined,
     PlusOutlined,
-    WalletOutlined,
 } from "@ant-design/icons";
 import { formatRupiah } from "../../Utils/format";
 import useMobile from "../../Hooks/useMobile";
-import { getModalWidth, numericMobileInputProps } from "../../Utils/responsive";
+import { numericMobileInputProps } from "../../Utils/responsive";
 
 const { Text } = Typography;
 
 const fieldLabelClassName = "pos-field-label";
 
+// Digital (Midtrans) disembunyikan atas permintaan Iwan 16 Sep 2026 — backend masih mendukung
 const AVAILABLE_METHODS = ["cash", "qris", "transfer"];
 
 const methodLabels = {
@@ -60,139 +59,98 @@ export default function PosPaymentSummary({
     hasCashPart,
 }) {
     const isMobile = useMobile();
-    const payButtonRef = useRef(null);
-    const [cashModalOpen, setCashModalOpen] = useState(false);
-    const [draftCash, setDraftCash] = useState("");
-
     const isManualTransfer = paymentMethod === "transfer";
-    const cashValue = Number(cash || 0);
     const cashPartAmount = hasCashPart
         ? Number(
               paymentParts.find((part) => part.method === "cash")?.amount || 0,
           )
         : 0;
 
-    const showCashSummary =
-        (!splitMode && paymentMethod === "cash") ||
-        (splitMode && hasCashPart);
+    const availableMethodsForRow = (rowIndex) =>
+        AVAILABLE_METHODS.filter(
+            (method) =>
+                method === paymentParts[rowIndex]?.method ||
+                !paymentParts.some((part, index) => index !== rowIndex && part.method === method),
+        );
 
-    const modalMinCash = splitMode && hasCashPart ? cashPartAmount : grandTotal;
+    const renderSingleMethodCashField = () => {
+        if (paymentMethod !== "cash") {
+            return null;
+        }
 
-    const modalCashOptions = useMemo(() => {
-        if (splitMode && hasCashPart) {
-            return cashPartAmount > 0
+        return (
+            <div className="pos-payment-field">
+                <label className={fieldLabelClassName}>Uang Tunai</label>
+                <InputNumber
+                    className="pos-cash-input"
+                    min={0}
+                    value={cash === "" ? null : Number(cash)}
+                    onChange={(value) =>
+                        onCashChange(value != null ? String(value) : "")
+                    }
+                    required
+                    style={{ width: "100%" }}
+                    {...numericMobileInputProps(isMobile)}
+                />
+
+                {cashOptions.length > 0 && (
+                    <div className="pos-cash-shortcuts">
+                        {cashOptions.map((option, index) => (
+                            <button
+                                type="button"
+                                key={option}
+                                onClick={() => onCashChange(String(option))}
+                            >
+                                {index === 0 ? "Pas" : formatRupiah(option)}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderSplitCashField = () => {
+        if (!hasCashPart) {
+            return null;
+        }
+
+        const splitCashOptions =
+            cashPartAmount > 0
                 ? [
                       cashPartAmount,
                       ...cashOptions.filter((option) => option > cashPartAmount),
                   ].slice(0, 5)
                 : [];
-        }
-        return cashOptions;
-    }, [cashOptions, cashPartAmount, hasCashPart, splitMode]);
-
-    const draftCashValue = Number(draftCash || 0);
-    const modalChange =
-        splitMode && hasCashPart
-            ? draftCashValue >= cashPartAmount
-                ? draftCashValue - cashPartAmount
-                : 0
-            : draftCashValue >= grandTotal
-              ? draftCashValue - grandTotal
-              : 0;
-
-    const modalCanSave = draftCashValue >= modalMinCash && modalMinCash > 0;
-
-    const openCashModal = useCallback(() => {
-        setDraftCash(cash);
-        setCashModalOpen(true);
-    }, [cash]);
-
-    const handleCashMethodActivate = useCallback(
-        (e) => {
-            e.stopPropagation();
-            openCashModal();
-        },
-        [openCashModal],
-    );
-
-    const closeCashModal = () => {
-        setCashModalOpen(false);
-    };
-
-    const saveCashModal = useCallback(() => {
-        const numericDraft = Number(draftCash || 0);
-        if (modalMinCash > 0 && numericDraft < modalMinCash) {
-            return;
-        }
-        onCashChange(draftCash === "" ? "" : String(numericDraft));
-        setCashModalOpen(false);
-        requestAnimationFrame(() => {
-            payButtonRef.current?.focus();
-        });
-    }, [draftCash, modalMinCash, onCashChange]);
-
-    const handlePaymentMethodSelect = (value) => {
-        onPaymentMethodChange(value);
-        if (value === "cash") {
-            openCashModal();
-        }
-    };
-
-    const handlePaymentPartMethodSelect = (index, method) => {
-        onPaymentPartMethodChange(index, method);
-        if (method === "cash") {
-            openCashModal();
-        }
-    };
-
-    useEffect(() => {
-        if (!cashModalOpen) {
-            return undefined;
-        }
-
-        const onKeyDown = (e) => {
-            if (e.key === "Enter" && !e.defaultPrevented) {
-                const tag = document.activeElement?.tagName;
-                if (tag === "TEXTAREA") {
-                    return;
-                }
-                e.preventDefault();
-                saveCashModal();
-            }
-        };
-
-        document.addEventListener("keydown", onKeyDown);
-        return () => document.removeEventListener("keydown", onKeyDown);
-    }, [cashModalOpen, saveCashModal]);
-
-    const availableMethodsForRow = (rowIndex) =>
-        AVAILABLE_METHODS.filter(
-            (method) =>
-                method === paymentParts[rowIndex]?.method ||
-                !paymentParts.some(
-                    (part, index) => index !== rowIndex && part.method === method,
-                ),
-        );
-
-    const renderCashShortcuts = (options, onPick) => {
-        if (options.length === 0) {
-            return null;
-        }
 
         return (
-            <div className="pos-cash-shortcuts">
-                {options.map((option, index) => (
-                    <button
-                        type="button"
-                        key={option}
-                        onClick={() => onPick(String(option))}
-                    >
-                        {index === 0 ? "Pas" : formatRupiah(option)}
-                    </button>
-                ))}
-                <button type="button" onClick={() => onPick("0")}>
-                    Reset
-                </button>
+            <div className="pos-payment-field">
+                <label className={fieldLabelClassName}>Uang Tunai</label>
+                <InputNumber
+                    className="pos-cash-input"
+                    min={0}
+                    value={cash === "" ? null : Number(cash)}
+                    onChange={(value) =>
+                        onCashChange(value != null ? String(value) : "")
+                    }
+                    required
+                    style={{ width: "100%" }}
+                    {...numericMobileInputProps(isMobile)}
+                />
+
+                {splitCashOptions.length > 0 && (
+                    <div className="pos-cash-shortcuts">
+                        {splitCashOptions.map((option, index) => (
+                            <button
+                                type="button"
+                                key={option}
+                                onClick={() => onCashChange(String(option))}
+                            >
+                                {index === 0 ? "Pas" : formatRupiah(option)}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
         );
     };
@@ -201,7 +159,7 @@ export default function PosPaymentSummary({
         if (splitMode) {
             if (hasCashPart) {
                 return (
-                    <Text type="success" strong className="pos-num">
+                    <Text type="success" strong>
                         {formatRupiah(change)}
                     </Text>
                 );
@@ -224,7 +182,7 @@ export default function PosPaymentSummary({
 
         if (paymentMethod === "cash") {
             return (
-                <Text type="success" strong className="pos-num">
+                <Text type="success" strong>
                     {formatRupiah(change)}
                 </Text>
             );
@@ -257,69 +215,74 @@ export default function PosPaymentSummary({
         return "Status";
     };
 
-    const cashSummaryLabel = () => {
-        if (cash === "" || cashValue === 0) {
-            return "Ketuk untuk isi uang diterima";
-        }
-        return `Diterima ${formatRupiah(cashValue)} · Kembalian ${formatRupiah(change)}`;
-    };
-
     return (
-        <>
-            <form className="pos-payment-form pos-nota-foot" onSubmit={onSubmit}>
-                <div className="pos-nota-summary-lines">
-                    <div className="pos-nota-line">
-                        <span>Subtotal</span>
-                        <strong className="pos-num">{formatRupiah(subtotal)}</strong>
-                    </div>
-                    <div className="pos-nota-line">
-                        <span>Diskon</span>
-                        <Space.Compact className="pos-nota-discount-compact">
-                            <InputNumber
-                                min={0}
-                                value={discount}
-                                onChange={(value) => onDiscountChange(value ?? 0)}
-                                size="small"
-                                {...numericMobileInputProps(isMobile)}
-                            />
-                            <Button
-                                type={
-                                    discountType === "percent" ? "primary" : "default"
-                                }
-                                size="small"
-                                onClick={onDiscountTypeToggle}
-                                title={
-                                    discountType === "nominal"
-                                        ? "Ubah ke persen"
-                                        : "Ubah ke nominal"
-                                }
-                            >
-                                {discountType === "nominal" ? "Rp" : "%"}
-                            </Button>
-                        </Space.Compact>
-                    </div>
-                    {discountAmount > 0 && (
-                        <div className="pos-nota-line pos-nota-line--muted">
-                            <span>Potongan</span>
-                            <Text type="danger" strong className="pos-num">
-                                -{formatRupiah(discountAmount)}
-                            </Text>
-                        </div>
-                    )}
-                    <div className="pos-nota-line pos-nota-line--total">
-                        <span>TOTAL</span>
-                        <strong className="pos-num">{formatRupiah(grandTotal)}</strong>
-                    </div>
+        <form className="pos-payment-form" onSubmit={onSubmit}>
+            <div className="pos-payment-block">
+                <label className={fieldLabelClassName}>Metode Pembayaran</label>
+                <Radio.Group
+                    className="pos-method-toggle"
+                    style={{ width: "100%" }}
+                    value={paymentMethod}
+                    onChange={(e) => onPaymentMethodChange(e.target.value)}
+                    optionType="button"
+                    buttonStyle="solid"
+                >
+                    {AVAILABLE_METHODS.map((method) => (
+                        <Radio.Button
+                            key={method}
+                            value={method}
+                            className="pos-method-option"
+                        >
+                            {methodLabels[method]}
+                        </Radio.Button>
+                    ))}
+                </Radio.Group>
+            </div>
+
+            <div className="pos-payment-fields">
+                <div className="pos-payment-field">
+                    <label className={fieldLabelClassName}>Diskon</label>
+                    <Space.Compact style={{ width: "100%" }}>
+                        <InputNumber
+                            min={0}
+                            value={discount}
+                            onChange={(value) => onDiscountChange(value ?? 0)}
+                            style={{ flex: 1, width: "100%" }}
+                            {...numericMobileInputProps(isMobile)}
+                        />
+                        <Button
+                            type={
+                                discountType === "percent" ? "primary" : "default"
+                            }
+                            onClick={onDiscountTypeToggle}
+                            style={{ width: "4rem" }}
+                            title={
+                                discountType === "nominal"
+                                    ? "Ubah ke persen"
+                                    : "Ubah ke nominal"
+                            }
+                        >
+                            {discountType === "nominal" ? "Rp" : "%"}
+                        </Button>
+                    </Space.Compact>
                 </div>
 
                 {splitMode ? (
-                    <div className="pos-payment-fields">
+                    <>
                         {paymentParts.map((part, index) => (
                             <div
                                 className="pos-payment-field"
                                 key={`${part.method}-${index}`}
                             >
-                                <div className="pos-split-part-header">
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        gap: 8,
+                                        marginBottom: 6,
+                                    }}
+                                >
                                     <label className={fieldLabelClassName}>
                                         {index === 0
                                             ? "Metode Utama"
@@ -353,7 +316,7 @@ export default function PosPaymentSummary({
                                         <Select
                                             value={part.method}
                                             onChange={(value) =>
-                                                handlePaymentPartMethodSelect(
+                                                onPaymentPartMethodChange(
                                                     index,
                                                     value,
                                                 )
@@ -400,6 +363,8 @@ export default function PosPaymentSummary({
                             </Button>
                         )}
 
+                        {renderSplitCashField()}
+
                         {remaining !== 0 && (
                             <Alert
                                 type={overAmount > 0 ? "error" : "warning"}
@@ -407,185 +372,84 @@ export default function PosPaymentSummary({
                                 className="pos-payment-alert"
                                 message={
                                     overAmount > 0
-                                        ? `Kelebihan ${formatRupiah(overAmount)}. Kurangi nominal salah satu metode.`
+                                        ? `Kelebihan ${formatRupiah(overAmount)} — kurangi nominal salah satu metode`
                                         : `Sisa: ${formatRupiah(remaining)}`
                                 }
                             />
                         )}
-
-                        {splitMode && (
-                            <div className="pos-nota-line">
-                                <span>Terbayar</span>
-                                <strong className="pos-num">
-                                    {formatRupiah(partsTotal)}
-                                </strong>
-                            </div>
-                        )}
-                    </div>
+                    </>
                 ) : (
-                    <Button
-                        type="dashed"
-                        icon={<PlusOutlined />}
-                        onClick={onEnterSplitMode}
-                        block
-                    >
-                        Tambah metode pembayaran
-                    </Button>
-                )}
+                    <>
+                        {renderSingleMethodCashField()}
 
-                {showCashSummary ? (
-                    <button
-                        type="button"
-                        className="pos-cash-pay-summary"
-                        onClick={openCashModal}
-                        aria-label="Ubah uang diterima tunai"
-                    >
-                        <WalletOutlined
-                            className="pos-cash-pay-summary-icon"
-                            aria-hidden="true"
-                        />
-                        <span className="pos-cash-pay-summary-method">Tunai</span>
-                        <span className="pos-cash-pay-summary-detail">
-                            {cashSummaryLabel()}
-                        </span>
-                    </button>
-                ) : (
-                    <div className="pos-nota-line pos-nota-line--change">
-                        <span>{summaryStatusLabel()}</span>
-                        {renderSummaryStatus()}
-                    </div>
-                )}
-
-                {isManualTransfer && !splitMode && (
-                    <Alert
-                        type="info"
-                        showIcon
-                        className="pos-payment-alert"
-                        message="Pelanggan transfer ke rekening toko. Transaksi akan disimpan sebagai pending dan bisa dikonfirmasi setelah dana masuk."
-                    />
-                )}
-
-                {paymentMethod === "qris" && !splitMode && (
-                    <Alert
-                        type="info"
-                        showIcon
-                        className="pos-payment-alert"
-                        message="QRIS dicatat manual. Pastikan pembayaran sudah masuk sebelum menyelesaikan struk."
-                    />
-                )}
-
-                {!splitMode && (
-                    <div className="pos-payment-block">
-                        <label className={fieldLabelClassName}>
-                            Metode pembayaran
-                        </label>
-                        <Radio.Group
-                            className="pos-method-toggle"
-                            style={{ width: "100%" }}
-                            value={paymentMethod}
-                            onChange={(e) =>
-                                handlePaymentMethodSelect(e.target.value)
-                            }
-                            optionType="button"
-                            buttonStyle="solid"
+                        <Button
+                            type="dashed"
+                            icon={<PlusOutlined />}
+                            onClick={onEnterSplitMode}
+                            block
                         >
-                            {AVAILABLE_METHODS.map((method) => (
-                                <Radio.Button
-                                    key={method}
-                                    value={method}
-                                    className="pos-method-option"
-                                    onClick={
-                                        method === "cash"
-                                            ? handleCashMethodActivate
-                                            : undefined
-                                    }
-                                >
-                                    {methodLabels[method]}
-                                </Radio.Button>
-                            ))}
-                        </Radio.Group>
+                            Tambah metode
+                        </Button>
+                    </>
+                )}
+            </div>
+
+            {isManualTransfer && !splitMode && (
+                <Alert
+                    type="info"
+                    showIcon
+                    className="pos-payment-alert"
+                    message="Pelanggan transfer ke rekening toko. Transaksi akan disimpan sebagai pending dan bisa dikonfirmasi setelah dana masuk."
+                />
+            )}
+
+            {paymentMethod === "qris" && !splitMode && (
+                <Alert
+                    type="info"
+                    showIcon
+                    className="pos-payment-alert"
+                    message="QRIS dicatat manual — pastikan pembayaran sudah masuk sebelum menyelesaikan struk."
+                />
+            )}
+
+            <div className="pos-summary-box">
+                <div>
+                    <span>Subtotal</span>
+                    <strong>{formatRupiah(subtotal)}</strong>
+                </div>
+                <div>
+                    <span>Diskon</span>
+                    <Text type="danger" strong>
+                        -{formatRupiah(discountAmount)}
+                    </Text>
+                </div>
+                <div className="pos-summary-total">
+                    <span>Total</span>
+                    <strong>{formatRupiah(grandTotal)}</strong>
+                </div>
+                {splitMode && (
+                    <div>
+                        <span>Terbayar</span>
+                        <strong>{formatRupiah(partsTotal)}</strong>
                     </div>
                 )}
+                <div>
+                    <span>{summaryStatusLabel()}</span>
+                    {renderSummaryStatus()}
+                </div>
+            </div>
 
-                <Button
-                    ref={payButtonRef}
-                    type="primary"
-                    size="large"
-                    htmlType="submit"
-                    className="pos-pay-button"
-                    disabled={!canSubmit || activeCartsCount === 0}
-                    block
-                >
-                    <span className="pos-pay-button-label">
-                        Bayar &amp; cetak nota
-                    </span>
-                    <kbd className="pos-pay-kbd">F9</kbd>
-                </Button>
-            </form>
-
-            <Modal
-                title="Uang diterima"
-                open={cashModalOpen}
-                onCancel={closeCashModal}
-                width={getModalWidth(isMobile)}
-                zIndex={1200}
-                destroyOnClose={false}
-                maskClosable
-                footer={[
-                    <Button key="cancel" onClick={closeCashModal}>
-                        Batal
-                    </Button>,
-                    <Button
-                        key="save"
-                        type="primary"
-                        onClick={saveCashModal}
-                        disabled={modalMinCash > 0 && !modalCanSave}
-                    >
-                        Simpan
-                    </Button>,
-                ]}
-                className="pos-cash-received-modal"
+            <Button
+                type="primary"
+                size="large"
+                htmlType="submit"
+                className="pos-pay-button"
+                icon={<CheckCircleOutlined />}
+                disabled={!canSubmit}
+                block
             >
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        saveCashModal();
-                    }}
-                >
-                    <div className="pos-payment-field">
-                        <label className={fieldLabelClassName} htmlFor="pos-cash-modal-input">
-                            Uang diterima
-                        </label>
-                        <InputNumber
-                            id="pos-cash-modal-input"
-                            className="pos-cash-input"
-                            min={0}
-                            autoFocus
-                            value={draftCash === "" ? null : Number(draftCash)}
-                            onChange={(value) =>
-                                setDraftCash(
-                                    value != null ? String(value) : "",
-                                )
-                            }
-                            required
-                            style={{ width: "100%" }}
-                            {...numericMobileInputProps(isMobile)}
-                        />
-                        {renderCashShortcuts(modalCashOptions, setDraftCash)}
-                    </div>
-                    <div className="pos-cash-modal-change">
-                        <span>Kembalian</span>
-                        <Text type="success" strong className="pos-num">
-                            {formatRupiah(modalChange)}
-                        </Text>
-                    </div>
-                    {modalMinCash > 0 && draftCashValue < modalMinCash && (
-                        <Text type="danger" style={{ display: "block", marginTop: 8 }}>
-                            Minimal {formatRupiah(modalMinCash)}
-                        </Text>
-                    )}
-                </form>
-            </Modal>
-        </>
+                Proses Pembayaran
+            </Button>
+        </form>
     );
 }
