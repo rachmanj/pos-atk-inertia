@@ -26,6 +26,22 @@ class SettingsSeeder extends Seeder
         );
 
         Setting::updateOrCreate(
+            ['key' => 'ppob_topup_fee'],
+            [
+                'value' => '1500',
+                'group' => 'ppob',
+            ],
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'ppob_topup_fee_enabled'],
+            [
+                'value' => '1',
+                'group' => 'ppob',
+            ],
+        );
+
+        Setting::updateOrCreate(
             ['key' => 'ppob_token_fee'],
             [
                 'value' => '4500',

@@ -50,6 +50,8 @@ class SettingController extends Controller
             'ppob_token_markup_1jt_up' => 'nullable|integer|min:0',
             'ppob_token_product_ids' => ['nullable', 'string', 'max:500', 'regex:/^[\d,\s]*$/'],
             'ppob_balance_alert_enabled' => 'nullable|boolean',
+            'ppob_topup_fee' => 'nullable|integer|min:0',
+            'ppob_topup_fee_enabled' => 'nullable|boolean',
         ]);
 
         $currentLogo = Setting::query()
@@ -81,6 +83,11 @@ class SettingController extends Controller
         $this->setStoreValue('receipt.paper_size', $request->input('receipt_paper_size', '58'));
         $this->setPpobValue('ppob_admin_fee', (string) (int) $request->input('ppob_admin_fee', 2000));
         $this->setPpobValue('ppob_min_balance_default', (string) (int) $request->input('ppob_min_balance_default', 100000));
+        $this->setPpobValue('ppob_topup_fee', (string) (int) $request->input('ppob_topup_fee', 1500));
+        $this->setPpobValue(
+            'ppob_topup_fee_enabled',
+            $request->boolean('ppob_topup_fee_enabled', true) ? '1' : '0',
+        );
         $this->setPpobValue('ppob_token_fee', (string) (int) $request->input('ppob_token_fee', 4500));
         $this->setPpobValue(
             'ppob_token_markup_below_1jt',

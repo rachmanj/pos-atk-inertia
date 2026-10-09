@@ -57,6 +57,12 @@ export default function SettingIndex() {
     const [ppobBalanceAlertEnabled, setPpobBalanceAlertEnabled] = useState(
         ppob.ppob_balance_alert_enabled ?? true,
     );
+    const [ppobTopupFeeEnabled, setPpobTopupFeeEnabled] = useState(
+        ppob.ppob_topup_fee_enabled ?? true,
+    );
+    const [ppobTopupFee, setPpobTopupFee] = useState(
+        Number(ppob.ppob_topup_fee ?? 1500),
+    );
     const [ppobTokenFee, setPpobTokenFee] = useState(
         Number(ppob.ppob_token_fee || 4500),
     );
@@ -127,6 +133,8 @@ export default function SettingIndex() {
                 ppob_admin_fee: ppobAdminFee,
                 ppob_min_balance_default: ppobMinBalanceDefault,
                 ppob_balance_alert_enabled: ppobBalanceAlertEnabled,
+                ppob_topup_fee_enabled: ppobTopupFeeEnabled,
+                ppob_topup_fee: ppobTopupFee,
                 ppob_token_fee: ppobTokenFee,
                 ppob_token_markup_below_1jt: ppobTokenMarkupBelow1jt,
                 ppob_token_markup_1jt_up: ppobTokenMarkup1jtUp,
@@ -166,6 +174,8 @@ export default function SettingIndex() {
             Number(ppob.ppob_min_balance_default || 100000),
         );
         setPpobBalanceAlertEnabled(ppob.ppob_balance_alert_enabled ?? true);
+        setPpobTopupFeeEnabled(ppob.ppob_topup_fee_enabled ?? true);
+        setPpobTopupFee(Number(ppob.ppob_topup_fee ?? 1500));
         setPpobTokenFee(Number(ppob.ppob_token_fee || 4500));
         setPpobTokenMarkupBelow1jt(
             Number(ppob.ppob_token_markup_below_1jt ?? 5000),
@@ -550,6 +560,32 @@ export default function SettingIndex() {
                                     <Switch
                                         checked={ppobBalanceAlertEnabled}
                                         onChange={setPpobBalanceAlertEnabled}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24}>
+                                <Form.Item
+                                    label="Potong biaya admin setoran otomatis saat top up"
+                                    extra="Mencatat pemotongan biaya administrasi setoran H2H setiap saldo PPOB di-top up (sesuai nominal di bawah)."
+                                >
+                                    <Switch
+                                        checked={ppobTopupFeeEnabled}
+                                        onChange={setPpobTopupFeeEnabled}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label="Biaya administrasi setoran (Rp)"
+                                    extra="Dipotong otomatis dari saldo PPOB setiap pencatatan top up."
+                                >
+                                    <InputNumber
+                                        min={0}
+                                        style={{ width: "100%" }}
+                                        value={ppobTopupFee}
+                                        onChange={(value) =>
+                                            setPpobTopupFee(value ?? 0)
+                                        }
                                     />
                                 </Form.Item>
                             </Col>

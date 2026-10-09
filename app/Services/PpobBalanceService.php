@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\PpobAccount;
 use App\Models\PpobBalanceLog;
+use App\Models\Setting;
 use DomainException;
 
 class PpobBalanceService
@@ -46,6 +47,14 @@ class PpobBalanceService
             'current_balance' => $balanceAfter,
         ]);
 
+        if ($type === 'top_up') {
+            $this->recordTopUpDepositFeeIfApplicable(
+                $account,
+                $userId,
+                $cashierShiftId,
+            );
+        }
+
         try {
             app(PpobBalanceAlertService::class)->check($account->fresh());
         } catch (\Throwable) {
@@ -53,5 +62,34 @@ class PpobBalanceService
         }
 
         return $log;
+    }
+
+    protected function recordTopUpDepositFeeIfApplicable(
+        PpobAccount $account,
+        int $userId,
+        ?int $cashierShiftId,
+    ): void {
+        $settings = Setting::ppobSettings();
+
+        if (!$settings['ppob_topup_fee_enabled']) {
+            return;
+        }
+
+        $fee = (int) $settings['ppob_topup_fee'];
+
+        if ($fee <= 0) {
+            return;
+        }
+
+        $formatted = 'Rp ' . number_format($fee, 0, ',', '.');
+
+        $this->recordMovement(
+            account: $account,
+            userId: $userId,
+            type: 'adjustment',
+            amount: -$fee,
+            cashierShiftId: $cashierShiftId,
+            note: "Biaya administrasi setoran otomatis ({$formatted})",
+        );
     }
 }

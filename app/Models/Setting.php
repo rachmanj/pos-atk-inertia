@@ -49,10 +49,18 @@ class Setting extends Model
             $balanceAlertEnabled = '1';
         }
 
+        $topupFeeEnabled = $settings->get('ppob_topup_fee_enabled');
+
+        if ($topupFeeEnabled === null) {
+            $topupFeeEnabled = '1';
+        }
+
         return [
             'ppob_admin_fee' => (int) ($settings->get('ppob_admin_fee') ?: 2000),
             'ppob_min_balance_default' => (int) ($settings->get('ppob_min_balance_default') ?: 100000),
             'ppob_balance_alert_enabled' => filter_var($balanceAlertEnabled, FILTER_VALIDATE_BOOLEAN),
+            'ppob_topup_fee' => (int) ($settings->get('ppob_topup_fee') ?: 1500),
+            'ppob_topup_fee_enabled' => filter_var($topupFeeEnabled, FILTER_VALIDATE_BOOLEAN),
             'ppob_token_fee' => (int) ($settings->get('ppob_token_fee') ?: 4500),
             'ppob_token_markup_below_1jt' => (int) ($settings->get('ppob_token_markup_below_1jt') ?: 5000),
             'ppob_token_markup_1jt_up' => (int) ($settings->get('ppob_token_markup_1jt_up') ?: 10000),
