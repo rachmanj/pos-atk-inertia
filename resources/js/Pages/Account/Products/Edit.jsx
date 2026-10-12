@@ -211,7 +211,7 @@ export default function ProductEdit() {
                         </Link>
                     }
                 >
-                    <form onSubmit={updateProduct}>
+                    <form className="product-form" onSubmit={updateProduct}>
                         <Row gutter={16}>
                             <Col xs={24} md={12}>
                                 <Form.Item

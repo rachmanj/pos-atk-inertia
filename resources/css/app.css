@@ -1584,6 +1584,77 @@ html {
     overflow: hidden;
 }
 
+/* -----------------------------------------------------------------------------
+   Product Create/Edit (`resources/js/Pages/Account/Products/*.jsx`)
+   Form.Item defaults to horizontal layout even outside <Form>; long labels with
+   nowrap squeeze the control column on narrow viewports (InputNumber width → 0).
+   ----------------------------------------------------------------------------- */
+.product-form {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.product-unit-builder,
+.product-component-builder {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.product-form .ant-input-number {
+    width: 100%;
+    max-width: 100%;
+}
+
+.product-form .ant-input-number .ant-input-number-input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+    .product-form {
+        overflow-x: clip;
+    }
+
+    .product-form > .ant-row > .ant-col {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .product-form .ant-form-item .ant-form-item-row {
+        flex-direction: column;
+    }
+
+    .product-form .ant-form-item .ant-form-item-label {
+        flex-grow: 0;
+        max-width: 100%;
+        white-space: normal;
+        text-align: start;
+        padding: 0 0 4px;
+    }
+
+    .product-form .ant-form-item .ant-form-item-label > label {
+        height: auto;
+        min-height: var(--ant-form-label-height);
+    }
+
+    .product-form .ant-form-item .ant-form-item-control {
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .product-form .ant-input-number {
+        display: flex;
+        min-height: 44px;
+    }
+
+    .product-unit-builder .ant-input-number,
+    .product-component-builder .ant-input-number {
+        display: flex;
+        min-height: 44px;
+    }
+}
+
 @media (max-width: 1199.98px) {
     .pos-cashier-main {
         min-height: auto;

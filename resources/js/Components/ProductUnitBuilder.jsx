@@ -147,7 +147,7 @@ export default function ProductUnitBuilder({
     ];
 
     return (
-        <div style={{ marginBottom: 24 }}>
+        <div className="product-unit-builder" style={{ marginBottom: 24 }}>
             <Flex justify="space-between" align="center" style={{ marginBottom: 4 }}>
                 <Text strong>Satuan & Harga Jual</Text>
                 <Button

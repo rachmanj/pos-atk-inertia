@@ -215,7 +215,7 @@ export default function ProductCreate() {
                         </Link>
                     }
                 >
-                    <form onSubmit={storeProduct}>
+                    <form className="product-form" onSubmit={storeProduct}>
                         <Row gutter={16}>
                             <Col xs={24} md={12}>
                                 <Form.Item

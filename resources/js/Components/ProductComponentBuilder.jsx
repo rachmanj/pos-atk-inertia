@@ -91,7 +91,7 @@ export default function ProductComponentBuilder({
     ];
 
     return (
-        <div style={{ marginBottom: 24 }}>
+        <div className="product-component-builder" style={{ marginBottom: 24 }}>
             <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
                 <Text strong>Bahan Baku (Resep)</Text>
                 <Button
