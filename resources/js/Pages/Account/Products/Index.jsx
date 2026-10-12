@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
 import { Head, usePage, Link, router } from "@inertiajs/react";
 import {
@@ -29,21 +29,67 @@ import {
 } from "@ant-design/icons";
 import Pagination from "../../../Shared/Pagination";
 import Search from "../../../Shared/Search";
+import BarcodeScanner from "../../../Components/BarcodeScanner";
 import Delete from "../../../Shared/Delete";
 import hasAnyPermission from "../../../Utils/Permissions";
 import { formatRupiah } from "../../../Utils/format";
 
 const { Title, Text } = Typography;
 
+function queryFromPageUrl(pageUrl) {
+    const queryString = pageUrl.includes("?")
+        ? pageUrl.slice(pageUrl.indexOf("?") + 1)
+        : "";
+    return new URLSearchParams(queryString).get("q") ?? "";
+}
+
 export default function ProductIndex() {
     const { products, auth = {} } = usePage().props;
+    const { url: pageUrl } = usePage();
     const allPermissions = auth.permissions || {};
     const { token } = theme.useToken();
+
+    const activeQuery = useMemo(
+        () => queryFromPageUrl(pageUrl),
+        [pageUrl],
+    );
 
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [showImportModal, setShowImportModal] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [importProcessing, setImportProcessing] = useState(false);
+    const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+    const [searchQuery, setSearchQuery] = useState(() =>
+        queryFromPageUrl(pageUrl),
+    );
+
+    useEffect(() => {
+        setSearchQuery(activeQuery);
+    }, [activeQuery]);
+
+    const handleBarcodeScan = (barcode) => {
+        setShowBarcodeScanner(false);
+        setSearchQuery(barcode);
+
+        router.get(
+            "/account/products",
+            { q: barcode },
+            {
+                preserveState: true,
+                replace: true,
+                only: ["products"],
+                onSuccess: (page) => {
+                    const found = page.props.products?.data ?? [];
+                    if (found.length === 0) {
+                        notification.warning({
+                            message: "Produk tidak ditemukan",
+                            description: `Produk dengan barcode ${barcode} tidak ditemukan.`,
+                        });
+                    }
+                },
+            },
+        );
+    };
 
     const handlePrintSelected = () => {
         if (selectedRowKeys.length === 0) {
@@ -333,6 +379,9 @@ export default function ProductIndex() {
                         <Search
                             URL="/account/products"
                             placeholder="Cari barcode atau nama produk..."
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            onScannerClick={() => setShowBarcodeScanner(true)}
                         />
                     </div>
 
@@ -343,8 +392,9 @@ export default function ProductIndex() {
                         dataSource={products.data}
                         pagination={false}
                         locale={{
-                            emptyText:
-                                "Belum ada produk. Tambahkan produk pertama untuk mulai menjual di POS.",
+                            emptyText: activeQuery
+                                ? `Tidak ada produk yang sesuai dengan pencarian "${activeQuery}".`
+                                : "Belum ada produk. Tambahkan produk pertama untuk mulai menjual di POS.",
                         }}
                         rowSelection={{
                             selectedRowKeys,
@@ -401,6 +451,13 @@ export default function ProductIndex() {
                         <Button icon={<UploadOutlined />}>Pilih File Excel</Button>
                     </Upload>
                 </Modal>
+
+                {showBarcodeScanner && (
+                    <BarcodeScanner
+                        onScan={handleBarcodeScan}
+                        onClose={() => setShowBarcodeScanner(false)}
+                    />
+                )}
             </LayoutAccount>
         </>
     );
