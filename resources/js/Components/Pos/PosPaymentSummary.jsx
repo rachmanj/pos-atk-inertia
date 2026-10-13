@@ -234,6 +234,41 @@ export default function PosPaymentSummary({
         return "Status";
     };
 
+    const showAddMethodButton = splitMode
+        ? paymentParts.length < 3
+        : true;
+
+    const handleAddMethodClick = splitMode
+        ? onAddPaymentPart
+        : onEnterSplitMode;
+
+    const renderAddMethodButton = (placement) => {
+        if (!showAddMethodButton) {
+            return null;
+        }
+
+        const isHeader = placement === "header";
+        if (isHeader !== isMobile) {
+            return null;
+        }
+
+        return (
+            <Button
+                type="dashed"
+                icon={<PlusOutlined />}
+                onClick={handleAddMethodClick}
+                block={!isHeader}
+                className={
+                    isHeader
+                        ? "pos-add-method-btn pos-add-method-btn--header"
+                        : "pos-add-method-btn pos-add-method-btn--footer"
+                }
+            >
+                Tambah metode
+            </Button>
+        );
+    };
+
     return (
         <form
             className="pos-payment-form"
@@ -241,7 +276,10 @@ export default function PosPaymentSummary({
             onSubmit={onSubmit}
         >
             <div className="pos-payment-block">
-                <label className={fieldLabelClassName}>Metode Pembayaran</label>
+                <div className="pos-payment-block-header">
+                    <label className={fieldLabelClassName}>Metode Pembayaran</label>
+                    {renderAddMethodButton("header")}
+                </div>
                 <Radio.Group
                     className="pos-method-toggle"
                     style={{ width: "100%" }}
@@ -375,16 +413,7 @@ export default function PosPaymentSummary({
                             </div>
                         ))}
 
-                        {paymentParts.length < 3 && (
-                            <Button
-                                type="dashed"
-                                icon={<PlusOutlined />}
-                                onClick={onAddPaymentPart}
-                                block
-                            >
-                                Tambah metode
-                            </Button>
-                        )}
+                        {renderAddMethodButton("footer")}
 
                         {renderSplitCashField()}
 
@@ -405,14 +434,7 @@ export default function PosPaymentSummary({
                     <>
                         {renderSingleMethodCashField()}
 
-                        <Button
-                            type="dashed"
-                            icon={<PlusOutlined />}
-                            onClick={onEnterSplitMode}
-                            block
-                        >
-                            Tambah metode
-                        </Button>
+                        {renderAddMethodButton("footer")}
                     </>
                 )}
             </div>
