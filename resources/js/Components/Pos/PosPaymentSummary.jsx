@@ -29,20 +29,30 @@ const methodLabels = {
     transfer: "Transfer",
 };
 
-export function PosPayButton({ canSubmit, form }) {
+export function PosPayButton({ canSubmit, form, blockReason }) {
     return (
-        <Button
-            type="primary"
-            size="large"
-            htmlType="submit"
-            className="pos-pay-button"
-            icon={<CheckCircleOutlined />}
-            disabled={!canSubmit}
-            block
-            form={form}
-        >
-            Proses Pembayaran
-        </Button>
+        <div className="pos-pay-button-wrap">
+            {blockReason && !canSubmit ? (
+                <Alert
+                    type="warning"
+                    showIcon
+                    className="pos-payment-alert pos-payment-submit-hint"
+                    message={blockReason}
+                />
+            ) : null}
+            <Button
+                type="primary"
+                size="large"
+                htmlType="submit"
+                className="pos-pay-button"
+                icon={<CheckCircleOutlined />}
+                disabled={!canSubmit}
+                block
+                form={form}
+            >
+                Proses Pembayaran
+            </Button>
+        </div>
     );
 }
 
@@ -74,6 +84,7 @@ export default function PosPaymentSummary({
     overAmount,
     canSubmit,
     hasCashPart,
+    submitBlockReason,
     formId,
     hidePayButton = false,
 }) {
@@ -484,7 +495,12 @@ export default function PosPaymentSummary({
                 </div>
             </div>
 
-            {!hidePayButton && <PosPayButton canSubmit={canSubmit} />}
+            {!hidePayButton && (
+                <PosPayButton
+                    canSubmit={canSubmit}
+                    blockReason={submitBlockReason}
+                />
+            )}
         </form>
     );
 }

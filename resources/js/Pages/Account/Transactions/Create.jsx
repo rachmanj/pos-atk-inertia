@@ -308,6 +308,80 @@ export default function TransactionCreate() {
         splitMode,
     ]);
 
+    const paymentSubmitBlockReason = useMemo(() => {
+        if (activeCarts.length === 0 || canSubmitPayment) {
+            return null;
+        }
+
+        if (splitMode) {
+            if (remaining !== 0) {
+                return null;
+            }
+
+            const emptyPartIndex = paymentParts.findIndex(
+                (part) => !part.amount || Number(part.amount) <= 0,
+            );
+            if (emptyPartIndex !== -1) {
+                if (emptyPartIndex === 0) {
+                    return "Nominal Metode Utama belum diisi.";
+                }
+
+                return `Baris metode ke-${emptyPartIndex + 1} belum diisi nominalnya.`;
+            }
+
+            if (hasCashPart && cashValue < cashPartAmount) {
+                if (cash === "" || cashValue <= 0) {
+                    return `Uang tunai diterima belum diisi — minimal ${formatRupiah(cashPartAmount)} (tekan Pas untuk mengisinya otomatis).`;
+                }
+
+                return `Uang tunai diterima kurang ${formatRupiah(
+                    cashPartAmount - cashValue,
+                )} dari bagian tunai.`;
+            }
+
+            return null;
+        }
+
+        if (isCashPayment && cashValue < grandTotal) {
+            if (cash === "" || cashValue <= 0) {
+                return `Uang tunai diterima belum diisi — minimal ${formatRupiah(grandTotal)} (tekan Pas untuk mengisinya otomatis).`;
+            }
+
+            return `Uang tunai diterima kurang ${formatRupiah(
+                grandTotal - cashValue,
+            )}.`;
+        }
+
+        return null;
+    }, [
+        activeCarts.length,
+        canSubmitPayment,
+        cash,
+        cashPartAmount,
+        cashValue,
+        grandTotal,
+        hasCashPart,
+        isCashPayment,
+        paymentParts,
+        remaining,
+        splitMode,
+    ]);
+
+    useEffect(() => {
+        if (!splitMode || !hasCashPart || cashPartAmount <= 0) {
+            return;
+        }
+
+        setCash((current) => {
+            const currentValue = Number(current || 0);
+            if (current === "" || currentValue < cashPartAmount) {
+                return String(cashPartAmount);
+            }
+
+            return current;
+        });
+    }, [cashPartAmount, hasCashPart, splitMode]);
+
     const enterSplitMode = () => {
         const primaryMethod = SPLIT_METHODS.includes(paymentMethod)
             ? paymentMethod
@@ -1400,6 +1474,7 @@ export default function TransactionCreate() {
         overAmount,
         canSubmit: canSubmitPayment,
         hasCashPart,
+        submitBlockReason: paymentSubmitBlockReason,
     };
 
     const checkoutPanel = (mobile = false) => (
@@ -1420,6 +1495,7 @@ export default function TransactionCreate() {
                         <PosPayButton
                             canSubmit={canSubmitPayment}
                             form="pos-mobile-payment-form"
+                            blockReason={paymentSubmitBlockReason}
                         />
                     </div>
                 </>
