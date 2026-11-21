@@ -28,6 +28,7 @@ import {
     FileTextOutlined,
     BarChartOutlined,
     AccountBookOutlined,
+    InboxOutlined,
 } from "@ant-design/icons";
 import { NAV_MENUS } from "../Utils/navMenu";
 import hasAnyPermission from "../Utils/Permissions";
@@ -47,6 +48,8 @@ const MENU_ICONS = {
     "stock-mv": SwapOutlined,
     "stock-opname": FileDoneOutlined,
     purchases: ShoppingCartOutlined,
+    consignments: InboxOutlined,
+    "consignment-payables": AccountBookOutlined,
     "supplier-ret": UndoOutlined,
     shifts: ClockCircleOutlined,
     pos: ReconciliationOutlined,

@@ -28,6 +28,7 @@ export const NAV_MENUS = [
     { id: 'stock-opname',  label: 'Stock Opname',        group: 'Inventory',            permission: 'stock_opnames.index',      href: '/account/stock-opnames' },
     { id: 'purchases',     label: 'Pembelian Supplier',  group: 'Transaksi Supplier',   permission: 'purchases.index',          href: '/account/purchases' },
     { id: 'consignments',  label: 'Konsinyasi',          group: 'Transaksi Supplier',   permission: 'consignments.index',       href: '/account/consignments' },
+    { id: 'consignment-payables', label: 'Utang Konsinyasi', group: 'Transaksi Supplier', permission: 'consignment_payments.create', href: '/account/consignment-payables' },
     { id: 'supplier-ret',  label: 'Retur Supplier',      group: 'Transaksi Supplier',   permission: 'supplier_returns.index',   href: '/account/supplier-returns' },
     { id: 'report-sales',    label: 'Laporan Penjualan',   group: 'Laporan',              permission: 'reports.sales',            href: '/account/reports/sales' },
     { id: 'report-shift-sales', label: 'Penjualan per Shift', group: 'Laporan',           permission: 'reports.sales',            href: '/account/reports/shift-sales' },

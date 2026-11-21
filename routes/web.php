@@ -14,6 +14,8 @@ use App\Http\Controllers\Account\StockMovementController;
 use App\Http\Controllers\Account\StockOpnameController;
 use App\Http\Controllers\Account\PurchaseController;
 use App\Http\Controllers\Account\ConsignmentController;
+use App\Http\Controllers\Account\ConsignmentPayableController;
+use App\Http\Controllers\Account\ConsignmentPaymentController;
 use App\Http\Controllers\Account\SupplierReturnController;
 use App\Http\Controllers\Account\CashierShiftController;
 use App\Http\Controllers\Account\CartController;
@@ -211,6 +213,18 @@ Route::middleware(['auth'])
             ->middlewareFor('index', 'permission:consignments.index')
             ->middlewareFor(['create', 'store'], 'permission:consignments.create')
             ->middlewareFor('show', 'permission:consignments.show');
+
+        Route::get('consignment-payables', [ConsignmentPayableController::class, 'index'])
+            ->middleware('permission:consignment_payments.create')
+            ->name('consignment-payables.index');
+
+        Route::get('consignment-payables/{supplier}', [ConsignmentPayableController::class, 'show'])
+            ->middleware('permission:consignment_payments.create')
+            ->name('consignment-payables.show');
+
+        Route::post('consignment-payments', [ConsignmentPaymentController::class, 'store'])
+            ->middleware('permission:consignment_payments.create')
+            ->name('consignment-payments.store');
 
         Route::post('purchases/{purchase}/payments', [PurchasePaymentController::class, 'store'])
             ->middleware('permission:purchases.edit')
