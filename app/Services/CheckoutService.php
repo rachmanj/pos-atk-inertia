@@ -21,6 +21,7 @@ class CheckoutService
 {
     public function __construct(
         protected PpobBalanceService $ppobBalanceService,
+        protected ConsignmentAllocator $consignmentAllocator,
     ) {}
 
     public function checkout(User $user, array $data): Transaction
@@ -366,22 +367,45 @@ class CheckoutService
 
                 $stockBefore = (int) $lockedProduct->stock;
                 $stockAfter = $stockBefore - $qtyInBase;
-                $itemCost = (int) $lockedProduct->avg_cost * $qtyInBase;
+                $avgCost = (int) $lockedProduct->avg_cost;
 
-                TransactionDetail::create([
-                    'transaction_id' => $transaction->id,
-                    'product_id' => $line['product_id'],
-                    'unit_id' => $line['unit_id'],
-                    'conversion_factor' => $conversionFactor,
-                    'qty' => $line['qty'],
-                    'price' => $line['price'],
-                    'buy_price' => (int) $lockedProduct->avg_cost,
-                    'subtotal' => $itemSubtotal,
-                    'discount_type' => $lineDiscountType,
-                    'discount_amount' => $itemDiscount,
-                ]);
+                $slices = $this->consignmentAllocator->allocateFifo(
+                    (int) $line['product_id'],
+                    $qtyInBase,
+                    $avgCost,
+                );
 
-                $totalBuyPrice += $itemCost;
+                $detailPortions = $this->buildPhysicalDetailPortions(
+                    $line,
+                    $conversionFactor,
+                    $itemSubtotal,
+                    $itemDiscount,
+                    $lineDiscountType,
+                    $slices,
+                );
+
+                foreach ($detailPortions as $portion) {
+                    TransactionDetail::forceCreate([
+                        'transaction_id' => $transaction->id,
+                        'product_id' => $line['product_id'],
+                        'unit_id' => $line['unit_id'],
+                        'conversion_factor' => $conversionFactor,
+                        'qty' => $portion['qty'],
+                        'price' => $line['price'],
+                        'buy_price' => $portion['buy_price'],
+                        'subtotal' => $portion['subtotal'],
+                        'discount_type' => $portion['discount_type'],
+                        'discount_amount' => $portion['discount_amount'],
+                        'consignment_item_id' => $portion['consignment_item_id'],
+                        'consignment_qty' => $portion['consignment_qty'],
+                    ]);
+
+                    $totalBuyPrice += (int) $portion['buy_price'] * (int) $portion['qty_base'];
+
+                    if ($portion['consignment_item'] !== null) {
+                        $portion['consignment_item']->increment('qty_sold', (int) $portion['qty_base']);
+                    }
+                }
 
                 StockMovement::create([
                     'product_id' => $line['product_id'],
@@ -552,6 +576,91 @@ class CheckoutService
 
             return $transaction->fresh();
         });
+    }
+
+    /**
+     * @param  list<array{
+     *     qty_base: int,
+     *     buy_price: int,
+     *     consignment_item_id: int|null,
+     *     consignment_item: \App\Models\ConsignmentItem|null
+     * }>  $slices
+     * @return list<array{
+     *     qty_base: int,
+     *     buy_price: int,
+     *     consignment_item_id: int|null,
+     *     consignment_item: \App\Models\ConsignmentItem|null,
+     *     qty: int,
+     *     subtotal: int,
+     *     discount_type: string|null,
+     *     discount_amount: int,
+     *     consignment_qty: int
+     * }>
+     */
+    protected function buildPhysicalDetailPortions(
+        array $line,
+        float $conversionFactor,
+        int $lineNet,
+        int $lineDiscount,
+        ?string $lineDiscountType,
+        array $slices,
+    ): array {
+        $price = (int) $line['price'];
+        $qtyInBase = (int) array_sum(array_map(fn (array $slice) => (int) $slice['qty_base'], $slices));
+        $sliceCount = count($slices);
+
+        if ($sliceCount === 0) {
+            return [];
+        }
+
+        if ($sliceCount === 1) {
+            $slice = $slices[0];
+
+            return [[
+                ...$slice,
+                'qty' => (int) $line['qty'],
+                'subtotal' => $lineNet,
+                'discount_type' => $lineDiscountType,
+                'discount_amount' => $lineDiscount,
+                'consignment_qty' => $slice['consignment_item_id'] !== null ? (int) $slice['qty_base'] : 0,
+            ]];
+        }
+
+        $portions = [];
+        $allocatedDiscount = 0;
+        $allocatedSubtotal = 0;
+
+        foreach ($slices as $index => $slice) {
+            $qtyBase = (int) $slice['qty_base'];
+            $qtyPorsi = $conversionFactor > 0
+                ? (int) round($qtyBase / $conversionFactor)
+                : $qtyBase;
+            $isLast = $index === $sliceCount - 1;
+
+            if ($isLast) {
+                $discountPortion = $lineDiscount - $allocatedDiscount;
+                $subtotal = $lineNet - $allocatedSubtotal;
+            } else {
+                $discountPortion = $qtyInBase > 0
+                    ? (int) round($lineDiscount * $qtyBase / $qtyInBase)
+                    : 0;
+                $grossPortion = $price * $qtyPorsi;
+                $subtotal = $grossPortion - $discountPortion;
+                $allocatedDiscount += $discountPortion;
+                $allocatedSubtotal += $subtotal;
+            }
+
+            $portions[] = [
+                ...$slice,
+                'qty' => $qtyPorsi,
+                'subtotal' => $subtotal,
+                'discount_type' => $lineDiscountType,
+                'discount_amount' => $discountPortion,
+                'consignment_qty' => $slice['consignment_item_id'] !== null ? $qtyBase : 0,
+            ];
+        }
+
+        return $portions;
     }
 
     protected function lineGross(array $line): int
