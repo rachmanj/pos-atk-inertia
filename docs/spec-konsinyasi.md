@@ -1,6 +1,6 @@
 # Spec: Barang Konsinyasi (titipan supplier)
 
-**Status:** draft — menunggu izin mulai. Iwan belum bilang "mulai". Jangan tulis kode sebelum itu.
+**Status:** fase 1 SELESAI & terverifikasi (commit `a443073`, migrasi sudah jalan di DB live 21 Nov 2026). Fase 2 (penerimaan titipan) sedang dikerjakan. Fase 3–7 belum dimulai.
 Dibuat: 21 Nov 2026 · Sesi: POS VASIA (pos-atk) · Grill: 2 ronde, 10 keputusan, semua dijawab.
 
 ---

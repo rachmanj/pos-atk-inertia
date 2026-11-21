@@ -13,6 +13,7 @@ use App\Http\Controllers\Account\ProductImportController;
 use App\Http\Controllers\Account\StockMovementController;
 use App\Http\Controllers\Account\StockOpnameController;
 use App\Http\Controllers\Account\PurchaseController;
+use App\Http\Controllers\Account\ConsignmentController;
 use App\Http\Controllers\Account\SupplierReturnController;
 use App\Http\Controllers\Account\CashierShiftController;
 use App\Http\Controllers\Account\CartController;
@@ -204,6 +205,12 @@ Route::middleware(['auth'])
             ->middlewareFor('index', 'permission:purchases.index')
             ->middlewareFor(['create', 'store'], 'permission:purchases.create')
             ->middlewareFor('show', 'permission:purchases.show');
+
+        Route::resource('consignments', ConsignmentController::class)
+            ->only(['index', 'create', 'store', 'show'])
+            ->middlewareFor('index', 'permission:consignments.index')
+            ->middlewareFor(['create', 'store'], 'permission:consignments.create')
+            ->middlewareFor('show', 'permission:consignments.show');
 
         Route::post('purchases/{purchase}/payments', [PurchasePaymentController::class, 'store'])
             ->middleware('permission:purchases.edit')
