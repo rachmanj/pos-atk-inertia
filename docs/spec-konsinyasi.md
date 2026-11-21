@@ -1,6 +1,6 @@
 # Spec: Barang Konsinyasi (titipan supplier)
 
-**Status:** fase 1 SELESAI & terverifikasi (commit `a443073`, migrasi sudah jalan di DB live 21 Nov 2026). Fase 2 (penerimaan titipan) sedang dikerjakan. Fase 3–7 belum dimulai.
+**Status:** fase 2 SELESAI & terverifikasi (commit `89bf323`; fase 1 `a443073`). Fase 3 (hook penjualan) sedang dikerjakan. Fase 4–7 belum.
 Dibuat: 21 Nov 2026 · Sesi: POS VASIA (pos-atk) · Grill: 2 ronde, 10 keputusan, semua dijawab.
 
 ---
