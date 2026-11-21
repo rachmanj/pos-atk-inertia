@@ -1,6 +1,6 @@
 # Spec: Barang Konsinyasi (titipan supplier)
 
-**Status:** fase 5 SELESAI & terverifikasi (commit `2f3fb4f`; fase 1 `a443073`, fase 2 `89bf323`, fase 3 `dc53284`, fase 4 `f8280fc`). Fase 6 (laporan + export) sedang dikerjakan. Fase 7 (uji end-to-end) belum.
+**Status:** SEMUA 7 FASE SELESAI & terverifikasi end-to-end (fase 6 `b7ebcf7`; fase 1 `a443073`, fase 2 `89bf323`, fase 3 `dc53284`, fase 4 `f8280fc`, fase 5 `2f3fb4f`). Uji E2E 21 Nov 2026: terima 10 → jual 4 → bayar 10.000 → retur 3 → laporan & export cocok, semua data uji dibersihkan.
 Dibuat: 21 Nov 2026 · Sesi: POS VASIA (pos-atk) · Grill: 2 ronde, 10 keputusan, semua dijawab.
 
 ---
