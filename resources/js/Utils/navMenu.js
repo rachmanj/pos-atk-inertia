@@ -40,6 +40,7 @@ export const NAV_MENUS = [
     { id: 'report-purchase-payables', label: 'Utang Supplier', group: 'Laporan',         permission: 'purchases.index',          href: '/account/reports/purchase-payables' },
     { id: 'report-customers', label: 'Laporan Pelanggan',  group: 'Laporan',              permission: 'reports.customers',        href: '/account/reports/customers' },
     { id: 'report-stock',    label: 'Laporan Stok',        group: 'Laporan',              permission: 'reports.stock',            href: '/account/reports/stock' },
+    { id: 'report-consignment', label: 'Laporan Konsinyasi', group: 'Laporan',           permission: 'reports.consignment',    href: '/account/reports/consignment' },
     { id: 'roles',         label: 'Role',                group: 'Pengaturan Sistem',    permission: 'roles.index',              href: '/account/roles' },
     { id: 'users',         label: 'User',                group: 'Pengaturan Sistem',    permission: 'users.index',              href: '/account/users' },
     { id: 'settings',      label: 'Store Settings',      group: 'Pengaturan Sistem',    permission: 'settings.index',           href: '/account/settings' },

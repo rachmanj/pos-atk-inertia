@@ -33,6 +33,7 @@ use App\Http\Controllers\Account\ExpenseReportController;
 use App\Http\Controllers\Account\CustomerReportController;
 use App\Http\Controllers\Account\PurchaseTaxReportController;
 use App\Http\Controllers\Account\PurchasePayablesReportController;
+use App\Http\Controllers\Account\ConsignmentReportController;
 use App\Http\Controllers\Account\PurchasePaymentController;
 use App\Http\Controllers\Account\SettingController;
 use App\Http\Controllers\Account\PpobAccountController;
@@ -424,6 +425,14 @@ Route::middleware(['auth'])
         Route::get('/reports/customers/export', [CustomerReportController::class, 'export'])
             ->middleware('permission:reports.export')
             ->name('reports.customers.export');
+
+        Route::get('/reports/consignment', [ConsignmentReportController::class, 'index'])
+            ->middleware('permission:reports.consignment')
+            ->name('reports.consignment');
+
+        Route::get('/reports/consignment/export', [ConsignmentReportController::class, 'export'])
+            ->middleware('permission:reports.consignment')
+            ->name('reports.consignment.export');
 
         Route::resource('/expenses', ExpenseController::class)
             ->except(['show'])
