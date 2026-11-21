@@ -214,6 +214,10 @@ Route::middleware(['auth'])
             ->middlewareFor(['create', 'store'], 'permission:consignments.create')
             ->middlewareFor('show', 'permission:consignments.show');
 
+        Route::post('consignments/{consignment}/returns', [ConsignmentController::class, 'returns'])
+            ->middleware('permission:consignments.show')
+            ->name('consignments.returns');
+
         Route::get('consignment-payables', [ConsignmentPayableController::class, 'index'])
             ->middleware('permission:consignment_payments.create')
             ->name('consignment-payables.index');

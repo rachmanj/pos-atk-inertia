@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import LayoutAccount from "../../../Layouts/Account";
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import {
     formatDateOnly,
     formatRupiah,
@@ -12,8 +12,12 @@ import {
     Button,
     Card,
     Col,
+    DatePicker,
     Grid,
+    Input,
+    InputNumber,
     List,
+    Modal,
     Row,
     Space,
     Spin,
@@ -21,7 +25,12 @@ import {
     Tag,
     Typography,
 } from "antd";
-import { ArrowLeftOutlined, InboxOutlined } from "@ant-design/icons";
+import {
+    ArrowLeftOutlined,
+    InboxOutlined,
+    RollbackOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 
@@ -43,10 +52,68 @@ const statusLabel = (status) => (status === "closed" ? "Ditutup" : "Aktif");
 const statusColor = (status) => (status === "closed" ? "default" : "processing");
 
 export default function ConsignmentShow() {
-    const { consignment, totals = {}, flash = {} } = usePage().props;
+    const {
+        consignment,
+        totals = {},
+        consignmentReturns = [],
+        flash = {},
+        errors = {},
+    } = usePage().props;
     const loading = useInertiaLoading();
     const screens = Grid.useBreakpoint();
     const isMobile = !screens.md;
+
+    const returnableItems = useMemo(
+        () =>
+            (consignment.items || []).filter(
+                (item) => (item.remaining_qty ?? 0) > 0,
+            ),
+        [consignment.items],
+    );
+
+    const canReturn = returnableItems.length > 0;
+
+    const [returnModalOpen, setReturnModalOpen] = useState(false);
+    const [returnDate, setReturnDate] = useState(dayjs());
+    const [returnNote, setReturnNote] = useState("");
+    const [returnQtyByItem, setReturnQtyByItem] = useState({});
+
+    const openReturnModal = () => {
+        const initial = {};
+        returnableItems.forEach((item) => {
+            initial[item.id] = 0;
+        });
+        setReturnQtyByItem(initial);
+        setReturnDate(dayjs());
+        setReturnNote("");
+        setReturnModalOpen(true);
+    };
+
+    const selectedReturnLines = useMemo(
+        () =>
+            returnableItems
+                .map((item) => ({
+                    consignment_item_id: item.id,
+                    qty: returnQtyByItem[item.id] ?? 0,
+                }))
+                .filter((line) => line.qty > 0),
+        [returnableItems, returnQtyByItem],
+    );
+
+    const submitReturn = () => {
+        router.post(
+            `/account/consignments/${consignment.id}/returns`,
+            {
+                return_date: returnDate.format("YYYY-MM-DD"),
+                note: returnNote || null,
+                items: selectedReturnLines,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => setReturnModalOpen(false),
+            },
+        );
+    };
 
     const itemColumns = [
         {
@@ -121,6 +188,77 @@ export default function ConsignmentShow() {
         },
     ];
 
+    const returnHistoryColumns = [
+        {
+            title: "Invoice",
+            dataIndex: "invoice",
+            render: (invoice) => (
+                <Link
+                    href={`/account/supplier-returns/${invoice}`}
+                    style={{ color: "var(--brand-primary)" }}
+                >
+                    <Text strong>{invoice}</Text>
+                </Link>
+            ),
+        },
+        {
+            title: "Tanggal",
+            dataIndex: "return_date",
+            responsive: ["sm"],
+            render: (value) => formatDateOnly(value),
+        },
+        {
+            title: "Qty",
+            dataIndex: "total_qty",
+            align: "center",
+            width: 72,
+        },
+        {
+            title: "Nilai",
+            dataIndex: "total_amount",
+            align: "right",
+            render: (value) => formatRupiahCompact(value),
+        },
+        {
+            title: "Oleh",
+            responsive: ["md"],
+            render: (_, row) => row.user?.name || "-",
+        },
+    ];
+
+    const returnModalColumns = [
+        {
+            title: "Produk",
+            render: (_, item) => (
+                <div>
+                    <Text strong>{item.product?.title || "-"}</Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                        Sisa maks. {item.remaining_qty ?? 0} pcs
+                    </Text>
+                </div>
+            ),
+        },
+        {
+            title: "Qty retur",
+            width: 140,
+            render: (_, item) => (
+                <InputNumber
+                    min={0}
+                    max={item.remaining_qty ?? 0}
+                    value={returnQtyByItem[item.id] ?? 0}
+                    style={{ width: "100%" }}
+                    onChange={(value) =>
+                        setReturnQtyByItem((prev) => ({
+                            ...prev,
+                            [item.id]: value ?? 0,
+                        }))
+                    }
+                />
+            ),
+        },
+    ];
+
     return (
         <>
             <Head>
@@ -146,17 +284,50 @@ export default function ConsignmentShow() {
                             </Space>
                         }
                         extra={
-                            <Link href="/account/consignments">
-                                <Button icon={<ArrowLeftOutlined />}>
-                                    KEMBALI
-                                </Button>
-                            </Link>
+                            <Space wrap>
+                                {canReturn && (
+                                    <Button
+                                        type="primary"
+                                        icon={<RollbackOutlined />}
+                                        onClick={openReturnModal}
+                                    >
+                                        Retur ke Supplier
+                                    </Button>
+                                )}
+                                <Link href="/account/consignments">
+                                    <Button icon={<ArrowLeftOutlined />}>
+                                        KEMBALI
+                                    </Button>
+                                </Link>
+                            </Space>
                         }
                     >
                         {flash.success && (
                             <Alert
                                 type="success"
                                 message={flash.success}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+                        {flash.error && (
+                            <Alert
+                                type="error"
+                                message={flash.error}
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+                        {(errors.items || Object.keys(errors).some((k) => k.startsWith("items."))) && (
+                            <Alert
+                                type="error"
+                                message={
+                                    errors.items ||
+                                    Object.entries(errors)
+                                        .filter(([k]) => k.startsWith("items."))
+                                        .map(([, v]) => v)
+                                        .join(" ")
+                                }
                                 showIcon
                                 style={{ marginBottom: 16 }}
                             />
@@ -336,8 +507,96 @@ export default function ConsignmentShow() {
                                 />
                             )}
                         </Card>
+
+                        <Card size="small" title="Riwayat retur konsinyasi">
+                            {consignmentReturns.length === 0 ? (
+                                <Text type="secondary">
+                                    Belum ada retur untuk penerimaan ini.
+                                </Text>
+                            ) : (
+                                <Table
+                                    rowKey="id"
+                                    size="small"
+                                    pagination={false}
+                                    columns={returnHistoryColumns}
+                                    dataSource={consignmentReturns}
+                                />
+                            )}
+                        </Card>
                     </Card>
                 </Spin>
+
+                <Modal
+                    title="Retur barang titipan ke supplier"
+                    open={returnModalOpen}
+                    onCancel={() => setReturnModalOpen(false)}
+                    onOk={submitReturn}
+                    okText="Simpan retur"
+                    okButtonProps={{
+                        disabled: selectedReturnLines.length === 0,
+                        loading,
+                    }}
+                    width={640}
+                    destroyOnClose
+                >
+                    <Space
+                        direction="vertical"
+                        size="middle"
+                        style={{ width: "100%" }}
+                    >
+                        <div>
+                            <Text
+                                type="secondary"
+                                style={{
+                                    display: "block",
+                                    marginBottom: 4,
+                                    fontSize: 12,
+                                }}
+                            >
+                                Tanggal retur
+                            </Text>
+                            <DatePicker
+                                value={returnDate}
+                                onChange={(value) =>
+                                    setReturnDate(value || dayjs())
+                                }
+                                format="DD/MM/YYYY"
+                                style={{ width: "100%" }}
+                            />
+                        </div>
+                        <div>
+                            <Text
+                                type="secondary"
+                                style={{
+                                    display: "block",
+                                    marginBottom: 4,
+                                    fontSize: 12,
+                                }}
+                            >
+                                Catatan (opsional)
+                            </Text>
+                            <Input.TextArea
+                                rows={2}
+                                value={returnNote}
+                                onChange={(e) => setReturnNote(e.target.value)}
+                                maxLength={1000}
+                                placeholder="Alasan atau catatan retur"
+                            />
+                        </div>
+                        <Table
+                            rowKey="id"
+                            size="small"
+                            pagination={false}
+                            columns={returnModalColumns}
+                            dataSource={returnableItems}
+                        />
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                            Pilih minimal satu baris dengan qty retur &gt; 0.
+                            Stok fisik akan berkurang; utang konsinyasi tidak
+                            berubah.
+                        </Text>
+                    </Space>
+                </Modal>
             </LayoutAccount>
         </>
     );

@@ -21,6 +21,7 @@ class SupplierReturn extends Model
 
     protected $fillable = [
         'purchase_id',
+        'consignment_id',
         'supplier_id',
         'user_id',
         'invoice',
@@ -35,6 +36,11 @@ class SupplierReturn extends Model
     public function purchase(): BelongsTo
     {
         return $this->belongsTo(Purchase::class);
+    }
+
+    public function consignment(): BelongsTo
+    {
+        return $this->belongsTo(Consignment::class);
     }
 
     public function supplier(): BelongsTo

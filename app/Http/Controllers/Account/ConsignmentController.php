@@ -8,9 +8,12 @@ use App\Models\ConsignmentItem;
 use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Supplier;
+use App\Models\SupplierReturn;
+use App\Models\SupplierReturnDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -229,10 +232,174 @@ class ConsignmentController extends Controller
             'total_remaining_value' => (int) $consignment->items->sum('remaining_value'),
         ];
 
+        $consignmentReturns = SupplierReturn::query()
+            ->where('consignment_id', $consignment->id)
+            ->with(['user:id,name'])
+            ->latest('return_date')
+            ->latest('id')
+            ->get([
+                'id',
+                'invoice',
+                'return_date',
+                'total_qty',
+                'total_amount',
+                'note',
+                'user_id',
+            ]);
+
         return Inertia::render('Account/Consignments/Show', [
             'consignment' => $consignment,
             'totals' => $totals,
+            'consignmentReturns' => $consignmentReturns,
         ]);
+    }
+
+    public function returns(Request $request, Consignment $consignment)
+    {
+        abort_unless($request->user()->can('consignments.show'), 403);
+
+        $request->validate([
+            'return_date' => 'nullable|date',
+            'note' => 'nullable|string|max:1000',
+            'items' => 'required|array|min:1',
+            'items.*.consignment_item_id' => [
+                'required',
+                'integer',
+                Rule::exists('consignment_items', 'id')->where(
+                    fn ($query) => $query->where('consignment_id', $consignment->id),
+                ),
+            ],
+            'items.*.qty' => 'required|integer|min:1',
+        ]);
+
+        $selectedItems = collect($request->items)
+            ->map(fn ($item) => [
+                'consignment_item_id' => (int) $item['consignment_item_id'],
+                'qty' => (int) $item['qty'],
+            ])
+            ->values();
+
+        if ($selectedItems->pluck('consignment_item_id')->unique()->count() !== $selectedItems->count()) {
+            throw ValidationException::withMessages([
+                'items' => 'Baris retur tidak boleh duplikat untuk item yang sama.',
+            ]);
+        }
+
+        $returnDate = filled($request->return_date)
+            ? $request->return_date
+            : now()->toDateString();
+
+        $supplierReturn = DB::transaction(function () use ($request, $consignment, $selectedItems, $returnDate) {
+            $consignmentItems = ConsignmentItem::query()
+                ->with('product:id,title,stock')
+                ->where('consignment_id', $consignment->id)
+                ->whereIn('id', $selectedItems->pluck('consignment_item_id')->all())
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            $preparedItems = [];
+
+            foreach ($selectedItems as $index => $item) {
+                $consignmentItem = $consignmentItems->get($item['consignment_item_id']);
+
+                if (!$consignmentItem) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Terdapat item retur yang tidak sesuai dengan penerimaan konsinyasi ini.',
+                    ]);
+                }
+
+                $remainingQty = $consignmentItem->remainingQty();
+
+                if ($item['qty'] > $remainingQty) {
+                    $productTitle = $consignmentItem->product?->title ?? 'produk';
+
+                    throw ValidationException::withMessages([
+                        "items.{$index}.qty" => "Qty retur ({$item['qty']} pcs) melebihi sisa titipan ({$remainingQty} pcs) untuk {$productTitle}.",
+                    ]);
+                }
+
+                $product = Product::query()
+                    ->whereKey($consignmentItem->product_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $costPrice = (int) $consignmentItem->cost_price;
+                $stockBefore = (int) $product->stock;
+                $stockAfter = $stockBefore - $item['qty'];
+
+                $preparedItems[] = [
+                    'consignment_item_id' => $consignmentItem->id,
+                    'product_id' => $consignmentItem->product_id,
+                    'qty' => $item['qty'],
+                    'buy_price' => $costPrice,
+                    'subtotal' => $item['qty'] * $costPrice,
+                    'stock_before' => $stockBefore,
+                    'stock_after' => $stockAfter,
+                    'new_qty_returned' => (int) $consignmentItem->qty_returned + $item['qty'],
+                ];
+            }
+
+            $supplierReturn = SupplierReturn::create([
+                'purchase_id' => null,
+                'consignment_id' => $consignment->id,
+                'supplier_id' => $consignment->supplier_id,
+                'user_id' => $request->user()->id,
+                'invoice' => $this->generateConsignmentReturnInvoice(),
+                'return_date' => $returnDate,
+                'total_items' => count($preparedItems),
+                'total_qty' => collect($preparedItems)->sum('qty'),
+                'total_amount' => collect($preparedItems)->sum('subtotal'),
+                'reason' => 'other',
+                'note' => filled($request->note) ? trim($request->note) : null,
+            ]);
+
+            foreach ($preparedItems as $item) {
+                SupplierReturnDetail::create([
+                    'supplier_return_id' => $supplierReturn->id,
+                    'purchase_detail_id' => null,
+                    'consignment_item_id' => $item['consignment_item_id'],
+                    'product_id' => $item['product_id'],
+                    'qty' => $item['qty'],
+                    'buy_price' => $item['buy_price'],
+                    'subtotal' => $item['subtotal'],
+                ]);
+
+                ConsignmentItem::query()
+                    ->whereKey($item['consignment_item_id'])
+                    ->update([
+                        'qty_returned' => $item['new_qty_returned'],
+                    ]);
+
+                Product::query()
+                    ->whereKey($item['product_id'])
+                    ->update([
+                        'stock' => $item['stock_after'],
+                    ]);
+
+                StockMovement::create([
+                    'product_id' => $item['product_id'],
+                    'user_id' => $request->user()->id,
+                    'type' => 'out',
+                    'qty' => $item['qty'],
+                    'stock_before' => $item['stock_before'],
+                    'stock_after' => $item['stock_after'],
+                    'reference_type' => SupplierReturn::class,
+                    'reference_id' => $supplierReturn->id,
+                    'note' => 'Retur Konsinyasi: ' . $supplierReturn->invoice,
+                ]);
+            }
+
+            return $supplierReturn;
+        });
+
+        return redirect()
+            ->route('account.consignments.show', $consignment)
+            ->with(
+                'success',
+                'Retur konsinyasi ' . $supplierReturn->invoice . ' berhasil disimpan dan stok produk telah diperbarui.',
+            );
     }
 
     protected function generateConsignmentCode(): string
@@ -242,5 +409,14 @@ class ConsignmentController extends Controller
         } while (Consignment::where('code', $code)->exists());
 
         return $code;
+    }
+
+    protected function generateConsignmentReturnInvoice(): string
+    {
+        do {
+            $invoice = 'RET-' . now()->format('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+        } while (SupplierReturn::query()->where('invoice', $invoice)->exists());
+
+        return $invoice;
     }
 }

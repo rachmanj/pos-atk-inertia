@@ -19,6 +19,7 @@ class SupplierReturnDetail extends Model
     protected $fillable = [
         'supplier_return_id',
         'purchase_detail_id',
+        'consignment_item_id',
         'product_id',
         'qty',
         'buy_price',
@@ -33,6 +34,11 @@ class SupplierReturnDetail extends Model
     public function purchaseDetail(): BelongsTo
     {
         return $this->belongsTo(PurchaseDetail::class);
+    }
+
+    public function consignmentItem(): BelongsTo
+    {
+        return $this->belongsTo(ConsignmentItem::class);
     }
 
     public function product(): BelongsTo

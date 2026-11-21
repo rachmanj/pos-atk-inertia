@@ -1,6 +1,6 @@
 # Spec: Barang Konsinyasi (titipan supplier)
 
-**Status:** fase 2 SELESAI & terverifikasi (commit `89bf323`; fase 1 `a443073`). Fase 3 (hook penjualan) sedang dikerjakan. Fase 4–7 belum.
+**Status:** fase 4 SELESAI & terverifikasi (commit `f8280fc`; fase 1 `a443073`, fase 2 `89bf323`, fase 3 `dc53284`). Fase 5 (retur konsinyasi) sedang dikerjakan. Fase 6–7 belum.
 Dibuat: 21 Nov 2026 · Sesi: POS VASIA (pos-atk) · Grill: 2 ronde, 10 keputusan, semua dijawab.
 
 ---
